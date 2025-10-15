@@ -1,63 +1,1060 @@
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'residence_screen.dart';
-import 'business_screen.dart';
-import 'auto_screen.dart';
-import 'land_screen.dart';
-import 'utilities_screen.dart';
-import 'justice_screen.dart';
-import 'tax_screen.dart';
+// ========================================================================================
+// FASODOCS - APPLICATION MOBILE DE GESTION ADMINISTRATIVE
+// ========================================================================================
+// Cette application permet aux citoyens burkinabés d'effectuer leurs démarches 
+// administratives de manière simplifiée et centralisée.
+//
+// Fonctionnalités principales :
+// - Authentification par SMS
+// - Gestion des documents administratifs
+// - Notifications des mises à jour
+// - Suivi des démarches
+// - Support multilingue (Français/English)
+// ========================================================================================
 
-void main() {
-  runApp(const FasoDocsApp());
-}
+// Imports Flutter essentiels
+import 'package:flutter/material.dart';  // Framework UI principal
+import 'package:flutter/services.dart';  // Services système (orientation, statut bar)
+import 'package:image_picker/image_picker.dart';  // Sélection d'images depuis galerie/caméra
+import 'dart:io';  // Gestion des fichiers locaux
 
-class FasoDocsApp extends StatelessWidget {
-  const FasoDocsApp({super.key});
+// Imports des écrans spécialisés pour les différentes catégories de démarches
+import 'residence_screen.dart';   // Écran pour les démarches de résidence
+import 'business_screen.dart';    // Écran pour les démarches commerciales
+import 'auto_screen.dart';        // Écran pour les démarches automobiles
+import 'land_screen.dart';        // Écran pour les démarches foncières
+import 'utilities_screen.dart';   // Écran pour les démarches utilitaires
+import 'justice_screen.dart';     // Écran pour les démarches judiciaires
+import 'tax_screen.dart';         // Écran pour les démarches fiscales
 
-  @override
-  Widget build(BuildContext context) {
-    SystemChrome.setPreferredOrientations([
-      DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown,
-    ]);
-
-    return MaterialApp(
-      title: 'FasoDocs',
-      debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+// ========================================================================================
+// CLASSE GLOBALE POUR LA GESTION DU SIGNALEMENT
+// ========================================================================================
+// Cette classe permet d'accéder aux fonctionnalités de signalement depuis n'importe 
+// où dans l'application via une méthode statique.
+class GlobalReportAccess {
+  /// Affiche un dialogue de confirmation pour signaler un problème
+  /// Cette méthode peut être appelée depuis n'importe quel écran de l'application
+  /// 
+  /// @param context Le contexte de l'écran appelant
+  static void showReportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          // Titre du dialogue
+          title: const Text('Signaler un problème'),
+          // Message de confirmation
+          content: const Text('Voulez-vous signaler un problème ou faire une suggestion ?'),
+          actions: [
+            // Bouton d'annulation - ferme le dialogue sans action
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Ferme le dialogue
+              },
+              child: const Text('Annuler'),
+            ),
+            // Bouton de confirmation - navigue vers l'écran de signalement
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Ferme le dialogue actuel
+                // Navigue vers l'écran de signalement de problème
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,  // Couleur verte FasoDocs
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Continuer'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
 
-// ÉCRAN 1: SPLASH SCREEN (exactement comme la photo)
-class SplashScreen extends StatefulWidget {
-  const SplashScreen({super.key});
+
+// ========================================================================================
+// ÉCRAN: MODIFIER LE PROFIL UTILISATEUR
+// ========================================================================================
+// Cet écran permet à l'utilisateur de modifier ses informations personnelles :
+// - Nom complet
+// - Adresse email
+// - Mot de passe
+// - Numéro de téléphone
+// - Photo de profil (sélection depuis la galerie)
+// ========================================================================================
+class EditProfileScreen extends StatefulWidget {
+  const EditProfileScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> {
+class _EditProfileScreenState extends State<EditProfileScreen> {
+  // ========================================================================================
+  // CONTRÔLEURS DE CHAMPS DE TEXTE
+  // ========================================================================================
+  // Contrôleurs pour gérer les valeurs des champs de saisie avec des valeurs par défaut
+  final TextEditingController _nameController = TextEditingController(text: 'Tenen M Sylla');
+  final TextEditingController _emailController = TextEditingController(text: 'madyehsylla427@gmail.com');
+  final TextEditingController _passwordController = TextEditingController(text: '••••••••••••');
+  final TextEditingController _phoneController = TextEditingController(text: '+223 74323874');
+  
+  // ========================================================================================
+  // VARIABLES D'ÉTAT POUR LA GESTION DE L'IMAGE DE PROFIL
+  // ========================================================================================
+  File? _profileImage;        // Fichier image sélectionné
+  String? _profileImagePath;  // Chemin vers l'image sélectionnée
+
+  // ========================================================================================
+  // MÉTHODES DE LIFECYCLE
+  // ========================================================================================
+  
+  /// Libère les ressources des contrôleurs de texte
+  /// Appelée automatiquement quand le widget est supprimé
   @override
-  void initState() {
-    super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  // ========================================================================================
+  // MÉTHODES UTILITAIRES
+  // ========================================================================================
+  
+  /// Permet à l'utilisateur de sélectionner une image depuis la galerie
+  /// L'image est redimensionnée et compressée pour optimiser les performances
+  Future<void> _pickProfileImage() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+      // Sélection d'une image depuis la galerie avec contraintes de taille
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.gallery,  // Sélection depuis la galerie
+        maxWidth: 1024,               // Largeur maximale de 1024px
+        maxHeight: 1024,              // Hauteur maximale de 1024px
+        imageQuality: 80,             // Qualité de compression à 80%
+      );
+      
+      // Si une image a été sélectionnée, mettre à jour l'état
+      if (image != null) {
+        setState(() {
+          _profileImage = File(image.path);      // Convertir en File
+          _profileImagePath = image.path;        // Sauvegarder le chemin
+        });
+      }
+    } catch (e) {
+      // Afficher un message d'erreur en cas de problème
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la sélection de l\'image: $e')),
+      );
+    }
+  }
+
+  // ========================================================================================
+  // MÉTHODE BUILD - CONSTRUCTION DE L'INTERFACE UTILISATEUR
+  // ========================================================================================
+  
+  /// Construit l'interface utilisateur de l'écran de modification de profil
+  /// Utilise un LayoutBuilder pour s'adapter à différentes tailles d'écran
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,  // Fond blanc pour l'écran
+      body: SafeArea(  // Zone sûre qui évite les encoches et la barre de statut
+        child: LayoutBuilder(  // Builder qui fournit les contraintes de taille
+          builder: (context, constraints) {
+            // ========================================================================================
+            // CALCUL DES DIMENSIONS RESPONSIVES
+            // ========================================================================================
+            final screenWidth = constraints.maxWidth;     // Largeur de l'écran
+            final screenHeight = constraints.maxHeight;   // Hauteur de l'écran
+            final horizontalPadding = screenWidth * 0.05; // Padding horizontal (5% de la largeur)
+            final verticalPadding = screenHeight * 0.02;  // Padding vertical (2% de la hauteur)
+            
+            return Column(
+              children: [
+                // ========================================================================================
+                // HEADER AVEC BOUTON RETOUR, TITRE ET LOGOUT
+                // ========================================================================================
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // ========================================================================================
+                      // BOUTON RETOUR - Permet de revenir à l'écran précédent
+                      // ========================================================================================
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),  // Navigation retour
+                        child: Container(
+                          padding: EdgeInsets.all(screenWidth * 0.02),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,  // Couleur orange pour le bouton
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: screenWidth * 0.05,
+                          ),
+                        ),
+                      ),
+                      // ========================================================================================
+                      // TITRE DE LA PAGE
+                      // ========================================================================================
+                      Text(
+                        'Modifier le profil',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      // ========================================================================================
+                      // BOUTON DÉCONNEXION - Permet à l'utilisateur de se déconnecter
+                      // ========================================================================================
+                      GestureDetector(
+                        onTap: () {
+                          // TODO: Implémenter l'action de déconnexion
+                        },
+                        child: Icon(
+                          Icons.logout,
+                          color: Colors.red,  // Couleur rouge pour indiquer une action importante
+                          size: screenWidth * 0.06,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // ========================================================================================
+                // CONTENU PRINCIPAL - Zone scrollable avec les champs de modification
+                // ========================================================================================
+                Expanded(
+                  child: SingleChildScrollView(  // Permet le défilement si le contenu dépasse
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: Column(
+                      children: [
+                        SizedBox(height: screenHeight * 0.04),
+                        
+                        // ========================================================================================
+                        // PHOTO DE PROFIL AVEC BOUTON DE MODIFICATION
+                        // ========================================================================================
+                        Stack(
+                          children: [
+                            Container(
+                              width: screenWidth * 0.4,
+                              height: screenWidth * 0.4,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: Colors.green,
+                                  width: 3,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: _profileImagePath != null
+                                    ? Image.network(
+                                        _profileImagePath!,
+                                        fit: BoxFit.cover,
+                                        width: double.infinity,
+                                        height: double.infinity,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            color: Colors.grey[300],
+                                            child: Icon(
+                                              Icons.person,
+                                              color: Colors.grey[600],
+                                              size: screenWidth * 0.2,
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Container(
+                                        color: Colors.grey[300],
+                                        child: Icon(
+                                          Icons.person,
+                                          color: Colors.grey[600],
+                                          size: screenWidth * 0.2,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: GestureDetector(
+                                onTap: _pickProfileImage,
+                                child: Container(
+                                  width: screenWidth * 0.1,
+                                  height: screenWidth * 0.1,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.grey, width: 1),
+                                  ),
+                                  child: Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.black,
+                                    size: screenWidth * 0.05,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.04),
+                        
+                        // Conteneur principal avec bordure verte
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.all(screenWidth * 0.04),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green, width: 2),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            children: [
+                              // Champ Nom
+                              _buildEditField(
+                                context,
+                                screenWidth,
+                                screenHeight,
+                                Icons.person,
+                                _nameController,
+                                'Nom complet',
+                              ),
+                              
+                              SizedBox(height: screenHeight * 0.02),
+                              
+                              // Champ Email
+                              _buildEditField(
+                                context,
+                                screenWidth,
+                                screenHeight,
+                                Icons.email,
+                                _emailController,
+                                'Email',
+                              ),
+                              
+                              SizedBox(height: screenHeight * 0.02),
+                              
+                              // Champ Mot de passe
+                              _buildEditField(
+                                context,
+                                screenWidth,
+                                screenHeight,
+                                Icons.lock,
+                                _passwordController,
+                                'Mot de passe',
+                                isPassword: true,
+                              ),
+                              
+                              SizedBox(height: screenHeight * 0.02),
+                              
+                              // Champ Téléphone
+                              _buildEditField(
+                                context,
+                                screenWidth,
+                                screenHeight,
+                                Icons.phone,
+                                _phoneController,
+                                'Téléphone',
+                              ),
+                              
+                              SizedBox(height: screenHeight * 0.04),
+                              
+                              // Bouton Enregistrer
+                              Container(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  onPressed: () {
+                                    // Action de sauvegarde
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Profil mis à jour avec succès!')),
+                                    );
+                                  },
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.green,
+                                    foregroundColor: Colors.white,
+                                    padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Enregistrer',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.04,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.04),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
+  }
 
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-        );
+  Widget _buildEditField(
+    BuildContext context,
+    double screenWidth,
+    double screenHeight,
+    IconData icon,
+    TextEditingController controller,
+    String hintText, {
+    bool isPassword = false,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: screenHeight * 0.015,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.green, width: 1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword,
+        decoration: InputDecoration(
+          prefixIcon: Icon(
+            icon,
+            color: Colors.black,
+            size: screenWidth * 0.05,
+          ),
+          hintText: hintText,
+          hintStyle: TextStyle(
+            fontSize: screenWidth * 0.04,
+            color: Colors.grey[600],
+          ),
+          border: InputBorder.none,
+        ),
+        style: TextStyle(
+          fontSize: screenWidth * 0.04,
+          color: Colors.black,
+        ),
+      ),
+    );
+  }
+}
+
+// ÉCRAN: PROFIL
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final screenHeight = constraints.maxHeight;
+            final horizontalPadding = screenWidth * 0.05;
+            final verticalPadding = screenHeight * 0.02;
+            
+            return Column(
+              children: [
+                // Header avec bouton retour, titre et menu
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Bouton retour
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          padding: EdgeInsets.all(screenWidth * 0.02),
+                          decoration: BoxDecoration(
+                            color: Colors.green,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                            size: screenWidth * 0.05,
+                          ),
+                        ),
+                      ),
+                      // Titre
+                      Text(
+                        'Profil',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                      // Menu trois points
+                      PopupMenuButton<String>(
+                        icon: Icon(
+                          Icons.more_vert,
+                          color: Colors.grey[600],
+                          size: screenWidth * 0.06,
+                        ),
+                        onSelected: (String value) {
+                          if (value == 'history') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                            );
+                          } else if (value == 'report') {
+                            GlobalReportAccess.showReportDialog(context);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          const PopupMenuItem<String>(
+                            value: 'history',
+                            child: Row(
+                              children: [
+                                Icon(Icons.history, color: Colors.grey),
+                                SizedBox(width: 8),
+                                Text('Historique'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.report_problem, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Signaler un problème'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Contenu principal
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: Column(
+                      children: [
+                        SizedBox(height: screenHeight * 0.04),
+                        
+                        // Photo de profil
+                        Container(
+                          width: screenWidth * 0.3,
+                          height: screenWidth * 0.3,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.grey[600],
+                            size: screenWidth * 0.15,
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                        
+                        // Nom de l'utilisateur
+                        Text(
+                          'Daba Diarra',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.05,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.01),
+                        
+                        // Email
+                        Text(
+                          'daba.diarra@gmail.com',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.04,
+                            color: Colors.black,
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.04),
+                        
+                        // Cartes d'informations
+                        _buildProfileCard(
+                          context,
+                          screenWidth,
+                          screenHeight,
+                          Icons.phone,
+                          'Téléphone',
+                          '+223 76 00 00 00',
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                        
+                        _buildProfileCard(
+                          context,
+                          screenWidth,
+                          screenHeight,
+                          Icons.location_on,
+                          'Adresse',
+                          'Hamdallaye ACI 2000',
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                        
+                        _buildProfileCard(
+                          context,
+                          screenWidth,
+                          screenHeight,
+                          Icons.calendar_today,
+                          'Date de naissance',
+                          '01/01/1990',
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                        
+                        _buildProfileCard(
+                          context,
+                          screenWidth,
+                          screenHeight,
+                          Icons.person,
+                          'Genre',
+                          'Femme',
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.04),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProfileCard(
+    BuildContext context,
+    double screenWidth,
+    double screenHeight,
+    IconData icon,
+    String label,
+    String value,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(screenWidth * 0.04),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: screenWidth * 0.12,
+            height: screenWidth * 0.12,
+            decoration: BoxDecoration(
+              color: Colors.green.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: Colors.green,
+              size: screenWidth * 0.06,
+            ),
+          ),
+          SizedBox(width: screenWidth * 0.04),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.005),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+              );
+            },
+            child: Icon(
+              Icons.edit,
+              color: Colors.grey[600],
+              size: screenWidth * 0.05,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ÉCRAN: HISTORIQUE
+class HistoryScreen extends StatelessWidget {
+  const HistoryScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final screenHeight = constraints.maxHeight;
+            final horizontalPadding = screenWidth * 0.05;
+            final verticalPadding = screenHeight * 0.02;
+            
+            return Column(
+              children: [
+                // Header avec logo FasoDocs et profil
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Logo FasoDocs
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/FasoDocs1.png',
+                            width: screenWidth * 0.08,
+                            height: screenWidth * 0.08 * 0.6,
+                            fit: BoxFit.contain,
+                          ),
+                          SizedBox(width: screenWidth * 0.02),
+                          Text(
+                            'FasoDocs',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.04,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Profil et notifications
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                              );
+                            },
+                            child: Container(
+                              width: screenWidth * 0.1,
+                              height: screenWidth * 0.1,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.grey[600],
+                                size: screenWidth * 0.05,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: screenWidth * 0.03),
+                          Stack(
+                            children: [
+                              Icon(
+                                Icons.notifications_outlined,
+                                color: Colors.grey[600],
+                                size: screenWidth * 0.06,
+                              ),
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  width: screenWidth * 0.03,
+                                  height: screenWidth * 0.03,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '3',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: screenWidth * 0.025,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: screenWidth * 0.03),
+                          GestureDetector(
+                            onTap: () => Navigator.of(context).pop(),
+                            child: Icon(
+                              Icons.more_vert,
+                              color: Colors.grey[600],
+                              size: screenWidth * 0.06,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Contenu principal
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Titre avec bouton retour
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.of(context).pop(),
+                              child: Container(
+                                padding: EdgeInsets.all(screenWidth * 0.02),
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.white,
+                                  size: screenWidth * 0.05,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.03),
+                            Text(
+                              'Historique',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.05,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.04),
+                        
+                        // Liste des activités
+                        _buildHistoryItem(
+                          context,
+                          screenWidth,
+                          screenHeight,
+                          Icons.credit_card,
+                          Colors.orange,
+                          'Demande de passport',
+                          'Il y a 2 heures',
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                        
+                        _buildHistoryItem(
+                          context,
+                          screenWidth,
+                          screenHeight,
+                          Icons.description,
+                          Colors.blue,
+                          'Acte de naissance',
+                          'Il y a 1 j',
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                        
+                        _buildHistoryItem(
+                          context,
+                          screenWidth,
+                          screenHeight,
+                          Icons.warning,
+                          Colors.red,
+                          'Signalement du tribunal de hamdallaye',
+                          '15 Avril 2025',
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem(
+    BuildContext context,
+    double screenWidth,
+    double screenHeight,
+    IconData icon,
+    Color iconColor,
+    String title,
+    String time,
+  ) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(screenWidth * 0.04),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: screenWidth * 0.12,
+            height: screenWidth * 0.12,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: iconColor,
+              size: screenWidth * 0.06,
+            ),
+          ),
+          SizedBox(width: screenWidth * 0.04),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black,
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.005),
+                Text(
+                  time,
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.035,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ÉCRAN: SIGNALER UN PROBLÈME
+class ReportProblemScreen extends StatefulWidget {
+  const ReportProblemScreen({super.key});
+
+  @override
+  State<ReportProblemScreen> createState() => _ReportProblemScreenState();
+}
+
+class _ReportProblemScreenState extends State<ReportProblemScreen> {
+  File? _selectedImage;
+  String? _selectedImagePath;
+  final ImagePicker _picker = ImagePicker();
+  String? _selectedReportType;
+  final TextEditingController _structureController = TextEditingController();
+  final TextEditingController _descriptionController = TextEditingController();
+  
+  final List<String> _reportTypes = [
+    'Problème technique',
+    'Erreur de contenu',
+    'Suggestion d\'amélioration',
+    'Signalement d\'abus',
+    'Autre',
+  ];
+
+  @override
+  void dispose() {
+    _structureController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+      
+      if (image != null) {
+        setState(() {
+          _selectedImage = File(image.path);
+          _selectedImagePath = image.path;
+        });
       }
-    });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erreur lors de la sélection de l\'image: $e')),
+      );
+    }
   }
 
   @override
@@ -68,16 +1065,536 @@ class _SplashScreenState extends State<SplashScreen> {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final screenWidth = constraints.maxWidth;
-            final logoSize = screenWidth * 0.3; // 30% de la largeur
-            final fontSize = screenWidth * 0.08; // 8% de la largeur
+            final screenHeight = constraints.maxHeight;
+            final horizontalPadding = screenWidth * 0.05;
+            final verticalPadding = screenHeight * 0.02;
+            
+            return Column(
+              children: [
+                // Header avec logo FasoDocs et profil
+                Padding(
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      // Logo FasoDocs
+                      Row(
+                        children: [
+                          Image.asset(
+                            'assets/images/FasoDocs1.png',
+                            width: screenWidth * 0.08,
+                            height: screenWidth * 0.08 * 0.6,
+                            fit: BoxFit.contain,
+                          ),
+                          SizedBox(width: screenWidth * 0.02),
+                          Text(
+                            'FasoDocs',
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.04,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // Profil et notifications
+                      Row(
+                        children: [
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                              );
+                            },
+                            child: Container(
+                              width: screenWidth * 0.1,
+                              height: screenWidth * 0.1,
+                              decoration: BoxDecoration(
+                                color: Colors.grey[300],
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.grey[600],
+                                size: screenWidth * 0.05,
+                              ),
+                            ),
+                          ),
+                          SizedBox(width: screenWidth * 0.03),
+                          Stack(
+                            children: [
+                              Icon(
+                                Icons.notifications_outlined,
+                                color: Colors.grey[600],
+                                size: screenWidth * 0.06,
+                              ),
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                child: Container(
+                                  width: screenWidth * 0.03,
+                                  height: screenWidth * 0.03,
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Center(
+                                    child: Text(
+                                      '3',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: screenWidth * 0.025,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(width: screenWidth * 0.03),
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                              );
+                            },
+                            child: Icon(
+                              Icons.more_vert,
+                              color: Colors.grey[600],
+                              size: screenWidth * 0.06,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Contenu principal
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Titre avec bouton retour
+                        Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () => Navigator.of(context).pop(),
+                              child: Container(
+                                padding: EdgeInsets.all(screenWidth * 0.02),
+                                decoration: BoxDecoration(
+                                  color: Colors.green,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: Icon(
+                                  Icons.arrow_back,
+                                  color: Colors.white,
+                                  size: screenWidth * 0.05,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: screenWidth * 0.03),
+                            Text(
+                              'Signaler un problème',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.05,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                              ),
+                            ),
+                          ],
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.04),
+                        
+                        // Type de signalement
+                        Text(
+                          'Type de signalement',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.04,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04,
+                            vertical: screenHeight * 0.01,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green, width: 1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: _selectedReportType,
+                              hint: Text(
+                                'Sélectionnez un type',
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.04,
+                                  color: Colors.grey[600],
+                                ),
+                              ),
+                              isExpanded: true,
+                              icon: Icon(
+                                Icons.keyboard_arrow_down,
+                                color: Colors.black,
+                                size: screenWidth * 0.05,
+                              ),
+                              items: _reportTypes.map((String value) {
+                                return DropdownMenuItem<String>(
+                                  value: value,
+                                  child: Text(
+                                    value,
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.04,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              onChanged: (String? newValue) {
+                                setState(() {
+                                  _selectedReportType = newValue;
+                                });
+                              },
+                            ),
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.03),
+                        
+                        // Structure concernée
+                        Text(
+                          'Structure concernée',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.04,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+                        Container(
+                          width: double.infinity,
+                          padding: EdgeInsets.symmetric(
+                            horizontal: screenWidth * 0.04,
+                            vertical: screenHeight * 0.01,
+                          ),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green, width: 1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextField(
+                            controller: _structureController,
+                            decoration: InputDecoration(
+                              hintText: 'Nom de la structure',
+                              hintStyle: TextStyle(
+                                fontSize: screenWidth * 0.04,
+                                color: Colors.grey[600],
+                              ),
+                              prefixIcon: Icon(
+                                Icons.location_on,
+                                color: Colors.grey[600],
+                                size: screenWidth * 0.05,
+                              ),
+                              border: InputBorder.none,
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: screenHeight * 0.01,
+                              ),
+                            ),
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.04,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.03),
+                        
+                        // Description
+                        Text(
+                          'Description',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.04,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+                        Container(
+                          width: double.infinity,
+                          height: screenHeight * 0.15,
+                          padding: EdgeInsets.all(screenWidth * 0.04),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.green, width: 1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: TextField(
+                            controller: _descriptionController,
+                            maxLines: null,
+                            expands: true,
+                            decoration: InputDecoration(
+                              hintText: 'Description du problème rencontré...',
+                              hintStyle: TextStyle(
+                                fontSize: screenWidth * 0.04,
+                                color: Colors.grey[600],
+                              ),
+                              border: InputBorder.none,
+                            ),
+                            style: TextStyle(
+                              fontSize: screenWidth * 0.04,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.03),
+                        
+                        // Ajouter une photo
+                        Text(
+                          'Ajouter une photo (optionel)',
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.04,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.black,
+                          ),
+                        ),
+                        SizedBox(height: screenHeight * 0.01),
+                        GestureDetector(
+                          onTap: _pickImage,
+                          child: Container(
+                            width: double.infinity,
+                            height: screenHeight * 0.2,
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey[400]!, width: 2, style: BorderStyle.solid),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: _selectedImagePath != null
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(6),
+                                    child: Image.network(
+                                      _selectedImagePath!,
+                                      fit: BoxFit.cover,
+                                      width: double.infinity,
+                                      height: double.infinity,
+                                      errorBuilder: (context, error, stackTrace) {
+                                        return Container(
+                                          color: Colors.grey[300],
+                                          child: Icon(
+                                            Icons.image,
+                                            color: Colors.grey[600],
+                                            size: screenWidth * 0.08,
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  )
+                                : Center(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(
+                                          Icons.camera_alt,
+                                          color: Colors.grey[600],
+                                          size: screenWidth * 0.08,
+                                        ),
+                                        SizedBox(height: screenHeight * 0.01),
+                                        Text(
+                                          'Appuyez pour ajouter une photo',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.035,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.04),
+                        
+                        // Bouton Envoyer le signalement
+                        Container(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              // Action d'envoi du signalement
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.green,
+                              foregroundColor: Colors.white,
+                              padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  'Envoyer le signalement',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.04,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                SizedBox(width: screenWidth * 0.02),
+                                Icon(
+                                  Icons.send,
+                                  size: screenWidth * 0.05,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        SizedBox(height: screenHeight * 0.02),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ========================================================================================
+// POINT D'ENTRÉE PRINCIPAL DE L'APPLICATION
+// ========================================================================================
+
+/// Fonction principale qui lance l'application FasoDocs
+/// Cette fonction est le point d'entrée de l'application Flutter
+void main() {
+  runApp(const FasoDocsApp());
+}
+
+// ========================================================================================
+// CLASSE PRINCIPALE DE L'APPLICATION FASODOCS
+// ========================================================================================
+// Cette classe configure l'application Flutter avec :
+// - L'orientation en mode portrait uniquement
+// - Le titre de l'application
+// - Le premier écran affiché (SplashScreen)
+// - La désactivation de la bannière de debug
+// ========================================================================================
+class FasoDocsApp extends StatelessWidget {
+  const FasoDocsApp({super.key});
+
+  /// Construit l'application FasoDocs avec la configuration de base
+  @override
+  Widget build(BuildContext context) {
+    // ========================================================================================
+    // CONFIGURATION DE L'ORIENTATION
+    // ========================================================================================
+    // Force l'application à rester en mode portrait uniquement
+    // pour une meilleure expérience utilisateur sur mobile
+    SystemChrome.setPreferredOrientations([
+      DeviceOrientation.portraitUp,    // Portrait normal
+      DeviceOrientation.portraitDown,  // Portrait inversé
+    ]);
+
+    // ========================================================================================
+    // CONFIGURATION DE L'APPLICATION FLUTTER
+    // ========================================================================================
+    return MaterialApp(
+      title: 'FasoDocs',                    // Titre de l'application
+      debugShowCheckedModeBanner: false,   // Masque la bannière "DEBUG" en mode développement
+      home: const SplashScreen(),          // Premier écran affiché au lancement
+    );
+  }
+}
+
+// ========================================================================================
+// ÉCRAN 1: SPLASH SCREEN - ÉCRAN DE CHARGEMENT INITIAL
+// ========================================================================================
+// Premier écran affiché au lancement de l'application.
+// Affiche le logo FasoDocs et redirige automatiquement vers l'écran d'onboarding
+// après 3 secondes de chargement.
+// ========================================================================================
+class SplashScreen extends StatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  State<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends State<SplashScreen> {
+  // ========================================================================================
+  // MÉTHODE D'INITIALISATION
+  // ========================================================================================
+  
+  /// Initialise l'écran de splash avec la configuration de l'interface système
+  /// et programme la navigation automatique vers l'onboarding après 3 secondes
+  @override
+  void initState() {
+    super.initState();
+    
+    // ========================================================================================
+    // CONFIGURATION DE L'INTERFACE SYSTÈME
+    // ========================================================================================
+    // Configure l'apparence de la barre de statut et de navigation
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,        // Barre de statut transparente
+        statusBarIconBrightness: Brightness.dark, // Icônes sombres sur fond clair
+        systemNavigationBarColor: Colors.white,    // Barre de navigation blanche
+        systemNavigationBarIconBrightness: Brightness.dark, // Icônes sombres
+      ),
+    );
+
+    // ========================================================================================
+    // NAVIGATION AUTOMATIQUE VERS L'ONBOARDING
+    // ========================================================================================
+    // Attend 3 secondes puis navigue vers l'écran d'onboarding
+    // Vérifie que le widget est toujours monté avant de naviguer
+    Future.delayed(const Duration(seconds: 3), () {
+      if (mounted) {  // Vérification que le widget existe encore
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+        );
+      }
+    });
+  }
+
+  // ========================================================================================
+  // MÉTHODE BUILD - CONSTRUCTION DE L'INTERFACE UTILISATEUR
+  // ========================================================================================
+  
+  /// Construit l'interface utilisateur du splash screen
+  /// Affiche le logo FasoDocs centré avec le texte de l'application
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,  // Fond blanc pour l'écran de splash
+      body: SafeArea(  // Zone sûre qui évite les encoches et la barre de statut
+        child: LayoutBuilder(  // Builder qui fournit les contraintes de taille
+          builder: (context, constraints) {
+            // ========================================================================================
+            // CALCUL DES DIMENSIONS RESPONSIVES
+            // ========================================================================================
+            final screenWidth = constraints.maxWidth;     // Largeur de l'écran
+            final logoSize = screenWidth * 0.3;           // Taille du logo (30% de la largeur)
+            final fontSize = screenWidth * 0.08;          // Taille de police (8% de la largeur)
             
             return Center(
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                mainAxisSize: MainAxisSize.min,  // Colonne centrée verticalement
                 children: [
-                  // Logo FasoDocs exactement comme sur la photo
+                  // ========================================================================================
+                  // LOGO FASODOCS - Image principale du splash screen
+                  // ========================================================================================
                   Image.asset(
-                    'assets/images/FasoDocs.png',
+                    'assets/images/FasoDocs1.png',
                     width: logoSize,
                     height: logoSize * 0.6,
                     fit: BoxFit.contain,
@@ -415,8 +1932,8 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const SignupScreen()),
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SMSVerificationScreen()),
     );
   }
 
@@ -453,7 +1970,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Column(
                     children: [
                       Image.asset(
-                        'assets/images/FasoDocs.png',
+                        'assets/images/FasoDocs1.png',
                         width: logoSize,
                         height: logoSize * 0.6,
                         fit: BoxFit.contain,
@@ -574,6 +2091,284 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+// ========================================================================================
+// ÉCRAN: VÉRIFICATION SMS - AUTHENTIFICATION PAR CODE SMS
+// ========================================================================================
+// Cet écran permet à l'utilisateur de vérifier son numéro de téléphone
+// en saisissant le code de vérification reçu par SMS.
+//
+// Fonctionnalités :
+// - Affichage du logo FasoDocs stylisé avec les couleurs du drapeau burkinabé
+// - Message indiquant le numéro de téléphone où le code a été envoyé
+// - Champ de saisie pour le code de vérification (8 chiffres)
+// - Compteur de caractères en temps réel
+// - Validation du code avant de permettre la continuation
+// - Navigation vers la page d'accueil après validation réussie
+// ========================================================================================
+class SMSVerificationScreen extends StatefulWidget {
+  const SMSVerificationScreen({super.key});
+
+  @override
+  State<SMSVerificationScreen> createState() => _SMSVerificationScreenState();
+}
+
+class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
+  final _smsController = TextEditingController();
+  String _phoneNumber = '+223 74 32 38 74'; // Numéro par défaut
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _smsController.dispose();
+    super.dispose();
+  }
+
+  void _handleContinue() {
+    // Vérifier si le code SMS est valide (ici on simule juste)
+    if (_smsController.text.length == 8) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez saisir un code de 8 chiffres'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final screenHeight = constraints.maxHeight;
+            
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+              child: Column(
+                children: [
+                  SizedBox(height: screenHeight * 0.08),
+                  
+                  // Logo FasoDocs centré
+                  Center(
+                    child: Column(
+                      children: [
+                        // Logo avec les couleurs du drapeau burkinabé
+                        Container(
+                          width: screenWidth * 0.25,
+                          height: screenWidth * 0.25,
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Stack(
+                            children: [
+                              // Segment vert
+                              Positioned(
+                                left: 0,
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: screenWidth * 0.08,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF14B53A),
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(20),
+                                      bottomLeft: Radius.circular(20),
+                                    ),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.description,
+                                      color: Colors.white,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Segment jaune avec flèche
+                              Positioned(
+                                left: screenWidth * 0.08,
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: screenWidth * 0.09,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFFFD700),
+                                  ),
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.arrow_upward,
+                                      color: Colors.black,
+                                      size: 20,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              // Segment rouge
+                              Positioned(
+                                right: 0,
+                                top: 0,
+                                bottom: 0,
+                                child: Container(
+                                  width: screenWidth * 0.08,
+                                  decoration: const BoxDecoration(
+                                    color: Color(0xFFDC143C),
+                                    borderRadius: BorderRadius.only(
+                                      topRight: Radius.circular(20),
+                                      bottomRight: Radius.circular(20),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.08),
+                  
+                  // Titre principal
+                  Text(
+                    'Vérifiez vos sms',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.07,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.03),
+                  
+                  // Message d'instruction
+                  Text(
+                    'Nous avons envoyé votre code au $_phoneNumber',
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      color: Colors.black,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.06),
+                  
+                  // Champ de saisie du code SMS
+                  Container(
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: const Color(0xFF14B53A),
+                        width: 1.5,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: TextField(
+                      controller: _smsController,
+                      keyboardType: TextInputType.number,
+                      maxLength: 8,
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.05,
+                        color: Colors.black,
+                      ),
+                      decoration: InputDecoration(
+                        hintText: 'Code de vérification sms',
+                        hintStyle: TextStyle(
+                          color: Colors.grey[400],
+                          fontSize: screenWidth * 0.04,
+                        ),
+                        border: InputBorder.none,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: screenWidth * 0.04,
+                          vertical: screenHeight * 0.02,
+                        ),
+                        counterText: '',
+                      ),
+                    ),
+                  ),
+                  
+                  // Compteur de caractères
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: Padding(
+                      padding: EdgeInsets.only(top: screenHeight * 0.01),
+                      child: Text(
+                        '${_smsController.text.length}/8',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.035,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  const Spacer(),
+                  
+                  // Bouton Continuer
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: _handleContinue,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF14B53A),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'Continuer',
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.045,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.05),
+                  
+                  // Indicateur de navigation (ligne noire en bas)
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  
+                  SizedBox(height: screenHeight * 0.02),
+                ],
+              ),
             );
           },
         ),
@@ -944,18 +2739,33 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 }
 
-// ÉCRAN 5: HOME SCREEN (page d'accueil exacte comme l'image)
+// ========================================================================================
+// ÉCRAN 5: HOME SCREEN - PAGE D'ACCUEIL PRINCIPALE
+// ========================================================================================
+// Écran principal de l'application FasoDocs qui contient :
+// - Header avec logo FasoDocs, profil utilisateur et notifications
+// - Bannière principale avec image et message de bienvenue
+// - Section "Démarches Populaires" avec cartes scrollables
+// - Barre de navigation inférieure avec 4 onglets principaux
+// - Bouton flottant d'assistance client
+// ========================================================================================
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
+  /// Construit l'interface utilisateur de la page d'accueil
+  /// Utilise un design responsive qui s'adapte à différentes tailles d'écran
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
+      backgroundColor: Colors.white,  // Fond blanc pour l'écran d'accueil
+      body: SafeArea(  // Zone sûre qui évite les encoches et la barre de statut
         child: Column(
           children: [
-            // Header avec logo FasoDocs et profil utilisateur
+            // ========================================================================================
+            // HEADER AVEC LOGO FASODOCS ET PROFIL UTILISATEUR
+            // ========================================================================================
+            // Contient le logo FasoDocs, le nom de l'application, l'avatar utilisateur,
+            // l'icône de notifications avec badge, et le menu options
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -964,7 +2774,7 @@ class HomeScreen extends StatelessWidget {
                   Row(
                     children: [
                       Image.asset(
-                        'assets/images/FasoDocs.png',
+                        'assets/images/FasoDocs1.png',
                         width: 40,
                         height: 40,
                       ),
@@ -983,56 +2793,103 @@ class HomeScreen extends StatelessWidget {
                   // Profil utilisateur et notifications
                   Row(
                     children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.grey,
-                          size: 20,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                          );
+                        },
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[300],
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.person,
+                            color: Colors.grey,
+                            size: 20,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
-                      Stack(
-                        children: [
-                          const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.black,
-                            size: 24,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '3',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const NotificationsScreen()),
+                          );
+                        },
+                        child: Stack(
+                          children: [
+                            const Icon(
+                              Icons.notifications_outlined,
+                              color: Colors.black,
+                              size: 24,
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                width: 16,
+                                height: 16,
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Center(
+                                  child: Text(
+                                    '3',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      const Icon(
-                        Icons.more_vert,
-                        color: Colors.black,
-                        size: 24,
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          color: Colors.black,
+                          size: 24,
+                        ),
+                        onSelected: (String value) {
+                          if (value == 'history') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                            );
+                          } else if (value == 'report') {
+                            GlobalReportAccess.showReportDialog(context);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          const PopupMenuItem<String>(
+                            value: 'history',
+                            child: Row(
+                              children: [
+                                Icon(Icons.history, color: Colors.grey),
+                                SizedBox(width: 8),
+                                Text('Historique'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.report_problem, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Signaler un problème'),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -1043,7 +2900,7 @@ class HomeScreen extends StatelessWidget {
             // Bannière principale
             Container(
               margin: const EdgeInsets.symmetric(horizontal: 20),
-              height: 180,
+              height: MediaQuery.of(context).size.height * 0.35,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 image: const DecorationImage(
@@ -1222,11 +3079,21 @@ class HomeScreen extends StatelessWidget {
                       icon: Icons.warning_outlined,
                       label: 'Alerte',
                       isActive: false,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
+                        );
+                      },
                     ),
                     _buildNavItem(
                       icon: Icons.settings_outlined,
                       label: 'Options',
                       isActive: false,
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const SettingsScreen()),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -1348,9 +3215,31 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-// ÉCRAN 6: IDENTITY SCREEN (sous-catégorie Identité et citoyenneté)
-class IdentityScreen extends StatelessWidget {
-  const IdentityScreen({super.key});
+// ========================================================================================
+// ÉCRAN: PARAMÈTRES (Settings) - CONFIGURATION DE L'APPLICATION
+// ========================================================================================
+// Cet écran permet à l'utilisateur de configurer l'application :
+// - Changer la langue (Français/English)
+// - Activer/désactiver les notifications
+// - Activer/désactiver le mode sombre
+// - Accéder à l'aide et au support
+// - Se déconnecter de l'application
+// - Informations sur la version de l'application
+// ========================================================================================
+class SettingsScreen extends StatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  // ========================================================================================
+  // VARIABLES D'ÉTAT POUR LA GESTION DES PRÉFÉRENCES
+  // ========================================================================================
+  bool _notificationsEnabled = true;     // État des notifications (activé par défaut)
+  bool _darkModeEnabled = true;          // État du mode sombre (activé par défaut)
+  String _selectedLanguage = 'Français'; // Langue sélectionnée (Français par défaut)
 
   @override
   Widget build(BuildContext context) {
@@ -1368,7 +3257,7 @@ class IdentityScreen extends StatelessWidget {
                   Row(
                     children: [
                       Image.asset(
-                        'assets/images/FasoDocs.png',
+                        'assets/images/FasoDocs1.png',
                         width: 40,
                         height: 40,
                       ),
@@ -1433,10 +3322,959 @@ class IdentityScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(width: 12),
-                      const Icon(
-                        Icons.more_vert,
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          color: Colors.black,
+                          size: 24,
+                        ),
+                        onSelected: (String value) {
+                          if (value == 'history') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                            );
+                          } else if (value == 'report') {
+                            GlobalReportAccess.showReportDialog(context);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          const PopupMenuItem<String>(
+                            value: 'history',
+                            child: Row(
+                              children: [
+                                Icon(Icons.history, color: Colors.grey),
+                                SizedBox(width: 8),
+                                Text('Historique'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.report_problem, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Signaler un problème'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Titre de la page avec bouton retour
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        color: Colors.green,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Paramètres',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+
+            // Contenu principal
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Section Préférences
+                    const Text(
+                      'Préférences',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                         color: Colors.black,
-                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Langue
+                    _buildSettingsItem(
+                      icon: Icons.language,
+                      title: 'Langue',
+                      trailing: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey[100],
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Text(
+                          _selectedLanguage,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ),
+                      onTap: () {
+                        _showLanguageDialog();
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Notifications
+                    _buildSettingsItem(
+                      icon: Icons.notifications_outlined,
+                      title: 'Notification',
+                      trailing: Switch(
+                        value: _notificationsEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _notificationsEnabled = value;
+                          });
+                        },
+                        activeColor: Colors.black,
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Mode sombre
+                    _buildSettingsItem(
+                      icon: Icons.dark_mode_outlined,
+                      title: 'Mode sombre',
+                      trailing: Switch(
+                        value: _darkModeEnabled,
+                        onChanged: (bool value) {
+                          setState(() {
+                            _darkModeEnabled = value;
+                          });
+                        },
+                        activeColor: Colors.black,
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Section Support
+                    const Text(
+                      'Support',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Aide et support
+                    _buildSettingsItem(
+                      icon: Icons.help_outline,
+                      title: 'Aide et support',
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.grey,
+                        size: 16,
+                      ),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
+                        );
+                      },
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // Se déconnecter
+                    _buildSettingsItem(
+                      icon: Icons.logout,
+                      title: 'Se déconnecter',
+                      iconColor: Colors.red,
+                      titleColor: Colors.red,
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        color: Colors.grey,
+                        size: 16,
+                      ),
+                      onTap: () {
+                        _showLogoutDialog();
+                      },
+                    ),
+
+                    const Spacer(),
+
+                    // Version et copyright
+                    Center(
+                      child: Column(
+                        children: [
+                          const Text(
+                            'FasoDocs v1.0.0',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          const Text(
+                            '© 2025 FasoDocs. Tous droits réservés.',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 32),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                _buildNavItem(
+                  icon: Icons.home,
+                  label: 'Accueil',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.grid_view,
+                  label: 'Catégorie',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const CategoryScreen(),
+                      ),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.warning_outlined,
+                  label: 'Alerte',
+                  isActive: false,
+                  onTap: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.settings_outlined,
+                  label: 'Options',
+                  isActive: true,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSettingsItem({
+    required IconData icon,
+    required String title,
+    required Widget trailing,
+    VoidCallback? onTap,
+    Color iconColor = Colors.black,
+    Color titleColor = Colors.black,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey[50],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: iconColor,
+              size: 24,
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: titleColor,
+                ),
+              ),
+            ),
+            trailing,
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required String label,
+    required bool isActive,
+    VoidCallback? onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isActive ? Colors.yellow.withOpacity(0.3) : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              icon,
+              color: isActive ? Colors.black : Colors.black,
+              size: 24,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              color: isActive ? Colors.black : Colors.black,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showLanguageDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Choisir la langue'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Français'),
+                leading: Radio<String>(
+                  value: 'Français',
+                  groupValue: _selectedLanguage,
+                  onChanged: (String? value) {
+                    setState(() {
+                      _selectedLanguage = value!;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+              ListTile(
+                title: const Text('English'),
+                leading: Radio<String>(
+                  value: 'English',
+                  groupValue: _selectedLanguage,
+                  onChanged: (String? value) {
+                    setState(() {
+                      _selectedLanguage = value!;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showLogoutDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Se déconnecter'),
+          content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Se déconnecter'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+// ÉCRAN: AIDE ET SUPPORT
+class HelpSupportScreen extends StatelessWidget {
+  const HelpSupportScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: const Text(
+          'Aide et Support',
+          style: TextStyle(
+            color: Colors.black,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+      body: const Center(
+        child: Padding(
+          padding: EdgeInsets.all(20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.help_outline,
+                size: 80,
+                color: Colors.grey,
+              ),
+              SizedBox(height: 20),
+              Text(
+                'Centre d\'aide et support',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Pour toute assistance, veuillez contacter notre équipe de support.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ========================================================================================
+// ÉCRAN: NOTIFICATIONS - CENTRE DE NOTIFICATIONS
+// ========================================================================================
+// Cet écran affiche toutes les notifications importantes de l'application :
+// - Mises à jour des procédures administratives
+// - Nouveaux centres de services
+// - Perturbations de services
+// - Informations générales importantes
+//
+// Chaque notification contient :
+// - Une icône colorée selon le type de notification
+// - Un titre descriptif
+// - Une description détaillée
+// - Un timestamp (il y a X temps)
+// - Un badge "Nouveau" pour les notifications récentes
+// ========================================================================================
+class NotificationsScreen extends StatelessWidget {
+  const NotificationsScreen({super.key});
+
+  /// Construit l'interface utilisateur de l'écran des notifications
+  /// Affiche une liste de cartes de notifications avec différentes priorités
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header avec logo FasoDocs et profil utilisateur
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  // Logo FasoDocs
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/FasoDocs1.png',
+                        width: 40,
+                        height: 40,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'FasoDocs',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Profil utilisateur et notifications
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Stack(
+                        children: [
+                          const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.black,
+                            size: 24,
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '3',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      PopupMenuButton<String>(
+                        icon: const Icon(
+                          Icons.more_vert,
+                          color: Colors.black,
+                          size: 24,
+                        ),
+                        onSelected: (String value) {
+                          if (value == 'history') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                            );
+                          } else if (value == 'report') {
+                            GlobalReportAccess.showReportDialog(context);
+                          }
+                        },
+                        itemBuilder: (BuildContext context) => [
+                          const PopupMenuItem<String>(
+                            value: 'history',
+                            child: Row(
+                              children: [
+                                Icon(Icons.history, color: Colors.grey),
+                                SizedBox(width: 8),
+                                Text('Historique'),
+                              ],
+                            ),
+                          ),
+                          const PopupMenuItem<String>(
+                            value: 'report',
+                            child: Row(
+                              children: [
+                                Icon(Icons.report_problem, color: Colors.red),
+                                SizedBox(width: 8),
+                                Text('Signaler un problème'),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            // Titre de la page avec bouton retour
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(
+                        Icons.arrow_back_ios,
+                        color: Colors.green,
+                        size: 16,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  const Text(
+                    'Notifications',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // Liste des notifications
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: ListView(
+                  children: [
+                    // Notification 1: Mise à jour passeport
+                    _buildNotificationCard(
+                      icon: Icons.check_circle,
+                      iconColor: Colors.green,
+                      title: 'Mise à jour de la procédure de passport',
+                      description: 'Le prix du passeport a été révisé à 50 000F CFA à partir du 15 Novembre 2025',
+                      time: 'Il y a 2 heures',
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Notification 2: Nouveau centre
+                    _buildNotificationCard(
+                      icon: Icons.info,
+                      iconColor: Colors.blue,
+                      title: 'Nouveau centre pour les cartes biométriques',
+                      description: 'Un nouveau centre de délivrance des carte biométrique est désormais ouvert à Kalaban Coro',
+                      time: 'Il y a 1 jour',
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Notification 3: Perturbation service
+                    _buildNotificationCard(
+                      icon: Icons.warning,
+                      iconColor: Colors.red,
+                      title: 'Perturbation de service',
+                      description: 'Le service de délivrance des permis de conduire sera temporairement indisponible jusqu\'au 30 Novembre 2025',
+                      time: 'Il y a 3 jours',
+                    ),
+
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
+            ),
+
+            // Indicateur de navigation en bas
+            Padding(
+              padding: const EdgeInsets.only(bottom: 20),
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationCard({
+    required IconData icon,
+    required Color iconColor,
+    required String title,
+    required String description,
+    required String time,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              // Icône de notification
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: iconColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Contenu principal
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      description,
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Bas de la carte avec timestamp et tag
+          Row(
+            children: [
+              Text(
+                time,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[500],
+                ),
+              ),
+              const Spacer(),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Text(
+                  'Nouveau',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ÉCRAN 6: IDENTITY SCREEN (sous-catégorie Identité et citoyenneté)
+class IdentityScreen extends StatelessWidget {
+  const IdentityScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header avec logo FasoDocs et profil utilisateur
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  // Logo FasoDocs
+                  Row(
+                    children: [
+                      Image.asset(
+                        'assets/images/FasoDocs1.png',
+                        width: 40,
+                        height: 40,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'FasoDocs',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  // Profil utilisateur et notifications
+                  Row(
+                    children: [
+                      Container(
+                        width: 32,
+                        height: 32,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.person,
+                          color: Colors.grey,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Stack(
+                        children: [
+                          const Icon(
+                            Icons.notifications_outlined,
+                            color: Colors.black,
+                            size: 24,
+                          ),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              width: 16,
+                              height: 16,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  '3',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(width: 12),
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                          );
+                        },
+                        child: const Icon(
+                          Icons.more_vert,
+                          color: Colors.black,
+                          size: 24,
+                        ),
                       ),
                     ],
                   ),
@@ -1748,10 +4586,17 @@ class CategoryScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(width: 12),
-                      const Icon(
-                        Icons.more_vert,
-                        color: Colors.black,
-                        size: 24,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                          );
+                        },
+                        child: const Icon(
+                          Icons.more_vert,
+                          color: Colors.black,
+                          size: 24,
+                        ),
                       ),
                     ],
                   ),
