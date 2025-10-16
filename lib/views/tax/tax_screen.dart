@@ -1,6 +1,22 @@
+// ========================================================================================
+// TAX SCREEN - ÉCRAN IMPÔT ET DOUANE
+// ========================================================================================
+// Cet écran affiche toutes les procédures liées aux impôts et douanes
+// disponibles dans l'application FasoDocs. Il permet aux utilisateurs de gérer
+// leurs obligations fiscales de manière simplifiée.
+//
+// Fonctionnalités :
+// - Affichage des procédures fiscales en grille
+// - Interface responsive et intuitive
+// - Navigation vers les procédures spécialisées
+// ========================================================================================
+
 import 'package:flutter/material.dart';
 
-// ÉCRAN TAX SCREEN (Impôt et Douane)
+/// Écran des procédures fiscales et douanières
+/// 
+/// Affiche une grille des différentes procédures liées aux impôts et douanes
+/// que les utilisateurs peuvent effectuer selon leurs besoins.
 class TaxScreen extends StatelessWidget {
   const TaxScreen({super.key});
 
@@ -368,6 +384,12 @@ class TaxScreen extends StatelessWidget {
     );
   }
 
+  /// Construit une carte de procédure fiscale avec icône, couleur et titre
+  /// 
+  /// [icon] : L'icône à afficher
+  /// [backgroundColor] : Couleur de fond de l'icône
+  /// [iconColor] : Couleur de l'icône
+  /// [title] : Titre de la procédure
   Widget _buildTaxCard({
     required IconData icon,
     required Color backgroundColor,

@@ -21,7 +21,7 @@ class ResidenceScreen extends StatelessWidget {
                     Row(
                       children: [
                         Image.asset(
-                          'assets/images/FasoDocs1.png',
+                          'assets/images/FasoDocs 1.png',
                           width: 40,
                           height: 40,
                         ),

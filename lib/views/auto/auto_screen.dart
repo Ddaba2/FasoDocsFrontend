@@ -1,6 +1,22 @@
+// ========================================================================================
+// AUTO SCREEN - ÉCRAN DES DOCUMENTS AUTO
+// ========================================================================================
+// Cet écran affiche toutes les procédures liées aux documents automobiles
+// disponibles dans l'application FasoDocs. Il permet aux utilisateurs de gérer
+// leurs documents de véhicules de manière simplifiée.
+//
+// Fonctionnalités :
+// - Affichage des procédures auto en grille
+// - Interface responsive et intuitive
+// - Navigation vers les procédures spécialisées
+// ========================================================================================
+
 import 'package:flutter/material.dart';
 
-// ÉCRAN AUTO SCREEN (Documents auto)
+/// Écran des documents automobiles
+/// 
+/// Affiche une grille des différentes procédures liées aux véhicules
+/// que les utilisateurs peuvent effectuer selon leurs besoins.
 class AutoScreen extends StatelessWidget {
   const AutoScreen({super.key});
 
@@ -200,6 +216,12 @@ class AutoScreen extends StatelessWidget {
     );
   }
 
+  /// Construit une carte de procédure auto avec icône, couleur et titre
+  /// 
+  /// [icon] : L'icône à afficher
+  /// [backgroundColor] : Couleur de fond de l'icône
+  /// [iconColor] : Couleur de l'icône
+  /// [title] : Titre de la procédure
   Widget _buildAutoCard({
     required IconData icon,
     required Color backgroundColor,

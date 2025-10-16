@@ -1,8 +1,10 @@
+// ÉCRAN 6: IDENTITY SCREEN (sous-catégorie Identité et citoyenneté)
 import 'package:flutter/material.dart';
+import '../history/history_screen.dart';
+// import '../residence_screen.dart'; // TODO: Create ResidenceScreen
 
-// ÉCRAN JUSTICE SCREEN (Justice)
-class JusticeScreen extends StatelessWidget {
-  const JusticeScreen({super.key});
+class IdentityScreen extends StatelessWidget {
+  const IdentityScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +22,7 @@ class JusticeScreen extends StatelessWidget {
                   Row(
                     children: [
                       Image.asset(
-                        'assets/images/FasoDocs.png',
+                        'assets/images/FasoDocs 1.png',
                         width: 40,
                         height: 40,
                       ),
@@ -85,17 +87,24 @@ class JusticeScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(width: 12),
-                      const Icon(
-                        Icons.more_vert,
-                        color: Colors.black,
-                        size: 24,
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                          );
+                        },
+                        child: const Icon(
+                          Icons.more_vert,
+                          color: Colors.black,
+                          size: 24,
+                        ),
                       ),
                     ],
                   ),
                 ],
               ),
             ),
-
+            
             // Titre de la section avec bouton retour
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -118,7 +127,7 @@ class JusticeScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   const Text(
-                    'Justice',
+                    'Identité et citoyenneté',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -128,9 +137,9 @@ class JusticeScreen extends StatelessWidget {
                 ],
               ),
             ),
-
+            
             const SizedBox(height: 20),
-
+            
             // Grille des sous-catégories
             Expanded(
               child: Padding(
@@ -140,68 +149,95 @@ class JusticeScreen extends StatelessWidget {
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   children: [
-                    // Déclaration de vol
-                    _buildJusticeCard(
-                      icon: Icons.report,
+                    // Extrait d'acte de naissance
+                    _buildIdentityCard(
+                      icon: Icons.person_outline,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Déclaration de vol',
+                      title: 'Extrait d\'acte de naissance',
                     ),
-                    // Déclaration de perte
-                    _buildJusticeCard(
-                      icon: Icons.search,
+                    // Extrait d'acte de mariage
+                    _buildIdentityCard(
+                      icon: Icons.favorite_border,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Déclaration de perte',
+                      title: 'Extrait d\'acte de mariage',
                     ),
-                    // Règlement d'un litige
-                    _buildJusticeCard(
+                    // Demande de divorce
+                    _buildIdentityCard(
+                      icon: Icons.favorite_border,
+                      backgroundColor: const Color(0xFFE8F5E8),
+                      iconColor: const Color(0xFF4CAF50),
+                      title: 'Demande de divorce',
+                    ),
+                    // Acte de décès
+                    _buildIdentityCard(
+                      icon: Icons.close,
+                      backgroundColor: const Color(0xFFFFEBEE),
+                      iconColor: const Color(0xFFE91E63),
+                      title: 'Acte de décès',
+                    ),
+                    // Certificat de nationalité
+                    _buildIdentityCard(
+                      icon: Icons.flag_outlined,
+                      backgroundColor: const Color(0xFFFFEBEE),
+                      iconColor: const Color(0xFFE91E63),
+                      title: 'Certificat de nationalité',
+                    ),
+                    // Certificat de casier judiciaire
+                    _buildIdentityCard(
                       icon: Icons.gavel,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Règlement d\'un litige',
+                      title: 'Certificat de casier judiciaire',
                     ),
-                    // Demande de visite d'un prisonnier
-                    _buildJusticeCard(
-                      icon: Icons.person,
-                      backgroundColor: const Color(0xFFE8F5E8),
-                      iconColor: const Color(0xFF4CAF50),
-                      title: 'Demande de visite d\'un prisonnier',
+                    // Carte d'identité nationale
+                    _buildIdentityCard(
+                      icon: Icons.credit_card,
+                      backgroundColor: const Color(0xFFF5F5F5),
+                      iconColor: const Color(0xFF424242),
+                      title: 'Carte d\'identité nationale',
                     ),
-                    // Demande d'appel d'une décision de jugement
-                    _buildJusticeCard(
-                      icon: Icons.call_made,
+                    // Passeport malien
+                    _buildIdentityCard(
+                      icon: Icons.credit_card,
+                      backgroundColor: const Color(0xFFF5F5F5),
+                      iconColor: const Color(0xFF424242),
+                      title: 'Passeport malien',
+                    ),
+                    // Nationalité (par voie de naturalisation, par mariage)
+                    _buildIdentityCard(
+                      icon: Icons.flag_circle_outlined,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Demande d\'appel d\'une décision de jugement',
+                      title: 'Nationalité (par voie de naturalisation, par mariage)',
                     ),
-                    // Demande de libération conditionnelle
-                    _buildJusticeCard(
-                      icon: Icons.exit_to_app,
-                      backgroundColor: const Color(0xFFFFEBEE),
-                      iconColor: const Color(0xFFE91E63),
-                      title: 'Demande de libération conditionnelle',
+                    // Carte d'électeur
+                    _buildIdentityCard(
+                      icon: Icons.how_to_vote_outlined,
+                      backgroundColor: const Color(0xFFF5F5F5),
+                      iconColor: const Color(0xFF424242),
+                      title: 'Carte d\'électeur',
                     ),
-                    // Demande de libération provisoire
-                    _buildJusticeCard(
-                      icon: Icons.free_breakfast,
+                    // Fiche de résidence
+                    _buildIdentityCard(
+                      icon: Icons.home_outlined,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Demande de libération provisoire',
+                      title: 'Fiche de résidence',
+                      onTap: () {
+                        // TODO: Implement ResidenceScreen
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('Fonctionnalité en cours de développement')),
+                        );
+                      },
                     ),
-                    // Autorisation d'achat d'armes et munitions
-                    _buildJusticeCard(
-                      icon: Icons.security,
+                    // Inscription liste électorale
+                    _buildIdentityCard(
+                      icon: Icons.ballot_outlined,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Autorisation d\'achat d\'armes et munitions',
-                    ),
-                    // Autorisation de vente des biens d'un mineur
-                    _buildJusticeCard(
-                      icon: Icons.child_care,
-                      backgroundColor: const Color(0xFFFFEBEE),
-                      iconColor: const Color(0xFFE91E63),
-                      title: 'Autorisation de vente des biens d\'un mineur',
+                      title: 'Inscription liste électorale',
                     ),
                   ],
                 ),
@@ -228,56 +264,60 @@ class JusticeScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildJusticeCard({
+  Widget _buildIdentityCard({
     required IconData icon,
     required Color backgroundColor,
     required Color iconColor,
     required String title,
+    VoidCallback? onTap,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black, width: 1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            width: 50,
-            height: 50,
-            decoration: BoxDecoration(
-              color: backgroundColor,
-              borderRadius: BorderRadius.circular(25),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.black, width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1),
             ),
-            child: Icon(
-              icon,
-              size: 24,
-              color: iconColor,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                color: backgroundColor,
+                borderRadius: BorderRadius.circular(25),
+              ),
+              child: Icon(
+                icon,
+                size: 24,
+                color: iconColor,
               ),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              child: Text(
+                title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

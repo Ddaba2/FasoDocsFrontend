@@ -1,8 +1,24 @@
+// ========================================================================================
+// LAND SCREEN - ÉCRAN DES SERVICES FONCIERS
+// ========================================================================================
+// Cet écran affiche toutes les procédures liées aux services fonciers
+// disponibles dans l'application FasoDocs. Il permet aux utilisateurs de gérer
+// leurs affaires foncières de manière simplifiée.
+//
+// Fonctionnalités :
+// - Affichage des procédures foncières en grille
+// - Interface responsive et intuitive
+// - Navigation vers les procédures spécialisées
+// ========================================================================================
+
 import 'package:flutter/material.dart';
 
-// ÉCRAN BUSINESS SCREEN (Création d'entreprise)
-class BusinessScreen extends StatelessWidget {
-  const BusinessScreen({super.key});
+/// Écran des services fonciers
+/// 
+/// Affiche une grille des différentes procédures liées aux biens fonciers
+/// que les utilisateurs peuvent effectuer selon leurs besoins.
+class LandScreen extends StatelessWidget {
+  const LandScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +134,7 @@ class BusinessScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   const Text(
-                    'Création d\'entreprise',
+                    'Services fonciers',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -140,61 +156,68 @@ class BusinessScreen extends StatelessWidget {
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   children: [
-                    // Entreprise individuel
-                    _buildBusinessCard(
-                      icon: Icons.person,
+                    // Permis de construire
+                    _buildLandCard(
+                      icon: Icons.home_work,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Entreprise individuel',
+                      title: 'Permis de construire (à usage industriel, à usage personnelle)',
                     ),
-                    // Entreprise SARL
-                    _buildBusinessCard(
-                      icon: Icons.business,
+                    // Demande de bail
+                    _buildLandCard(
+                      icon: Icons.description,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Entreprise SARL',
+                      title: 'Demande de bail',
                     ),
-                    // Entreprise unipersonnelle à responsabilité limitée
-                    _buildBusinessCard(
-                      icon: Icons.business_center,
+                    // Titre foncier
+                    _buildLandCard(
+                      icon: Icons.description,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Entreprise unipersonnelle à responsabilité limitée (EURL, SARL unipersonnelle)',
+                      title: 'Titre foncier',
                     ),
-                    // Sociétés Anonymes
-                    _buildBusinessCard(
-                      icon: Icons.account_balance,
+                    // Vérification des titres de propriétés
+                    _buildLandCard(
+                      icon: Icons.verified,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Sociétés Anonymes (SA)',
+                      title: 'Vérification des titres de propriétés',
                     ),
-                    // Sociétés en Nom Collectif
-                    _buildBusinessCard(
-                      icon: Icons.group,
+                    // Lettre d'attribution du titre provisoire de concession rurale
+                    _buildLandCard(
+                      icon: Icons.assignment,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Sociétés en Nom Collectif (SNC)',
+                      title: 'Lettre d\'attribution du titre provisoire de concession rurale',
                     ),
-                    // Sociétés en Commandite Simple
-                    _buildBusinessCard(
-                      icon: Icons.groups,
+                    // Permis d'occupation
+                    _buildLandCard(
+                      icon: Icons.location_city,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Sociétés en Commandite Simple (SCS)',
+                      title: 'Permis d\'occupation',
                     ),
-                    // Sociétés par Actions Simplifiées
-                    _buildBusinessCard(
-                      icon: Icons.trending_up,
+                    // Lettre de transfert de parcelle à usage d'habitation
+                    _buildLandCard(
+                      icon: Icons.swap_horiz,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Sociétés par Actions Simplifiées (SAS)',
+                      title: 'Lettre de transfert de parcelle à usage d\'habitation',
                     ),
-                    // Sociétés par Actions Simplifiées Unipersonnelle
-                    _buildBusinessCard(
-                      icon: Icons.trending_flat,
+                    // Titre provisoire en titre foncier
+                    _buildLandCard(
+                      icon: Icons.transform,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Sociétés par Actions Simplifiées Unipersonnelle (SASU)',
+                      title: 'Titre provisoire en titre foncier (CUH, CRH et contrat de bail avec promesse de vente)',
+                    ),
+                    // Concession urbaine à usage d'habitation
+                    _buildLandCard(
+                      icon: Icons.apartment,
+                      backgroundColor: const Color(0xFFFFEBEE),
+                      iconColor: const Color(0xFFE91E63),
+                      title: 'Concession urbaine à usage d\'habitation (CUH)',
                     ),
                   ],
                 ),
@@ -221,7 +244,13 @@ class BusinessScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBusinessCard({
+  /// Construit une carte de procédure foncière avec icône, couleur et titre
+  /// 
+  /// [icon] : L'icône à afficher
+  /// [backgroundColor] : Couleur de fond de l'icône
+  /// [iconColor] : Couleur de l'icône
+  /// [title] : Titre de la procédure
+  Widget _buildLandCard({
     required IconData icon,
     required Color backgroundColor,
     required Color iconColor,

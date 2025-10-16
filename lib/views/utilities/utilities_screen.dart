@@ -1,8 +1,24 @@
+// ========================================================================================
+// UTILITIES SCREEN - ÉCRAN EAU ET ÉLECTRICITÉ
+// ========================================================================================
+// Cet écran affiche toutes les procédures liées aux services d'eau et d'électricité
+// disponibles dans l'application FasoDocs. Il permet aux utilisateurs de gérer
+// leurs compteurs et services publics de manière simplifiée.
+//
+// Fonctionnalités :
+// - Affichage des procédures utilitaires en grille
+// - Interface responsive et intuitive
+// - Navigation vers les procédures spécialisées
+// ========================================================================================
+
 import 'package:flutter/material.dart';
 
-// ÉCRAN LAND SCREEN (Services fonciers)
-class LandScreen extends StatelessWidget {
-  const LandScreen({super.key});
+/// Écran des services d'eau et d'électricité
+/// 
+/// Affiche une grille des différentes procédures liées aux services publics
+/// que les utilisateurs peuvent effectuer selon leurs besoins.
+class UtilitiesScreen extends StatelessWidget {
+  const UtilitiesScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +134,7 @@ class LandScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   const Text(
-                    'Services fonciers',
+                    'Eau et électricité',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -140,68 +156,47 @@ class LandScreen extends StatelessWidget {
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   children: [
-                    // Permis de construire
-                    _buildLandCard(
-                      icon: Icons.home_work,
+                    // Demande d'un compteur d'eau
+                    _buildUtilityCard(
+                      icon: Icons.water_drop,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Permis de construire (à usage industriel, à usage personnelle)',
+                      title: 'Demande d\'un compteur d\'eau',
                     ),
-                    // Demande de bail
-                    _buildLandCard(
-                      icon: Icons.description,
+                    // Demande d'un compteur d'électricité
+                    _buildUtilityCard(
+                      icon: Icons.flash_on,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Demande de bail',
+                      title: 'Demande d\'un compteur d\'électricité',
                     ),
-                    // Titre foncier
-                    _buildLandCard(
-                      icon: Icons.description,
+                    // Récupérer un compteur d'eau suspendue
+                    _buildUtilityCard(
+                      icon: Icons.water_drop_outlined,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Titre foncier',
+                      title: 'Récupérer un compteur d\'eau suspendue',
                     ),
-                    // Vérification des titres de propriétés
-                    _buildLandCard(
-                      icon: Icons.verified,
+                    // Récupérer un compteur d'électricité suspendue
+                    _buildUtilityCard(
+                      icon: Icons.power_off,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Vérification des titres de propriétés',
+                      title: 'Récupérer un compteur d\'électricité suspendue',
                     ),
-                    // Lettre d'attribution du titre provisoire de concession rurale
-                    _buildLandCard(
-                      icon: Icons.assignment,
-                      backgroundColor: const Color(0xFFFFF9C4),
-                      iconColor: const Color(0xFFFFB300),
-                      title: 'Lettre d\'attribution du titre provisoire de concession rurale',
-                    ),
-                    // Permis d'occupation
-                    _buildLandCard(
-                      icon: Icons.location_city,
-                      backgroundColor: const Color(0xFFFFEBEE),
-                      iconColor: const Color(0xFFE91E63),
-                      title: 'Permis d\'occupation',
-                    ),
-                    // Lettre de transfert de parcelle à usage d'habitation
-                    _buildLandCard(
+                    // Demande de transférer d'un compteur d'eau
+                    _buildUtilityCard(
                       icon: Icons.swap_horiz,
-                      backgroundColor: const Color(0xFFE8F5E8),
-                      iconColor: const Color(0xFF4CAF50),
-                      title: 'Lettre de transfert de parcelle à usage d\'habitation',
-                    ),
-                    // Titre provisoire en titre foncier
-                    _buildLandCard(
-                      icon: Icons.transform,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Titre provisoire en titre foncier (CUH, CRH et contrat de bail avec promesse de vente)',
+                      title: 'Demande de transférer d\'un compteur d\'eau',
                     ),
-                    // Concession urbaine à usage d'habitation
-                    _buildLandCard(
-                      icon: Icons.apartment,
+                    // Demande de transférer d'un compteur d'électricité
+                    _buildUtilityCard(
+                      icon: Icons.swap_vert,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Concession urbaine à usage d\'habitation (CUH)',
+                      title: 'Demande de transférer d\'un compteur d\'électricité',
                     ),
                   ],
                 ),
@@ -228,7 +223,13 @@ class LandScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildLandCard({
+  /// Construit une carte de procédure utilitaire avec icône, couleur et titre
+  /// 
+  /// [icon] : L'icône à afficher
+  /// [backgroundColor] : Couleur de fond de l'icône
+  /// [iconColor] : Couleur de l'icône
+  /// [title] : Titre de la procédure
+  Widget _buildUtilityCard({
     required IconData icon,
     required Color backgroundColor,
     required Color iconColor,

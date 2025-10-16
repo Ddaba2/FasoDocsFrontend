@@ -1,8 +1,24 @@
+// ========================================================================================
+// BUSINESS SCREEN - ÉCRAN DE CRÉATION D'ENTREPRISE
+// ========================================================================================
+// Cet écran affiche toutes les options de création d'entreprise disponibles
+// dans l'application FasoDocs. Il permet aux utilisateurs de choisir le type
+// d'entreprise qu'ils souhaitent créer.
+//
+// Fonctionnalités :
+// - Affichage des types d'entreprises en grille
+// - Interface responsive et intuitive
+// - Navigation vers les procédures spécialisées
+// ========================================================================================
+
 import 'package:flutter/material.dart';
 
-// ÉCRAN UTILITIES SCREEN (Eau et électricité)
-class UtilitiesScreen extends StatelessWidget {
-  const UtilitiesScreen({super.key});
+/// Écran de création d'entreprise
+/// 
+/// Affiche une grille des différents types d'entreprises que les utilisateurs
+/// peuvent créer selon leurs besoins et la structure juridique souhaitée.
+class BusinessScreen extends StatelessWidget {
+  const BusinessScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -118,7 +134,7 @@ class UtilitiesScreen extends StatelessWidget {
                   ),
                   const SizedBox(width: 16),
                   const Text(
-                    'Eau et électricité',
+                    'Création d\'entreprise',
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -140,47 +156,61 @@ class UtilitiesScreen extends StatelessWidget {
                   mainAxisSpacing: 16,
                   crossAxisSpacing: 16,
                   children: [
-                    // Demande d'un compteur d'eau
-                    _buildUtilityCard(
-                      icon: Icons.water_drop,
+                    // Entreprise individuel
+                    _buildBusinessCard(
+                      icon: Icons.person,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Demande d\'un compteur d\'eau',
+                      title: 'Entreprise individuel',
                     ),
-                    // Demande d'un compteur d'électricité
-                    _buildUtilityCard(
-                      icon: Icons.flash_on,
+                    // Entreprise SARL
+                    _buildBusinessCard(
+                      icon: Icons.business,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Demande d\'un compteur d\'électricité',
+                      title: 'Entreprise SARL',
                     ),
-                    // Récupérer un compteur d'eau suspendue
-                    _buildUtilityCard(
-                      icon: Icons.water_drop_outlined,
+                    // Entreprise unipersonnelle à responsabilité limitée
+                    _buildBusinessCard(
+                      icon: Icons.business_center,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Récupérer un compteur d\'eau suspendue',
+                      title: 'Entreprise unipersonnelle à responsabilité limitée (EURL, SARL unipersonnelle)',
                     ),
-                    // Récupérer un compteur d'électricité suspendue
-                    _buildUtilityCard(
-                      icon: Icons.power_off,
+                    // Sociétés Anonymes
+                    _buildBusinessCard(
+                      icon: Icons.account_balance,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Récupérer un compteur d\'électricité suspendue',
+                      title: 'Sociétés Anonymes (SA)',
                     ),
-                    // Demande de transférer d'un compteur d'eau
-                    _buildUtilityCard(
-                      icon: Icons.swap_horiz,
+                    // Sociétés en Nom Collectif
+                    _buildBusinessCard(
+                      icon: Icons.group,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Demande de transférer d\'un compteur d\'eau',
+                      title: 'Sociétés en Nom Collectif (SNC)',
                     ),
-                    // Demande de transférer d'un compteur d'électricité
-                    _buildUtilityCard(
-                      icon: Icons.swap_vert,
+                    // Sociétés en Commandite Simple
+                    _buildBusinessCard(
+                      icon: Icons.groups,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Demande de transférer d\'un compteur d\'électricité',
+                      title: 'Sociétés en Commandite Simple (SCS)',
+                    ),
+                    // Sociétés par Actions Simplifiées
+                    _buildBusinessCard(
+                      icon: Icons.trending_up,
+                      backgroundColor: const Color(0xFFE8F5E8),
+                      iconColor: const Color(0xFF4CAF50),
+                      title: 'Sociétés par Actions Simplifiées (SAS)',
+                    ),
+                    // Sociétés par Actions Simplifiées Unipersonnelle
+                    _buildBusinessCard(
+                      icon: Icons.trending_flat,
+                      backgroundColor: const Color(0xFFFFF9C4),
+                      iconColor: const Color(0xFFFFB300),
+                      title: 'Sociétés par Actions Simplifiées Unipersonnelle (SASU)',
                     ),
                   ],
                 ),
@@ -207,7 +237,13 @@ class UtilitiesScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildUtilityCard({
+  /// Construit une carte de type d'entreprise avec icône, couleur et titre
+  /// 
+  /// [icon] : L'icône à afficher
+  /// [backgroundColor] : Couleur de fond de l'icône
+  /// [iconColor] : Couleur de l'icône
+  /// [title] : Titre du type d'entreprise
+  Widget _buildBusinessCard({
     required IconData icon,
     required Color backgroundColor,
     required Color iconColor,
