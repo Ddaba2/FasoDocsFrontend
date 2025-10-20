@@ -2,7 +2,7 @@
 // CONTRÔLEUR SIGNALEMENT - MVC Pattern
 // ========================================================================================
 // Ce fichier contient la logique métier pour la gestion des signalements
-// Il gère les fonctionnalités de signalement de problèmes
+// Il gère les fonctionnalités de report de problèmes
 // ========================================================================================
 
 import 'package:flutter/material.dart';
@@ -59,7 +59,7 @@ class ReportController {
     );
   }
 
-  /// Soumet un signalement de problème
+  /// Soumet un report de problème
   Future<bool> submitReport({
     required String title,
     required String description,
@@ -68,7 +68,7 @@ class ReportController {
     String? userPhone,
   }) async {
     try {
-      // Simulation de la soumission du signalement
+      // Simulation de la soumission du report
       await Future.delayed(const Duration(seconds: 2));
       
       // Dans une vraie application, vous feriez un appel API ici
@@ -76,12 +76,12 @@ class ReportController {
       
       return true;
     } catch (e) {
-      print('Erreur lors de la soumission du signalement: $e');
+      print('Erreur lors de la soumission du report: $e');
       return false;
     }
   }
 
-  /// Valide les données du signalement
+  /// Valide les données du report
   bool validateReportData({
     required String title,
     required String description,
@@ -96,7 +96,7 @@ class ReportController {
     return true;
   }
 
-  /// Obtient les catégories de signalement disponibles
+  /// Obtient les catégories de report disponibles
   List<String> getReportCategories() {
     return [
       'Bug de l\'application',

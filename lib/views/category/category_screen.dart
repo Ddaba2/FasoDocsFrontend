@@ -28,6 +28,9 @@ import '../tax/tax_screen.dart';
 class CategoryScreen extends StatelessWidget {
   const CategoryScreen({super.key});
 
+  // Définition de la couleur principale (Vert) pour l'icône de retour
+  final Color primaryColor = const Color(0xFF14B53A);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -43,6 +46,7 @@ class CategoryScreen extends StatelessWidget {
                   // Logo FasoDocs
                   Row(
                     children: [
+                      //
                       Image.asset(
                         'assets/images/FasoDocs.png',
                         width: 40,
@@ -111,6 +115,8 @@ class CategoryScreen extends StatelessWidget {
                       const SizedBox(width: 12),
                       GestureDetector(
                         onTap: () {
+                          // Note: L'historique était lié ici, je le laisse,
+                          // mais il faudrait créer un écran ProfileScreen pour la cohérence
                           Navigator.of(context).push(
                             MaterialPageRoute(builder: (_) => const HistoryScreen()),
                           );
@@ -127,27 +133,21 @@ class CategoryScreen extends StatelessWidget {
               ),
             ),
 
-            // Titre de la section avec bouton retour
+            // Titre de la section avec bouton retour (MODIFIÉ ICI)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
+                  // Nouveau bouton de retour (chevron_left)
                   GestureDetector(
                     onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF14B53A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
+                    child: Icon(
+                      Icons.chevron_left, // Icône de chevron gauche
+                      color: primaryColor, // Couleur verte principale
+                      size: 32, // Taille ajustée pour être visible
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 8), // Espace réduit
                   const Text(
                     'Catégories',
                     style: TextStyle(

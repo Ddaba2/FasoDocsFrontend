@@ -1,10 +1,13 @@
 // ÉCRAN: PARAMÈTRES (Settings) - CONFIGURATION DE L'APPLICATION
 import 'package:flutter/material.dart';
-import '../home/home_screen.dart';
-import '../category/category_screen.dart';
-import '../report/report_problem_screen.dart';
-import '../help/help_support_screen.dart';
-import '../auth/login_screen.dart';
+
+// CORRECTION DES IMPORTS : Utilisation des imports de type package pour résoudre les erreurs de chemin.
+// REMPLACER 'fasodocs' par le nom réel de votre paquet si nécessaire.
+import 'package:fasodocs/views/home/home_screen.dart';
+import 'package:fasodocs/views/category/category_screen.dart';
+import 'package:fasodocs/views/report/report_problem_screen.dart';
+import 'package:fasodocs/views/help/help_support_screen.dart';
+import 'package:fasodocs/views/auth/login_screen.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,6 +20,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _darkModeEnabled = true;
   String _selectedLanguage = 'Français';
+
+  // Constante pour la couleur d'activation du BottomNavigationBar
+  static const Color activeNavColor = Color(0xFFFFCC00); // Jaune
+  static const Color primaryGreen = Color(0xFF14B53A); // Couleur verte de l'icône de retour
 
   @override
   Widget build(BuildContext context) {
@@ -60,9 +67,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           color: Colors.grey[300],
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
+                        child: Icon(
                           Icons.person,
-                          color: Colors.grey,
+                          color: Colors.grey[600],
                           size: 20,
                         ),
                       ),
@@ -106,7 +113,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           size: 24,
                         ),
                         onSelected: (String value) {
-                          // Actions du menu
+                          if (value == 'report') {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
+                            );
+                          }
+                          // Logique pour l'historique ('history')
                         },
                         itemBuilder: (BuildContext context) => [
                           const PopupMenuItem<String>(
@@ -149,12 +161,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.1),
+                        color: primaryGreen.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: const Icon(
                         Icons.arrow_back_ios,
-                        color: Colors.green,
+                        color: primaryGreen,
                         size: 16,
                       ),
                     ),
@@ -172,7 +184,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
             ),
 
-            const SizedBox(height: 32),
+            const SizedBox(height:2),
 
             // Contenu principal
             Expanded(
@@ -226,6 +238,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onChanged: (bool value) {
                           setState(() {
                             _notificationsEnabled = value;
+                            // TODO: Intégrer la logique de gestion d'état global (ex: Provider/Riverpod) ici
                           });
                         },
                         activeColor: Colors.black,
@@ -243,6 +256,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onChanged: (bool value) {
                           setState(() {
                             _darkModeEnabled = value;
+                            // TODO: Intégrer la logique de gestion d'état global (ex: Provider/Riverpod) pour changer le thème
                           });
                         },
                         activeColor: Colors.black,
@@ -299,18 +313,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const Spacer(),
 
                     // Version et copyright
-                    Center(
+                    const Center(
                       child: Column(
                         children: [
-                          const Text(
+                          Text(
                             'FasoDocs v1.0.0',
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          const Text(
+                          SizedBox(height: 4),
+                          Text(
                             '© 2025 FasoDocs. Tous droits réservés.',
                             style: TextStyle(
                               fontSize: 12,
@@ -451,7 +465,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isActive ? Colors.yellow.withOpacity(0.3) : Colors.transparent,
+              color: isActive ? activeNavColor.withOpacity(0.3) : Colors.transparent,
               borderRadius: BorderRadius.circular(20),
             ),
             child: Icon(
@@ -526,15 +540,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                Navigator.of(context).pop(); // Ferme la boîte de dialogue
               },
               child: const Text('Annuler'),
             ),
             ElevatedButton(
               onPressed: () {
+                // Étape 1: Fermer la boîte de dialogue
                 Navigator.of(context).pop();
-                Navigator.of(context).pushReplacement(
+
+                // TODO: Étape 2: Implémenter la logique de déconnexion réelle (ex: supprimer le jeton d'authentification)
+
+                // Étape 3: Naviguer vers l'écran de connexion et supprimer toutes les routes précédentes
+                Navigator.of(context).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (Route<dynamic> route) => false, // Supprime toutes les routes
                 );
               },
               style: ElevatedButton.styleFrom(

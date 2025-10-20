@@ -13,6 +13,12 @@
 // ========================================================================================
 
 // Imports Flutter essentiels
+import 'package:fasodocs/views/auto/auto_screen.dart';
+import 'package:fasodocs/views/business/business_screen.dart';
+import 'package:fasodocs/views/justice/justice_screen.dart';
+import 'package:fasodocs/views/land/land_screen.dart';
+import 'package:fasodocs/views/tax/tax_screen.dart';
+import 'package:fasodocs/views/utilities/utilities_screen.dart';
 import 'package:flutter/material.dart';  // Framework UI principal
 import 'package:flutter/services.dart';  // Services système (orientation, statut bar)
 import 'package:image_picker/image_picker.dart';  // Sélection d'images depuis galerie/caméra
@@ -20,17 +26,11 @@ import 'dart:io';  // Gestion des fichiers locaux
 
 // Imports des écrans spécialisés pour les différentes catégories de démarches
 import 'residence_screen.dart';   // Écran pour les démarches de résidence
-import 'business_screen.dart';    // Écran pour les démarches commerciales
-import 'auto_screen.dart';        // Écran pour les démarches automobiles
-import 'land_screen.dart';        // Écran pour les démarches foncières
-import 'utilities_screen.dart';   // Écran pour les démarches utilitaires
-import 'justice_screen.dart';     // Écran pour les démarches judiciaires
-import 'tax_screen.dart';         // Écran pour les démarches fiscales
 
 // ========================================================================================
 // CLASSE GLOBALE POUR LA GESTION DU SIGNALEMENT
 // ========================================================================================
-// Cette classe permet d'accéder aux fonctionnalités de signalement depuis n'importe 
+// Cette classe permet d'accéder aux fonctionnalités de report depuis n'importe
 // où dans l'application via une méthode statique.
 class GlobalReportAccess {
   /// Affiche un dialogue de confirmation pour signaler un problème
@@ -1212,7 +1212,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                         
                         // Type de signalement
                         Text(
-                          'Type de signalement',
+                          'Type de report',
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.w500,
@@ -1438,7 +1438,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Envoyer le signalement',
+                                  'Envoyer le report',
                                   style: TextStyle(
                                     fontSize: screenWidth * 0.04,
                                     fontWeight: FontWeight.w600,

@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../profile/profile_screen.dart';
-import '../history/history_screen.dart';
+
+// CORRECTION : Imports absolus basés sur le paquet pour résoudre les erreurs de chemin
+import 'package:fasodocs/views/profile/profile_screen.dart'; // REMPLACER 'fasodocs' si nécessaire
+import 'package:fasodocs/views/history/history_screen.dart';   // REMPLACER 'fasodocs' si nécessaire
 
 class ReportProblemScreen extends StatefulWidget {
   const ReportProblemScreen({super.key});
@@ -14,12 +16,12 @@ class ReportProblemScreen extends StatefulWidget {
 
 class _ReportProblemScreenState extends State<ReportProblemScreen> {
   File? _selectedImage;
-  String? _selectedImagePath;
+  // La variable _selectedImagePath n'est plus nécessaire car nous utilisons _selectedImage
   final ImagePicker _picker = ImagePicker();
   String? _selectedReportType;
   final TextEditingController _structureController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-  
+
   final List<String> _reportTypes = [
     'Problème technique',
     'Erreur de contenu',
@@ -27,6 +29,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     'Signalement d\'abus',
     'Autre',
   ];
+
+  // Couleur principale
+  static const Color primaryColor = Color(0xFF14B53A);
 
   @override
   void dispose() {
@@ -43,11 +48,10 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
         maxHeight: 1024,
         imageQuality: 80,
       );
-      
+
       if (image != null) {
         setState(() {
           _selectedImage = File(image.path);
-          _selectedImagePath = image.path;
         });
       }
     } catch (e) {
@@ -68,7 +72,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
             final screenHeight = constraints.maxHeight;
             final horizontalPadding = screenWidth * 0.05;
             final verticalPadding = screenHeight * 0.02;
-            
+
             return Column(
               children: [
                 // Header avec logo FasoDocs et profil
@@ -83,7 +87,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                           Image.asset(
                             'assets/images/FasoDocs 1.png',
                             width: screenWidth * 0.08,
-                            height: screenWidth * 0.08 * 0.6,
+                            height: screenWidth * 0.08, // Ajustement de la hauteur pour la cohérence
                             fit: BoxFit.contain,
                           ),
                           SizedBox(width: screenWidth * 0.02),
@@ -134,7 +138,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                                 child: Container(
                                   width: screenWidth * 0.03,
                                   height: screenWidth * 0.03,
-                                  decoration: BoxDecoration(
+                                  decoration: const BoxDecoration(
                                     color: Colors.red,
                                     shape: BoxShape.circle,
                                   ),
@@ -170,7 +174,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                     ],
                   ),
                 ),
-                
+
                 // Contenu principal
                 Expanded(
                   child: SingleChildScrollView(
@@ -186,11 +190,11 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               child: Container(
                                 padding: EdgeInsets.all(screenWidth * 0.02),
                                 decoration: BoxDecoration(
-                                  color: Colors.green,
+                                  color: primaryColor, // Utilisation de primaryColor
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.arrow_back,
+                                  Icons.chevron_left, // <--- CORRECTION ICI : Remplacement par chevron_left
                                   color: Colors.white,
                                   size: screenWidth * 0.05,
                                 ),
@@ -207,12 +211,12 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             ),
                           ],
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.04),
-                        
+
                         // Type de signalement
                         Text(
-                          'Type de signalement',
+                          'Type de report',
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.w500,
@@ -227,7 +231,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             vertical: screenHeight * 0.01,
                           ),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green, width: 1),
+                            border: Border.all(color: primaryColor, width: 1), // Utilisation de primaryColor
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: DropdownButtonHideUnderline(
@@ -266,9 +270,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             ),
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.03),
-                        
+
                         // Structure concernée
                         Text(
                           'Structure concernée',
@@ -286,7 +290,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             vertical: screenHeight * 0.01,
                           ),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green, width: 1),
+                            border: Border.all(color: primaryColor, width: 1), // Utilisation de primaryColor
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: TextField(
@@ -313,9 +317,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             ),
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.03),
-                        
+
                         // Description
                         Text(
                           'Description',
@@ -331,7 +335,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                           height: screenHeight * 0.15,
                           padding: EdgeInsets.all(screenWidth * 0.04),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green, width: 1),
+                            border: Border.all(color: primaryColor, width: 1), // Utilisation de primaryColor
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: TextField(
@@ -352,9 +356,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             ),
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.03),
-                        
+
                         // Ajouter une photo
                         Text(
                           'Ajouter une photo (optionel)',
@@ -374,60 +378,55 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               border: Border.all(color: Colors.grey[400]!, width: 2, style: BorderStyle.solid),
                               borderRadius: BorderRadius.circular(8),
                             ),
-                            child: _selectedImagePath != null
+                            child: _selectedImage != null
                                 ? ClipRRect(
-                                    borderRadius: BorderRadius.circular(6),
-                                    child: Image.network(
-                                      _selectedImagePath!,
-                                      fit: BoxFit.cover,
-                                      width: double.infinity,
-                                      height: double.infinity,
-                                      errorBuilder: (context, error, stackTrace) {
-                                        return Container(
-                                          color: Colors.grey[300],
-                                          child: Icon(
-                                            Icons.image,
-                                            color: Colors.grey[600],
-                                            size: screenWidth * 0.08,
-                                          ),
-                                        );
-                                      },
-                                    ),
-                                  )
+                              borderRadius: BorderRadius.circular(6),
+                              // Utilisation de Image.file pour les images locales
+                              child: Image.file(
+                                _selectedImage!,
+                                fit: BoxFit.cover,
+                                width: double.infinity,
+                                height: double.infinity,
+                              ),
+                            )
                                 : Center(
-                                    child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          Icons.camera_alt,
-                                          color: Colors.grey[600],
-                                          size: screenWidth * 0.08,
-                                        ),
-                                        SizedBox(height: screenHeight * 0.01),
-                                        Text(
-                                          'Appuyez pour ajouter une photo',
-                                          style: TextStyle(
-                                            fontSize: screenWidth * 0.035,
-                                            color: Colors.grey[600],
-                                          ),
-                                        ),
-                                      ],
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.camera_alt,
+                                    color: Colors.grey[600],
+                                    size: screenWidth * 0.08,
+                                  ),
+                                  SizedBox(height: screenHeight * 0.01),
+                                  Text(
+                                    'Appuyez pour ajouter une photo',
+                                    style: TextStyle(
+                                      fontSize: screenWidth * 0.035,
+                                      color: Colors.grey[600],
                                     ),
                                   ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.04),
-                        
+
                         // Bouton Envoyer le signalement
                         Container(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
-                              // Action d'envoi du signalement
+                              // TODO: Implémenter la logique d'envoi du signalement
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Signalement envoyé (Logique non implémentée)')),
+                              );
+                              Navigator.of(context).pop();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.green,
+                              backgroundColor: primaryColor, // Utilisation de primaryColor
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                               shape: RoundedRectangleBorder(
@@ -438,7 +437,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Text(
-                                  'Envoyer le signalement',
+                                  'Envoyer le report',
                                   style: TextStyle(
                                     fontSize: screenWidth * 0.04,
                                     fontWeight: FontWeight.w600,
@@ -453,7 +452,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             ),
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.02),
                       ],
                     ),

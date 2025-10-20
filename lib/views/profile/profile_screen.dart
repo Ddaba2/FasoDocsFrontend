@@ -1,12 +1,97 @@
 // ÉCRAN: PROFIL
 import 'package:flutter/material.dart';
-import 'edit_profile_screen.dart';
+import 'edit_profile_screen.dart'; // Import de l'écran d'édition
 import '../history/history_screen.dart';
-import '../../controllers/report_controller.dart';
+import '../../controllers/report_controller.dart'; // Supposé existant
 
-class ProfileScreen extends StatelessWidget {
+// ====================================================================
+// CONVERSION EN STATEFULWIDGET pour gérer la mise à jour
+// ====================================================================
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  // Définition de la couleur principale (le vert)
+  final Color primaryColor = const Color(0xFF14B53A);
+
+  // ====================================================================
+  // SIMULATION DES DONNÉES UTILISATEUR
+  // ====================================================================
+  // Ces données vont être mises à jour via setState
+  String userName = 'Daba Diarra';
+  String userEmail = 'daba.diarra@gmail.com';
+  String userPhone = '+223 76 00 00 00';
+  String userAddress = 'Hamdallaye ACI 2000';
+  String userBirthDate = '01/01/1990';
+  String userGender = 'Femme';
+
+
+  // ====================================================================
+  // MÉTHODE DE NAVIGATION ET MISE À JOUR
+  // ====================================================================
+  void _navigateToEditProfile(BuildContext context) async {
+    // Naviguer vers l'écran de modification et attendre un résultat (Map des données mises à jour)
+    final result = await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+    );
+
+    // Vérifier si le résultat est un Map (données mises à jour)
+    if (result != null && result is Map<String, String>) {
+      setState(() {
+        // Mettre à jour les variables d'état avec les nouvelles données renvoyées
+        userName = result['name'] ?? userName;
+        userEmail = result['email'] ?? userEmail;
+        userPhone = result['phone'] ?? userPhone;
+
+        // Note: Les autres champs (adresse, date, genre) ne sont pas modifiés
+        // par l'écran d'édition, donc ils conservent leur valeur actuelle.
+
+        print('Profil mis à jour avec les nouvelles données. Reconstruction de ProfileScreen.');
+      });
+    }
+  }
+
+  // ====================================================================
+  // Fonction pour afficher la boîte de dialogue de déconnexion
+  // ====================================================================
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Déconnexion'),
+          content: const Text('Êtes-vous sûr(e) de vouloir vous déconnecter?'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Annuler', style: TextStyle(color: Colors.grey)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+            ),
+            TextButton(
+              child: Text('Déconnexion', style: TextStyle(color: primaryColor, fontWeight: FontWeight.bold)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+
+                // TODO: Logique de déconnexion réelle
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Déconnexion réussie.')),
+                );
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // ====================================================================
+  // MÉTHODE BUILD PRINCIPALE
+  // ====================================================================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -18,28 +103,28 @@ class ProfileScreen extends StatelessWidget {
             final screenHeight = constraints.maxHeight;
             final horizontalPadding = screenWidth * 0.05;
             final verticalPadding = screenHeight * 0.02;
-            
+
             return Column(
               children: [
-                // Header avec bouton retour, titre et menu
+                // Header avec bouton fermeture (X), titre et menu
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Bouton retour
+                      // Bouton de fermeture (X)
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
                         child: Container(
                           padding: EdgeInsets.all(screenWidth * 0.02),
-                          decoration: BoxDecoration(
-                            color: Colors.green,
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
+                            color: Colors.transparent,
                           ),
                           child: Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: screenWidth * 0.05,
+                            Icons.close, // Icône de fermeture (X)
+                            color: Colors.black,
+                            size: screenWidth * 0.06,
                           ),
                         ),
                       ),
@@ -52,7 +137,7 @@ class ProfileScreen extends StatelessWidget {
                           color: Colors.black,
                         ),
                       ),
-                      // Menu trois points
+                      // Menu trois points avec OPTION DÉCONNEXION SEULEMENT
                       PopupMenuButton<String>(
                         icon: Icon(
                           Icons.more_vert,
@@ -60,32 +145,18 @@ class ProfileScreen extends StatelessWidget {
                           size: screenWidth * 0.06,
                         ),
                         onSelected: (String value) {
-                          if (value == 'history') {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const HistoryScreen()),
-                            );
-                          } else if (value == 'report') {
-                            ReportController.showReportDialog(context);
+                          if (value == 'logout') {
+                            _showLogoutDialog(context);
                           }
                         },
                         itemBuilder: (BuildContext context) => [
-                          const PopupMenuItem<String>(
-                            value: 'history',
+                          PopupMenuItem<String>(
+                            value: 'logout',
                             child: Row(
                               children: [
-                                Icon(Icons.history, color: Colors.grey),
+                                Icon(Icons.logout, color: primaryColor),
                                 SizedBox(width: 8),
-                                Text('Historique'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem<String>(
-                            value: 'report',
-                            child: Row(
-                              children: [
-                                Icon(Icons.report_problem, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Signaler un problème'),
+                                const Text('Déconnexion'),
                               ],
                             ),
                           ),
@@ -94,7 +165,7 @@ class ProfileScreen extends StatelessWidget {
                     ],
                   ),
                 ),
-                
+
                 // Contenu principal
                 Expanded(
                   child: SingleChildScrollView(
@@ -102,7 +173,7 @@ class ProfileScreen extends StatelessWidget {
                     child: Column(
                       children: [
                         SizedBox(height: screenHeight * 0.04),
-                        
+
                         // Photo de profil
                         Container(
                           width: screenWidth * 0.3,
@@ -117,75 +188,59 @@ class ProfileScreen extends StatelessWidget {
                             size: screenWidth * 0.15,
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.02),
-                        
-                        // Nom de l'utilisateur
+
+                        // Nom de l'utilisateur (Dynamique)
                         Text(
-                          'Daba Diarra',
+                          userName, // <-- Utilisez la variable d'état mise à jour
                           style: TextStyle(
                             fontSize: screenWidth * 0.05,
                             fontWeight: FontWeight.bold,
                             color: Colors.black,
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.01),
-                        
-                        // Email
+
+                        // Email (Dynamique)
                         Text(
-                          'daba.diarra@gmail.com',
+                          userEmail, // <-- Utilisez la variable d'état mise à jour
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             color: Colors.black,
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.04),
-                        
-                        // Cartes d'informations
+
+                        // Cartes d'informations (Dynamiques)
                         _buildProfileCard(
-                          context,
-                          screenWidth,
-                          screenHeight,
-                          Icons.phone,
-                          'Téléphone',
-                          '+223 76 00 00 00',
+                          context, screenWidth, screenHeight, Icons.phone,
+                          'Téléphone', userPhone, primaryColor, // <-- Utilisé la variable d'état
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.02),
-                        
+
                         _buildProfileCard(
-                          context,
-                          screenWidth,
-                          screenHeight,
-                          Icons.location_on,
-                          'Adresse',
-                          'Hamdallaye ACI 2000',
+                          context, screenWidth, screenHeight, Icons.location_on,
+                          'Adresse', userAddress, primaryColor,
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.02),
-                        
+
                         _buildProfileCard(
-                          context,
-                          screenWidth,
-                          screenHeight,
-                          Icons.calendar_today,
-                          'Date de naissance',
-                          '01/01/1990',
+                          context, screenWidth, screenHeight, Icons.calendar_today,
+                          'Date de naissance', userBirthDate, primaryColor,
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.02),
-                        
+
                         _buildProfileCard(
-                          context,
-                          screenWidth,
-                          screenHeight,
-                          Icons.person,
-                          'Genre',
-                          'Femme',
+                          context, screenWidth, screenHeight, Icons.person,
+                          'Genre', userGender, primaryColor,
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.04),
                       ],
                     ),
@@ -199,14 +254,16 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
+  // Fonction pour construire une carte de profil
   Widget _buildProfileCard(
-    BuildContext context,
-    double screenWidth,
-    double screenHeight,
-    IconData icon,
-    String label,
-    String value,
-  ) {
+      BuildContext context,
+      double screenWidth,
+      double screenHeight,
+      IconData icon,
+      String label,
+      String value,
+      Color primaryColor,
+      ) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(screenWidth * 0.04),
@@ -228,12 +285,12 @@ class ProfileScreen extends StatelessWidget {
             width: screenWidth * 0.12,
             height: screenWidth * 0.12,
             decoration: BoxDecoration(
-              color: Colors.green.withOpacity(0.1),
+              color: primaryColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: Colors.green,
+              color: primaryColor,
               size: screenWidth * 0.06,
             ),
           ),
@@ -261,16 +318,13 @@ class ProfileScreen extends StatelessWidget {
               ],
             ),
           ),
+          // Icône de navigation vers l'écran d'édition (Chevron droit)
           GestureDetector(
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const EditProfileScreen()),
-              );
-            },
+            onTap: () => _navigateToEditProfile(context), // Appelle la méthode de navigation/mise à jour
             child: Icon(
-              Icons.edit,
+              Icons.chevron_right,
               color: Colors.grey[600],
-              size: screenWidth * 0.05,
+              size: screenWidth * 0.08,
             ),
           ),
         ],

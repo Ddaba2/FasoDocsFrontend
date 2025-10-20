@@ -1,13 +1,6 @@
 // ========================================================================================
 // ÉCRAN: MODIFIER LE PROFIL UTILISATEUR
 // ========================================================================================
-// Cet écran permet à l'utilisateur de modifier ses informations personnelles :
-// - Nom complet
-// - Adresse email
-// - Mot de passe
-// - Numéro de téléphone
-// - Photo de profil (sélection depuis la galerie)
-// ========================================================================================
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -21,27 +14,26 @@ class EditProfileScreen extends StatefulWidget {
 }
 
 class _EditProfileScreenState extends State<EditProfileScreen> {
+  // Définition de la couleur principale (Vert)
+  static const Color primaryColor = Color(0xFF14B53A);
+
   // ========================================================================================
   // CONTRÔLEURS DE CHAMPS DE TEXTE
   // ========================================================================================
-  // Contrôleurs pour gérer les valeurs des champs de saisie avec des valeurs par défaut
   final TextEditingController _nameController = TextEditingController(text: 'Tenen M Sylla');
   final TextEditingController _emailController = TextEditingController(text: 'madyehsylla427@gmail.com');
   final TextEditingController _passwordController = TextEditingController(text: '••••••••••••');
   final TextEditingController _phoneController = TextEditingController(text: '+223 74323874');
-  
+
   // ========================================================================================
   // VARIABLES D'ÉTAT POUR LA GESTION DE L'IMAGE DE PROFIL
   // ========================================================================================
-  File? _profileImage;        // Fichier image sélectionné
-  String? _profileImagePath;  // Chemin vers l'image sélectionnée
+  File? _profileImage;
 
   // ========================================================================================
   // MÉTHODES DE LIFECYCLE
   // ========================================================================================
-  
-  /// Libère les ressources des contrôleurs de texte
-  /// Appelée automatiquement quand le widget est supprimé
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -54,87 +46,119 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // ========================================================================================
   // MÉTHODES UTILITAIRES
   // ========================================================================================
-  
+
   /// Permet à l'utilisateur de sélectionner une image depuis la galerie
-  /// L'image est redimensionnée et compressée pour optimiser les performances
   Future<void> _pickProfileImage() async {
     try {
       final ImagePicker picker = ImagePicker();
-      // Sélection d'une image depuis la galerie avec contraintes de taille
       final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,  // Sélection depuis la galerie
-        maxWidth: 1024,               // Largeur maximale de 1024px
-        maxHeight: 1024,              // Hauteur maximale de 1024px
-        imageQuality: 80,             // Qualité de compression à 80%
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
       );
-      
-      // Si une image a été sélectionnée, mettre à jour l'état
+
       if (image != null) {
         setState(() {
-          _profileImage = File(image.path);      // Convertir en File
-          _profileImagePath = image.path;        // Sauvegarder le chemin
+          _profileImage = File(image.path);
         });
       }
     } catch (e) {
-      // Afficher un message d'erreur en cas de problème
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur lors de la sélection de l\'image: $e')),
       );
     }
   }
 
+  // Fonction utilitaire pour construire les champs de saisie
+  Widget _buildEditField(
+      BuildContext context,
+      double screenWidth,
+      double screenHeight,
+      IconData icon,
+      TextEditingController controller,
+      String hintText, {
+        bool isPassword = false,
+      }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(
+        horizontal: screenWidth * 0.04,
+        vertical: screenHeight * 0.005,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: primaryColor, width: 1),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: TextField(
+        controller: controller,
+        obscureText: isPassword,
+        decoration: InputDecoration(
+          prefixIcon: Icon(
+            icon,
+            color: Colors.black,
+            size: screenWidth * 0.05,
+          ),
+          hintText: hintText,
+          hintStyle: TextStyle(
+            fontSize: screenWidth * 0.04,
+            color: Colors.grey[600],
+          ),
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+        ),
+        style: TextStyle(
+          fontSize: screenWidth * 0.04,
+          color: Colors.black,
+        ),
+      ),
+    );
+  }
+
   // ========================================================================================
   // MÉTHODE BUILD - CONSTRUCTION DE L'INTERFACE UTILISATEUR
   // ========================================================================================
-  
-  /// Construit l'interface utilisateur de l'écran de modification de profil
-  /// Utilise un LayoutBuilder pour s'adapter à différentes tailles d'écran
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,  // Fond blanc pour l'écran
-      body: SafeArea(  // Zone sûre qui évite les encoches et la barre de statut
-        child: LayoutBuilder(  // Builder qui fournit les contraintes de taille
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
           builder: (context, constraints) {
-            // ========================================================================================
-            // CALCUL DES DIMENSIONS RESPONSIVES
-            // ========================================================================================
-            final screenWidth = constraints.maxWidth;     // Largeur de l'écran
-            final screenHeight = constraints.maxHeight;   // Hauteur de l'écran
-            final horizontalPadding = screenWidth * 0.05; // Padding horizontal (5% de la largeur)
-            final verticalPadding = screenHeight * 0.02;  // Padding vertical (2% de la hauteur)
-            
+
+            final screenWidth = constraints.maxWidth;
+            final screenHeight = constraints.maxHeight;
+            final horizontalPadding = screenWidth * 0.05;
+            final verticalPadding = screenHeight * 0.02;
+
             return Column(
               children: [
                 // ========================================================================================
-                // HEADER AVEC BOUTON RETOUR, TITRE ET LOGOUT
+                // HEADER AVEC BOUTON FERMETURE (X) ET TITRE
                 // ========================================================================================
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // ========================================================================================
-                      // BOUTON RETOUR - Permet de revenir à l'écran précédent
-                      // ========================================================================================
+                      // BOUTON FERMETURE (X)
                       GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),  // Navigation retour
+                        onTap: () => Navigator.of(context).pop(), // Fermeture sans signal de mise à jour
                         child: Container(
                           padding: EdgeInsets.all(screenWidth * 0.02),
-                          decoration: BoxDecoration(
-                            color: Colors.orange,  // Couleur orange FasoDocs
+                          decoration: const BoxDecoration(
                             shape: BoxShape.circle,
+                            color: Colors.transparent,
                           ),
                           child: Icon(
-                            Icons.arrow_back,
-                            color: Colors.white,
-                            size: screenWidth * 0.05,
+                            Icons.close, // Icône de fermeture (X)
+                            color: Colors.black,
+                            size: screenWidth * 0.06,
                           ),
                         ),
                       ),
-                      // ========================================================================================
                       // TITRE DE LA PAGE
-                      // ========================================================================================
                       Text(
                         'Modifier le profil',
                         style: TextStyle(
@@ -143,36 +167,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           color: Colors.black,
                         ),
                       ),
-                      // ========================================================================================
-                      // BOUTON DÉCONNEXION - Permet à l'utilisateur de se déconnecter
-                      // ========================================================================================
-                      GestureDetector(
-                        onTap: () {
-                          // TODO: Implémenter l'action de déconnexion
-                        },
-                        child: Icon(
-                          Icons.logout,
-                          color: Colors.red,  // Couleur rouge pour indiquer une action importante
-                          size: screenWidth * 0.06,
-                        ),
-                      ),
+                      // EMPLACEMENT VIDE
+                      SizedBox(width: screenWidth * 0.1),
                     ],
                   ),
                 ),
-                
+
                 // ========================================================================================
-                // CONTENU PRINCIPAL - Zone scrollable avec les champs de modification
+                // CONTENU PRINCIPAL
                 // ========================================================================================
                 Expanded(
-                  child: SingleChildScrollView(  // Permet le défilement si le contenu dépasse
+                  child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                     child: Column(
                       children: [
                         SizedBox(height: screenHeight * 0.04),
-                        
-                        // ========================================================================================
+
                         // PHOTO DE PROFIL AVEC BOUTON DE MODIFICATION
-                        // ========================================================================================
                         Stack(
                           children: [
                             Container(
@@ -181,36 +192,26 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
                                 border: Border.all(
-                                  color: Colors.green,
+                                  color: primaryColor,
                                   width: 3,
                                 ),
                               ),
                               child: ClipOval(
-                                child: _profileImagePath != null
-                                    ? Image.network(
-                                        _profileImagePath!,
-                                        fit: BoxFit.cover,
-                                        width: double.infinity,
-                                        height: double.infinity,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Container(
-                                            color: Colors.grey[300],
-                                            child: Icon(
-                                              Icons.person,
-                                              color: Colors.grey[600],
-                                              size: screenWidth * 0.2,
-                                            ),
-                                          );
-                                        },
-                                      )
+                                child: _profileImage != null
+                                    ? Image.file(
+                                  _profileImage!,
+                                  fit: BoxFit.cover,
+                                  width: double.infinity,
+                                  height: double.infinity,
+                                )
                                     : Container(
-                                        color: Colors.grey[300],
-                                        child: Icon(
-                                          Icons.person,
-                                          color: Colors.grey[600],
-                                          size: screenWidth * 0.2,
-                                        ),
-                                      ),
+                                  color: Colors.grey[300],
+                                  child: Icon(
+                                    Icons.person,
+                                    color: Colors.grey[600],
+                                    size: screenWidth * 0.2,
+                                  ),
+                                ),
                               ),
                             ),
                             Positioned(
@@ -236,80 +237,71 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ),
                           ],
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.04),
-                        
-                        // Conteneur principal avec bordure verte
+
+                        // Conteneur principal des champs
                         Container(
                           width: double.infinity,
                           padding: EdgeInsets.all(screenWidth * 0.04),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.green, width: 2),
+                            border: Border.all(color: primaryColor, width: 2),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: Column(
                             children: [
-                              // Champ Nom
                               _buildEditField(
-                                context,
-                                screenWidth,
-                                screenHeight,
-                                Icons.person,
-                                _nameController,
-                                'Nom complet',
+                                context, screenWidth, screenHeight,
+                                Icons.person, _nameController, 'Nom complet',
                               ),
-                              
+
                               SizedBox(height: screenHeight * 0.02),
-                              
-                              // Champ Email
+
                               _buildEditField(
-                                context,
-                                screenWidth,
-                                screenHeight,
-                                Icons.email,
-                                _emailController,
-                                'Email',
+                                context, screenWidth, screenHeight,
+                                Icons.email, _emailController, 'Email',
                               ),
-                              
+
                               SizedBox(height: screenHeight * 0.02),
-                              
-                              // Champ Mot de passe
+
                               _buildEditField(
-                                context,
-                                screenWidth,
-                                screenHeight,
-                                Icons.lock,
-                                _passwordController,
-                                'Mot de passe',
+                                context, screenWidth, screenHeight,
+                                Icons.lock, _passwordController, 'Mot de passe',
                                 isPassword: true,
                               ),
-                              
+
                               SizedBox(height: screenHeight * 0.02),
-                              
-                              // Champ Téléphone
+
                               _buildEditField(
-                                context,
-                                screenWidth,
-                                screenHeight,
-                                Icons.phone,
-                                _phoneController,
-                                'Téléphone',
+                                context, screenWidth, screenHeight,
+                                Icons.phone, _phoneController, 'Téléphone',
                               ),
-                              
+
                               SizedBox(height: screenHeight * 0.04),
-                              
-                              // Bouton Enregistrer
-                              Container(
+
+                              // Bouton Enregistrer (Renvoie les nouvelles données)
+                              SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
                                   onPressed: () {
-                                    // Action de sauvegarde
+                                    // 1. Logique de sauvegarde (simulée)
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       const SnackBar(content: Text('Profil mis à jour avec succès!')),
                                     );
+
+                                    // 2. Créer un Map avec les nouvelles valeurs
+                                    final Map<String, String> updatedData = {
+                                      'name': _nameController.text,
+                                      'email': _emailController.text,
+                                      'phone': _phoneController.text,
+                                      // Note: Ajouter d'autres champs si besoin
+                                    };
+
+                                    // 3. Fermer l'écran et envoyer les données mises à jour
+                                    Navigator.of(context).pop(updatedData);
                                   },
                                   style: ElevatedButton.styleFrom(
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: primaryColor,
                                     foregroundColor: Colors.white,
                                     padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                                     shape: RoundedRectangleBorder(
@@ -328,7 +320,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                             ],
                           ),
                         ),
-                        
+
                         SizedBox(height: screenHeight * 0.04),
                       ],
                     ),
@@ -337,49 +329,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               ],
             );
           },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEditField(
-    BuildContext context,
-    double screenWidth,
-    double screenHeight,
-    IconData icon,
-    TextEditingController controller,
-    String hintText, {
-    bool isPassword = false,
-  }) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.04,
-        vertical: screenHeight * 0.015,
-      ),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.green, width: 1),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: TextField(
-        controller: controller,
-        obscureText: isPassword,
-        decoration: InputDecoration(
-          prefixIcon: Icon(
-            icon,
-            color: Colors.black,
-            size: screenWidth * 0.05,
-          ),
-          hintText: hintText,
-          hintStyle: TextStyle(
-            fontSize: screenWidth * 0.04,
-            color: Colors.grey[600],
-          ),
-          border: InputBorder.none,
-        ),
-        style: TextStyle(
-          fontSize: screenWidth * 0.04,
-          color: Colors.black,
         ),
       ),
     );

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../views/report/report_problem_screen.dart';
 
-/// Classe globale pour la gestion du signalement
+/// Classe globale pour la gestion du report
 /// 
-/// Cette classe permet d'accéder aux fonctionnalités de signalement 
+/// Cette classe permet d'accéder aux fonctionnalités de report
 /// depuis n'importe où dans l'application via une méthode statique.
 class GlobalReportAccess {
   /// Affiche un dialogue de confirmation pour signaler un problème

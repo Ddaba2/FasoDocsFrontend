@@ -23,7 +23,7 @@ import 'views/home/home_screen.dart';
 import 'views/profile/profile_screen.dart';
 import 'views/profile/edit_profile_screen.dart';
 import 'views/history/history_screen.dart';
-import 'views/report/report_problem_screen.dart';
+import 'views/report//report_problem_screen.dart';
 import 'views/settings/settings_screen.dart';
 import 'views/help/help_support_screen.dart';
 import 'views/notifications/notifications_screen.dart';
