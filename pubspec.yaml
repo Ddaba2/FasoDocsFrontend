@@ -21,6 +21,8 @@ dependencies:
   lottie: ^2.7.0
   flutter_animate: ^4.3.0
   intl_phone_field: ^3.2.0
+  #provider:
+  provider: ^6.1.1
   
   # State Management
   flutter_bloc: ^8.1.3

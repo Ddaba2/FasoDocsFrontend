@@ -1,13 +1,15 @@
 // ÉCRAN: PARAMÈTRES (Settings) - CONFIGURATION DE L'APPLICATION
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart'; // <<< NOUVEL IMPORT
 
-// CORRECTION DES IMPORTS : Utilisation des imports de type package pour résoudre les erreurs de chemin.
-// REMPLACER 'fasodocs' par le nom réel de votre paquet si nécessaire.
-import 'package:fasodocs/views/home/home_screen.dart';
-import 'package:fasodocs/views/category/category_screen.dart';
+// Imports de type PACKAGE pour les vues
 import 'package:fasodocs/views/report/report_problem_screen.dart';
 import 'package:fasodocs/views/help/help_support_screen.dart';
 import 'package:fasodocs/views/auth/login_screen.dart';
+
+// >>> CORRECTION DE L'IMPORTATION DU PROVIDER DE THÈME <<<
+// Maintenant, on importe directement le fichier main.dart
+import '../../main.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -17,18 +19,61 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  // --- ÉTATS LOCAUX POUR LES PARAMÈTRES ---
   bool _notificationsEnabled = true;
-  bool _darkModeEnabled = true;
+  // bool _darkModeEnabled n'est plus nécessaire car on utilise le provider
   String _selectedLanguage = 'Français';
 
-  // Constante pour la couleur d'activation du BottomNavigationBar
-  static const Color activeNavColor = Color(0xFFFFCC00); // Jaune
   static const Color primaryGreen = Color(0xFF14B53A); // Couleur verte de l'icône de retour
+
+  // --- LOGIQUE DE GESTION DES NOTIFICATIONS ---
+  void _toggleNotifications(bool value) {
+    setState(() {
+      _notificationsEnabled = value;
+    });
+
+    if (value) {
+      print('Notifications activées.');
+    } else {
+      print('Notifications désactivées.');
+    }
+  }
+
+  // --- LOGIQUE DE GESTION DU MODE SOMBRE (THÈME) ---
+  void _toggleDarkMode(bool value) {
+    // 1. Accéder au provider pour notifier le changement.
+    final provider = Provider.of<ThemeModeProvider>(context, listen: false);
+
+    // 2. Déterminer le nouveau mode.
+    final newMode = value ? ThemeMode.dark : ThemeMode.light;
+
+    // 3. Notifier le widget parent (FasoDocsApp) pour changer le thème global
+    provider.toggleTheme(newMode);
+
+    // Note: on n'a plus besoin de setState pour _darkModeEnabled car le Provider
+    // force la reconstruction de tout l'écran, ce qui va synchroniser le Switch.
+  }
 
   @override
   Widget build(BuildContext context) {
+    // 1. Accéder au provider de thème pour obtenir l'état actuel et forcer la reconstruction.
+    final themeProvider = Provider.of<ThemeModeProvider>(context);
+
+    // 2. Déterminer les couleurs en fonction du thème
+    final isDarkMode = themeProvider.themeMode == ThemeMode.dark;
+
+    // Couleurs du thème global
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final itemBackgroundColor = Theme.of(context).cardColor;
+    final iconColor = Theme.of(context).iconTheme.color!;
+
+    // Synchroniser l'état local du switch avec l'état global du thème
+    bool _darkModeEnabled = isDarkMode;
+
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: Column(
           children: [
@@ -46,12 +91,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         height: 40,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
+                      Text(
                         'FasoDocs',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: textColor, // Utilisation de la couleur du thème
                         ),
                       ),
                     ],
@@ -60,25 +105,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   // Profil utilisateur et notifications
                   Row(
                     children: [
+                      // Icône de profil
                       Container(
                         width: 32,
                         height: 32,
                         decoration: BoxDecoration(
-                          color: Colors.grey[300],
+                          color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
                           Icons.person,
-                          color: Colors.grey[600],
+                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: 12),
+                      // Icône de notifications
                       Stack(
                         children: [
-                          const Icon(
+                          Icon(
                             Icons.notifications_outlined,
-                            color: Colors.black,
+                            color: iconColor, // Utilisation de la couleur du thème
                             size: 24,
                           ),
                           Positioned(
@@ -106,10 +153,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         ],
                       ),
                       const SizedBox(width: 12),
+                      // Menu à trois points
                       PopupMenuButton<String>(
-                        icon: const Icon(
+                        color: itemBackgroundColor, // Utilisation de la couleur du thème (cardColor)
+                        icon: Icon(
                           Icons.more_vert,
-                          color: Colors.black,
+                          color: iconColor, // Utilisation de la couleur du thème
                           size: 24,
                         ),
                         onSelected: (String value) {
@@ -118,26 +167,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
                             );
                           }
-                          // Logique pour l'historique ('history')
                         },
                         itemBuilder: (BuildContext context) => [
-                          const PopupMenuItem<String>(
+                          PopupMenuItem<String>(
                             value: 'history',
                             child: Row(
                               children: [
-                                Icon(Icons.history, color: Colors.grey),
-                                SizedBox(width: 8),
-                                Text('Historique'),
+                                Icon(Icons.history, color: iconColor), // Utilisation de la couleur du thème
+                                const SizedBox(width: 8),
+                                Text('Historique', style: TextStyle(color: textColor)), // Utilisation de la couleur du thème
                               ],
                             ),
                           ),
-                          const PopupMenuItem<String>(
+                          PopupMenuItem<String>(
                             value: 'report',
                             child: Row(
                               children: [
-                                Icon(Icons.report_problem, color: Colors.red),
-                                SizedBox(width: 8),
-                                Text('Signaler un problème'),
+                                const Icon(Icons.report_problem, color: Colors.red),
+                                const SizedBox(width: 8),
+                                Text('Signaler un problème', style: TextStyle(color: textColor)), // Utilisation de la couleur du thème
                               ],
                             ),
                           ),
@@ -172,12 +220,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  const Text(
+                  Text(
                     'Paramètres',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: textColor, // Utilisation de la couleur du thème
                     ),
                   ),
                 ],
@@ -194,12 +242,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // Section Préférences
-                    const Text(
+                    Text(
                       'Préférences',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: textColor, // Utilisation de la couleur du thème
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -208,23 +256,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSettingsItem(
                       icon: Icons.language,
                       title: 'Langue',
+                      itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
+                      titleColor: textColor, // Utilisation de la couleur du thème
+                      iconColor: iconColor, // Utilisation de la couleur du thème
                       trailing: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.grey[100],
+                          color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: Text(
                           _selectedLanguage,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
                           ),
                         ),
                       ),
-                      onTap: () {
-                        _showLanguageDialog();
-                      },
+                      onTap: _showLanguageDialog,
                     ),
 
                     const SizedBox(height: 12),
@@ -233,15 +282,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSettingsItem(
                       icon: Icons.notifications_outlined,
                       title: 'Notification',
+                      itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
+                      titleColor: textColor, // Utilisation de la couleur du thème
+                      iconColor: iconColor, // Utilisation de la couleur du thème
                       trailing: Switch(
                         value: _notificationsEnabled,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _notificationsEnabled = value;
-                            // TODO: Intégrer la logique de gestion d'état global (ex: Provider/Riverpod) ici
-                          });
-                        },
-                        activeColor: Colors.black,
+                        onChanged: _toggleNotifications,
+                        // Les couleurs activeColor/inactiveColor sont gérées dans le darkTheme du main.dart
                       ),
                     ),
 
@@ -251,27 +298,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSettingsItem(
                       icon: Icons.dark_mode_outlined,
                       title: 'Mode sombre',
+                      itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
+                      titleColor: textColor, // Utilisation de la couleur du thème
+                      iconColor: iconColor, // Utilisation de la couleur du thème
                       trailing: Switch(
-                        value: _darkModeEnabled,
-                        onChanged: (bool value) {
-                          setState(() {
-                            _darkModeEnabled = value;
-                            // TODO: Intégrer la logique de gestion d'état global (ex: Provider/Riverpod) pour changer le thème
-                          });
-                        },
-                        activeColor: Colors.black,
+                        value: _darkModeEnabled, // Synchronisé avec le provider
+                        onChanged: _toggleDarkMode,
+                        // Les couleurs activeColor/inactiveColor sont gérées dans le darkTheme du main.dart
                       ),
                     ),
 
                     const SizedBox(height: 32),
 
                     // Section Support
-                    const Text(
+                    Text(
                       'Support',
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: textColor, // Utilisation de la couleur du thème
                       ),
                     ),
                     const SizedBox(height: 16),
@@ -280,9 +325,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSettingsItem(
                       icon: Icons.help_outline,
                       title: 'Aide et support',
-                      trailing: const Icon(
+                      itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
+                      titleColor: textColor, // Utilisation de la couleur du thème
+                      iconColor: iconColor, // Utilisation de la couleur du thème
+                      trailing: Icon(
                         Icons.arrow_forward_ios,
-                        color: Colors.grey,
+                        color: iconColor.withOpacity(0.5), // Utilisation de la couleur du thème
                         size: 16,
                       ),
                       onTap: () {
@@ -298,37 +346,36 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     _buildSettingsItem(
                       icon: Icons.logout,
                       title: 'Se déconnecter',
+                      itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
                       iconColor: Colors.red,
                       titleColor: Colors.red,
-                      trailing: const Icon(
+                      trailing: Icon(
                         Icons.arrow_forward_ios,
-                        color: Colors.grey,
+                        color: iconColor.withOpacity(0.5), // Utilisation de la couleur du thème
                         size: 16,
                       ),
-                      onTap: () {
-                        _showLogoutDialog();
-                      },
+                      onTap: _showLogoutDialog,
                     ),
 
                     const Spacer(),
 
                     // Version et copyright
-                    const Center(
+                    Center(
                       child: Column(
                         children: [
                           Text(
                             'FasoDocs v1.0.0',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey,
+                              color: isDarkMode ? Colors.grey[500] : Colors.grey,
                             ),
                           ),
-                          SizedBox(height: 4),
+                          const SizedBox(height: 4),
                           Text(
                             '© 2025 FasoDocs. Tous droits réservés.',
                             style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey,
+                              color: isDarkMode ? Colors.grey[600] : Colors.grey,
                             ),
                           ),
                         ],
@@ -343,86 +390,26 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: const BorderRadius.only(
-            topLeft: Radius.circular(20),
-            topRight: Radius.circular(20),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildNavItem(
-                  icon: Icons.home,
-                  label: 'Accueil',
-                  isActive: false,
-                  onTap: () {
-                    Navigator.of(context).pushReplacement(
-                      MaterialPageRoute(builder: (_) => const HomeScreen()),
-                    );
-                  },
-                ),
-                _buildNavItem(
-                  icon: Icons.grid_view,
-                  label: 'Catégorie',
-                  isActive: false,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const CategoryScreen(),
-                      ),
-                    );
-                  },
-                ),
-                _buildNavItem(
-                  icon: Icons.warning_outlined,
-                  label: 'Alerte',
-                  isActive: false,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
-                    );
-                  },
-                ),
-                _buildNavItem(
-                  icon: Icons.settings_outlined,
-                  label: 'Options',
-                  isActive: true,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 
+  // Fonction pour construire les lignes d'options des paramètres
   Widget _buildSettingsItem({
     required IconData icon,
     required String title,
     required Widget trailing,
+    required Color itemBackgroundColor,
     VoidCallback? onTap,
-    Color iconColor = Colors.black,
-    Color titleColor = Colors.black,
+    Color iconColor = Colors.black, // sera écrasé par la couleur du thème dans build()
+    Color titleColor = Colors.black, // sera écrasé par la couleur du thème dans build()
   }) {
+    // Les couleurs sont passées directement dans l'appel de _buildSettingsItem dans build()
     return GestureDetector(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[50],
+          color: itemBackgroundColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Row(
@@ -450,49 +437,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildNavItem({
-    required IconData icon,
-    required String label,
-    required bool isActive,
-    VoidCallback? onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: isActive ? activeNavColor.withOpacity(0.3) : Colors.transparent,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Icon(
-              icon,
-              color: isActive ? Colors.black : Colors.black,
-              size: 24,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: isActive ? Colors.black : Colors.black,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
+  // Dialogue pour le choix de la langue
   void _showLanguageDialog() {
+    // Les AlertDialogs utilisent maintenant les couleurs du thème global !
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          // Utilise les couleurs de texte et de fond définies dans main.dart
           title: const Text('Choisir la langue'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
@@ -530,11 +482,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
+  // Dialogue de déconnexion
   void _showLogoutDialog() {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          // Utilise les couleurs de texte et de fond définies dans main.dart
           title: const Text('Se déconnecter'),
           content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
           actions: [
@@ -542,14 +496,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
               onPressed: () {
                 Navigator.of(context).pop(); // Ferme la boîte de dialogue
               },
-              child: const Text('Annuler'),
+              child: Text('Annuler', style: TextStyle(color: Theme.of(context).primaryColor)),
             ),
             ElevatedButton(
               onPressed: () {
                 // Étape 1: Fermer la boîte de dialogue
                 Navigator.of(context).pop();
 
-                // TODO: Étape 2: Implémenter la logique de déconnexion réelle (ex: supprimer le jeton d'authentification)
+                // TODO: Étape 2: Implémenter la logique de déconnexion réelle (ex: suppression du jeton)
 
                 // Étape 3: Naviguer vers l'écran de connexion et supprimer toutes les routes précédentes
                 Navigator.of(context).pushAndRemoveUntil(

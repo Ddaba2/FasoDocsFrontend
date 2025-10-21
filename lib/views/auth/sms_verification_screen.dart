@@ -1,21 +1,7 @@
-// ========================================================================================
-// ÉCRAN: VÉRIFICATION SMS - AUTHENTIFICATION PAR CODE SMS
-// ========================================================================================
-// Cet écran permet à l'utilisateur de vérifier son numéro de téléphone
-// en saisissant le code de vérification reçu par SMS.
-//
-// Fonctionnalités :
-// - Affichage du logo FasoDocs stylisé avec les couleurs du drapeau burkinabé
-// - Message indiquant le numéro de téléphone où le code a été envoyé
-// - Champ de saisie pour le code de vérification (8 chiffres)
-// - Compteur de caractères en temps réel
-// - Validation du code avant de permettre la continuation
-// - Navigation vers la page d'accueil après validation réussie
-// ========================================================================================
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../home/home_screen.dart';
+// Note: Assurez-vous que le chemin vers HomeScreen est correct.
+import '../home/home_screen.dart'; // Placeholder pour la navigation
 
 class SMSVerificationScreen extends StatefulWidget {
   const SMSVerificationScreen({super.key});
@@ -25,12 +11,33 @@ class SMSVerificationScreen extends StatefulWidget {
 }
 
 class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
-  final _smsController = TextEditingController();
-  String _phoneNumber = '+223 74 32 38 74'; // Numéro par défaut
+  // Configuration pour l'OTP (One-Time Password)
+  final int _otpLength = 4; // Code à 4 chiffres basé sur l'image
+
+  // Liste des TextEditingController et FocusNode pour chaque boîte de saisie
+  late final List<TextEditingController> _controllers;
+  late final List<FocusNode> _focusNodes;
+
+  final String _phoneNumber = '+223 74 32 38 74'; // Numéro visible dans l'image
+
+  // Chemin d'asset du logo pour la vérification SMS
+  // REMPLACEZ CECI PAR LE CHEMIN RÉEL DE VOTRE LOGO D'ARCHE V-J-R
+  final String _logoAssetPath = 'assets/images/mali_logo_sms.png';
 
   @override
   void initState() {
     super.initState();
+
+    // Initialisation des listes
+    _controllers = List.generate(_otpLength, (_) => TextEditingController());
+    _focusNodes = List.generate(_otpLength, (_) => FocusNode());
+
+    // Pour se concentrer automatiquement sur le premier champ au démarrage
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _focusNodes.first.requestFocus();
+    });
+
+    // Configuration de la barre de statut (gardée, mais souvent mieux gérée par le thème)
     SystemChrome.setSystemUIOverlayStyle(
       const SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
@@ -43,135 +50,174 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
 
   @override
   void dispose() {
-    _smsController.dispose();
+    // Libération des ressources
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    for (var node in _focusNodes) {
+      node.dispose();
+    }
     super.dispose();
   }
 
+  // Fonction pour obtenir le code complet
+  String _getOTP() {
+    return _controllers.map((c) => c.text).join();
+  }
+
+  // Gère la validation et la navigation (associée au bouton "Confirmer")
   void _handleContinue() {
-    // Vérifier si le code SMS est valide (ici on simule juste)
-    if (_smsController.text.length == 8) {
+    final code = _getOTP();
+    // Vérifier si le code a la bonne longueur (4 chiffres)
+    if (code.length == _otpLength) {
+      // Simulation de la vérification réussie
+      // Dans une application réelle, vous feriez ici un appel API
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (_) => const HomeScreen()),
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Veuillez saisir un code de 8 chiffres'),
+          content: Text('Veuillez saisir le code complet'),
           backgroundColor: Colors.red,
         ),
       );
     }
   }
 
+  // Widget pour un seul champ de saisie (une boîte de l'OTP)
+  Widget _buildOTPField(int index, double boxSize, double screenWidth) {
+    const activeBorderColor = Color(0xFF14B53A); // Couleur verte
+    const defaultBorderColor = Color(0xFFE0E0E0); // Gris clair
+
+    // Détermine la couleur de la bordure : verte si le champ n'est pas vide
+    bool isFilled = _controllers[index].text.isNotEmpty;
+    // Détermine si le champ est le champ actuellement focus
+    bool isFocused = _focusNodes[index].hasFocus;
+    // La couleur de la bordure est verte si elle est remplie OU si elle a le focus
+    Color borderColor = isFilled || isFocused ? activeBorderColor : defaultBorderColor;
+
+
+    return Container(
+      width: boxSize,
+      height: boxSize,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: borderColor,
+          width: 1.5,
+        ),
+      ),
+      alignment: Alignment.center,
+      child: TextField(
+        controller: _controllers[index],
+        focusNode: _focusNodes[index],
+        keyboardType: TextInputType.number,
+        textAlign: TextAlign.center,
+        inputFormatters: [
+          LengthLimitingTextInputFormatter(1), // Un seul chiffre par boîte
+          FilteringTextInputFormatter.digitsOnly, // Seulement des chiffres
+        ],
+        style: TextStyle(
+          fontSize: screenWidth * 0.06,
+          fontWeight: FontWeight.bold,
+          color: Colors.black,
+        ),
+        decoration: const InputDecoration(
+          border: InputBorder.none,
+          contentPadding: EdgeInsets.zero,
+          counterText: '', // Supprime le compteur de caractères par défaut
+        ),
+        onChanged: (value) {
+          if (value.length == 1) {
+            // Passage automatique au champ suivant
+            if (index < _otpLength - 1) {
+              _focusNodes[index + 1].requestFocus();
+            } else {
+              // Si c'est le dernier champ, masquer le clavier
+              _focusNodes[index].unfocus();
+              // Tenter la confirmation immédiatement
+              // _handleContinue(); // Optionnel: activer pour valider auto
+            }
+          } else if (value.isEmpty && index > 0) {
+            // Retour en arrière si le champ est vidé (pour une meilleure UX)
+            _focusNodes[index - 1].requestFocus();
+          }
+          // Déclenche une reconstruction pour mettre à jour la couleur de la bordure
+          setState(() {});
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      // AppBar pour la flèche de retour
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        // Correction de style pour la flèche de retour à gauche
+        leading: Padding(
+          padding: const EdgeInsets.only(left: 10.0),
+          child: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
             final screenWidth = constraints.maxWidth;
             final screenHeight = constraints.maxHeight;
-            
+            // Calcule la taille des boîtes pour laisser de l'espace (4 boîtes + 3 espaces)
+            final boxSize = (screenWidth * 0.9 - 3 * 10) / 4;
+
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
               child: Column(
                 children: [
-                  SizedBox(height: screenHeight * 0.08),
-                  
-                  // Logo FasoDocs centré
+                  SizedBox(height: screenHeight * 0.02),
+
+                  // =========================================================
+                  // LOGO ADAPTÉ AU DESIGN DE SingUp (1).png
+                  // =========================================================
                   Center(
-                    child: Column(
-                      children: [
-                        // Logo avec les couleurs du drapeau burkinabé
-                        Container(
-                          width: screenWidth * 0.25,
-                          height: screenWidth * 0.25,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Stack(
-                            children: [
-                              // Segment vert
-                              Positioned(
-                                left: 0,
-                                top: 0,
-                                bottom: 0,
-                                child: Container(
-                                  width: screenWidth * 0.08,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF14B53A),
-                                    borderRadius: const BorderRadius.only(
-                                      topLeft: Radius.circular(20),
-                                      bottomLeft: Radius.circular(20),
-                                    ),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.description,
-                                      color: Colors.white,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Segment jaune avec flèche
-                              Positioned(
-                                left: screenWidth * 0.08,
-                                top: 0,
-                                bottom: 0,
-                                child: Container(
-                                  width: screenWidth * 0.09,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFFFD700),
-                                  ),
-                                  child: const Center(
-                                    child: Icon(
-                                      Icons.arrow_upward,
-                                      color: Colors.black,
-                                      size: 20,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              // Segment rouge
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                bottom: 0,
-                                child: Container(
-                                  width: screenWidth * 0.08,
-                                  decoration: const BoxDecoration(
-                                    color: Color(0xFFDC143C),
-                                    borderRadius: BorderRadius.only(
-                                      topRight: Radius.circular(20),
-                                      bottomRight: Radius.circular(20),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
+                    child: Image.asset(
+                      _logoAssetPath,
+                      width: screenWidth * 0.35,
+                      height: screenWidth * 0.35,
+                      fit: BoxFit.contain,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Icon(
+                          Icons.lock_open,
+                          size: screenWidth * 0.25,
+                          color: const Color(0xFF14B53A),
+                        );
+                      },
                     ),
                   ),
-                  
-                  SizedBox(height: screenHeight * 0.08),
-                  
+                  // =========================================================
+
+                  SizedBox(height: screenHeight * 0.05),
+
                   // Titre principal
                   Text(
                     'Vérifiez vos sms',
                     style: TextStyle(
-                      fontSize: screenWidth * 0.07,
+                      fontSize: screenWidth * 0.08,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   SizedBox(height: screenHeight * 0.03),
-                  
+
                   // Message d'instruction
                   Text(
                     'Nous avons envoyé votre code au $_phoneNumber',
@@ -181,61 +227,20 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  
+
                   SizedBox(height: screenHeight * 0.06),
-                  
-                  // Champ de saisie du code SMS
-                  Container(
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: const Color(0xFF14B53A),
-                        width: 1.5,
-                      ),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: TextField(
-                      controller: _smsController,
-                      keyboardType: TextInputType.number,
-                      maxLength: 8,
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.05,
-                        color: Colors.black,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Code de vérification sms',
-                        hintStyle: TextStyle(
-                          color: Colors.grey[400],
-                          fontSize: screenWidth * 0.04,
-                        ),
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.symmetric(
-                          horizontal: screenWidth * 0.04,
-                          vertical: screenHeight * 0.02,
-                        ),
-                        counterText: '',
-                      ),
-                    ),
+
+                  // Champs de saisie du code SMS (Boîtes séparées)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(_otpLength, (index) {
+                      return _buildOTPField(index, boxSize, screenWidth);
+                    }),
                   ),
-                  
-                  // Compteur de caractères
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: Padding(
-                      padding: EdgeInsets.only(top: screenHeight * 0.01),
-                      child: Text(
-                        '${_smsController.text.length}/8',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.035,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  ),
-                  
+
                   const Spacer(),
-                  
-                  // Bouton Continuer
+
+                  // Bouton Confirmer
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
@@ -245,32 +250,22 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(16),
                         ),
+                        elevation: 5,
+                        shadowColor: Colors.black.withOpacity(0.4),
                       ),
                       child: Text(
-                        'Continuer',
+                        'Confirmer',
                         style: TextStyle(
-                          fontSize: screenWidth * 0.045,
+                          fontSize: screenWidth * 0.05,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                     ),
                   ),
-                  
+
                   SizedBox(height: screenHeight * 0.05),
-                  
-                  // Indicateur de navigation (ligne noire en bas)
-                  Container(
-                    width: 40,
-                    height: 4,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
-                  
-                  SizedBox(height: screenHeight * 0.02),
                 ],
               ),
             );

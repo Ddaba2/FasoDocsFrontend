@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../home/home_screen.dart';
 
+// ASSUREZ-VOUS QUE CE CHEMIN EST CORRECT
+import '../auth/login_screen.dart'; // <--- NOUVELLE IMPORTATION POUR LA NAVIGATION
+
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -42,13 +45,18 @@ class _SignupScreenState extends State<SignupScreen> {
   }
 
   void _handleSignup() {
+    // Redirection vers la page de vérification SMS si nécessaire, ou l'accueil
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const HomeScreen()),
     );
   }
 
+  // FONCTION MISE À JOUR POUR REDIRIGER VERS LOGINSCREEN
   void _goToLogin() {
-    Navigator.of(context).pop();
+    // Remplace la route actuelle par LoginScreen
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
   }
 
   @override
@@ -56,6 +64,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
+          // Image d'arrière-plan (assurez-vous que l'asset 'confiance.png' existe)
           image: DecorationImage(
             image: AssetImage('assets/images/confiance.png'),
             fit: BoxFit.cover,
@@ -75,7 +84,7 @@ class _SignupScreenState extends State<SignupScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                // Header avec bouton retour (exactement comme la photo)
+                // Header avec bouton retour (adapté)
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Row(
@@ -89,9 +98,10 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: const Icon(
-                            Icons.arrow_back,
+                            // CHANGEMENT D'ICÔNE : Utilisation de chevron_left
+                            Icons.chevron_left,
                             color: Colors.white,
-                            size: 20,
+                            size: 24, // Légèrement plus grande pour un chevron
                           ),
                         ),
                       ),
@@ -109,16 +119,16 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                   ),
                 ),
-                
+
                 const Spacer(),
-                
-                // Contenu principal (exactement comme la photo)
+
+                // Contenu principal (Formulaire)
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: Colors.white,
-                    borderRadius: const BorderRadius.only(
+                    borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
@@ -126,7 +136,7 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Champ Téléphone (exactement comme la photo)
+                      // Champ Téléphone
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
@@ -150,10 +160,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
-                      // Champ Email (exactement comme la photo)
+
+                      // Champ Email
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -177,10 +187,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
-                      // Champ Mot de passe (exactement comme la photo)
+
+                      // Champ Mot de passe
                       TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
@@ -192,8 +202,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _isPasswordVisible 
-                                  ? Icons.visibility_off 
+                              _isPasswordVisible
+                                  ? Icons.visibility_off
                                   : Icons.visibility,
                               color: Colors.black,
                             ),
@@ -217,10 +227,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
-                      // Champ Confirmer mot de passe (exactement comme la photo)
+
+                      // Champ Confirmer mot de passe
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: !_isConfirmPasswordVisible,
@@ -232,8 +242,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _isConfirmPasswordVisible 
-                                  ? Icons.visibility_off 
+                              _isConfirmPasswordVisible
+                                  ? Icons.visibility_off
                                   : Icons.visibility,
                               color: Colors.black,
                             ),
@@ -257,10 +267,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
-                      // Checkbox conditions d'utilisation (exactement comme la photo)
+
+                      // Checkbox conditions d'utilisation
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -299,10 +309,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 24),
-                      
-                      // Bouton d'inscription (exactement comme la photo)
+
+                      // Bouton d'inscription
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
@@ -324,10 +334,10 @@ class _SignupScreenState extends State<SignupScreen> {
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 20),
-                      
-                      // Lien vers connexion (exactement comme la photo)
+
+                      // Lien vers connexion
                       Center(
                         child: TextButton(
                           onPressed: _goToLogin,

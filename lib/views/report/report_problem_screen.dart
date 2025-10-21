@@ -16,13 +16,12 @@ class ReportProblemScreen extends StatefulWidget {
 
 class _ReportProblemScreenState extends State<ReportProblemScreen> {
   File? _selectedImage;
-  // La variable _selectedImagePath n'est plus nécessaire car nous utilisons _selectedImage
   final ImagePicker _picker = ImagePicker();
   String? _selectedReportType;
   final TextEditingController _structureController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
 
-  final List<String> _reportTypes = [
+  final List<String> _reportTypes = const [
     'Problème technique',
     'Erreur de contenu',
     'Suggestion d\'amélioration',
@@ -63,8 +62,21 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. Récupération des couleurs du thème
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final Color textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final Color iconColor = Theme.of(context).iconTheme.color!;
+    final Color secondaryIconColor = isDarkMode ? (Colors.grey[400] ?? Colors.white70) : (Colors.grey[600] ?? Colors.black54);
+    final Color hintColor = isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54);
+
+    // Couleur de fond pour le cercle du profil
+    final Color profileIconBg = isDarkMode ? Theme.of(context).colorScheme.surface : (Colors.grey[300] ?? const Color(0xFFCCCCCC));
+    // Couleur de la bordure des champs (moins agressif que le primaryColor en mode sombre)
+    final Color inputBorderColor = isDarkMode ? primaryColor.withOpacity(0.7) : primaryColor;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor, // FOND: Couleur du thème
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -85,9 +97,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                       Row(
                         children: [
                           Image.asset(
-                            'assets/images/FasoDocs 1.png',
+                            'assets/images/FasoDocs 1.png', // VÉRIFIEZ LE CHEMIN
                             width: screenWidth * 0.08,
-                            height: screenWidth * 0.08, // Ajustement de la hauteur pour la cohérence
+                            height: screenWidth * 0.08,
                             fit: BoxFit.contain,
                           ),
                           SizedBox(width: screenWidth * 0.02),
@@ -96,7 +108,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             style: TextStyle(
                               fontSize: screenWidth * 0.04,
                               fontWeight: FontWeight.bold,
-                              color: Colors.black,
+                              color: textColor, // TEXTE: Couleur du thème
                             ),
                           ),
                         ],
@@ -114,12 +126,12 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               width: screenWidth * 0.1,
                               height: screenWidth * 0.1,
                               decoration: BoxDecoration(
-                                color: Colors.grey[300],
+                                color: profileIconBg, // FOND: Couleur du thème
                                 shape: BoxShape.circle,
                               ),
                               child: Icon(
                                 Icons.person,
-                                color: Colors.grey[600],
+                                color: secondaryIconColor, // ICÔNE: Couleur du thème
                                 size: screenWidth * 0.05,
                               ),
                             ),
@@ -129,7 +141,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             children: [
                               Icon(
                                 Icons.notifications_outlined,
-                                color: Colors.grey[600],
+                                color: iconColor, // ICÔNE: Couleur du thème
                                 size: screenWidth * 0.06,
                               ),
                               Positioned(
@@ -165,7 +177,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             },
                             child: Icon(
                               Icons.more_vert,
-                              color: Colors.grey[600],
+                              color: iconColor, // ICÔNE: Couleur du thème
                               size: screenWidth * 0.06,
                             ),
                           ),
@@ -189,12 +201,12 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               onTap: () => Navigator.of(context).pop(),
                               child: Container(
                                 padding: EdgeInsets.all(screenWidth * 0.02),
-                                decoration: BoxDecoration(
-                                  color: primaryColor, // Utilisation de primaryColor
+                                decoration: const BoxDecoration(
+                                  color: primaryColor, // Reste vert
                                   shape: BoxShape.circle,
                                 ),
                                 child: Icon(
-                                  Icons.chevron_left, // <--- CORRECTION ICI : Remplacement par chevron_left
+                                  Icons.chevron_left,
                                   color: Colors.white,
                                   size: screenWidth * 0.05,
                                 ),
@@ -206,7 +218,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               style: TextStyle(
                                 fontSize: screenWidth * 0.05,
                                 fontWeight: FontWeight.bold,
-                                color: Colors.black,
+                                color: textColor, // TEXTE: Couleur du thème
                               ),
                             ),
                           ],
@@ -220,7 +232,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: textColor, // TEXTE: Couleur du thème
                           ),
                         ),
                         SizedBox(height: screenHeight * 0.01),
@@ -231,8 +243,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             vertical: screenHeight * 0.01,
                           ),
                           decoration: BoxDecoration(
-                            border: Border.all(color: primaryColor, width: 1), // Utilisation de primaryColor
+                            border: Border.all(color: inputBorderColor, width: 1), // BORDURE: Couleur dynamique
                             borderRadius: BorderRadius.circular(8),
+                            color: isDarkMode ? Theme.of(context).colorScheme.surface : Colors.white, // FOND: Couleur de carte
                           ),
                           child: DropdownButtonHideUnderline(
                             child: DropdownButton<String>(
@@ -241,14 +254,20 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                                 'Sélectionnez un type',
                                 style: TextStyle(
                                   fontSize: screenWidth * 0.04,
-                                  color: Colors.grey[600],
+                                  color: hintColor, // TEXTE HINT: Couleur du thème
                                 ),
                               ),
                               isExpanded: true,
                               icon: Icon(
                                 Icons.keyboard_arrow_down,
-                                color: Colors.black,
+                                color: iconColor, // ICÔNE: Couleur du thème
                                 size: screenWidth * 0.05,
+                              ),
+                              // <--- CORRECTION APPLIQUÉE ICI : Utilisation de colorScheme.surface
+                              dropdownColor: Theme.of(context).colorScheme.surface,
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.04,
+                                color: textColor, // TEXTE ITEM: Couleur du thème
                               ),
                               items: _reportTypes.map((String value) {
                                 return DropdownMenuItem<String>(
@@ -257,7 +276,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                                     value,
                                     style: TextStyle(
                                       fontSize: screenWidth * 0.04,
-                                      color: Colors.black,
+                                      color: textColor, // TEXTE ITEM: Couleur du thème
                                     ),
                                   ),
                                 );
@@ -279,7 +298,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: textColor, // TEXTE: Couleur du thème
                           ),
                         ),
                         SizedBox(height: screenHeight * 0.01),
@@ -290,8 +309,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             vertical: screenHeight * 0.01,
                           ),
                           decoration: BoxDecoration(
-                            border: Border.all(color: primaryColor, width: 1), // Utilisation de primaryColor
+                            border: Border.all(color: inputBorderColor, width: 1), // BORDURE: Couleur dynamique
                             borderRadius: BorderRadius.circular(8),
+                            color: isDarkMode ? Theme.of(context).colorScheme.surface : Colors.white, // FOND: Couleur de carte
                           ),
                           child: TextField(
                             controller: _structureController,
@@ -299,11 +319,11 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               hintText: 'Nom de la structure',
                               hintStyle: TextStyle(
                                 fontSize: screenWidth * 0.04,
-                                color: Colors.grey[600],
+                                color: hintColor, // TEXTE HINT: Couleur du thème
                               ),
                               prefixIcon: Icon(
                                 Icons.location_on,
-                                color: Colors.grey[600],
+                                color: secondaryIconColor, // ICÔNE: Couleur du thème
                                 size: screenWidth * 0.05,
                               ),
                               border: InputBorder.none,
@@ -313,7 +333,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             ),
                             style: TextStyle(
                               fontSize: screenWidth * 0.04,
-                              color: Colors.black,
+                              color: textColor, // TEXTE SAISI: Couleur du thème
                             ),
                           ),
                         ),
@@ -326,7 +346,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: textColor, // TEXTE: Couleur du thème
                           ),
                         ),
                         SizedBox(height: screenHeight * 0.01),
@@ -335,8 +355,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                           height: screenHeight * 0.15,
                           padding: EdgeInsets.all(screenWidth * 0.04),
                           decoration: BoxDecoration(
-                            border: Border.all(color: primaryColor, width: 1), // Utilisation de primaryColor
+                            border: Border.all(color: inputBorderColor, width: 1), // BORDURE: Couleur dynamique
                             borderRadius: BorderRadius.circular(8),
+                            color: isDarkMode ? Theme.of(context).colorScheme.surface : Colors.white, // FOND: Couleur de carte
                           ),
                           child: TextField(
                             controller: _descriptionController,
@@ -346,13 +367,13 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               hintText: 'Description du problème rencontré...',
                               hintStyle: TextStyle(
                                 fontSize: screenWidth * 0.04,
-                                color: Colors.grey[600],
+                                color: hintColor, // TEXTE HINT: Couleur du thème
                               ),
                               border: InputBorder.none,
                             ),
                             style: TextStyle(
                               fontSize: screenWidth * 0.04,
-                              color: Colors.black,
+                              color: textColor, // TEXTE SAISI: Couleur du thème
                             ),
                           ),
                         ),
@@ -365,7 +386,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
                             fontWeight: FontWeight.w500,
-                            color: Colors.black,
+                            color: textColor, // TEXTE: Couleur du thème
                           ),
                         ),
                         SizedBox(height: screenHeight * 0.01),
@@ -375,7 +396,8 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             width: double.infinity,
                             height: screenHeight * 0.2,
                             decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey[400]!, width: 2, style: BorderStyle.solid),
+                              // BORDURE: Utilisation d'une couleur plus visible en mode sombre
+                              border: Border.all(color: isDarkMode ? (Colors.grey[600] ?? Colors.white54) : (Colors.grey[400] ?? Colors.black54), width: 2, style: BorderStyle.solid),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: _selectedImage != null
@@ -395,7 +417,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                                 children: [
                                   Icon(
                                     Icons.camera_alt,
-                                    color: Colors.grey[600],
+                                    color: secondaryIconColor, // ICÔNE: Couleur du thème
                                     size: screenWidth * 0.08,
                                   ),
                                   SizedBox(height: screenHeight * 0.01),
@@ -403,7 +425,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                                     'Appuyez pour ajouter une photo',
                                     style: TextStyle(
                                       fontSize: screenWidth * 0.035,
-                                      color: Colors.grey[600],
+                                      color: hintColor, // TEXTE HINT: Couleur du thème
                                     ),
                                   ),
                                 ],
@@ -415,7 +437,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                         SizedBox(height: screenHeight * 0.04),
 
                         // Bouton Envoyer le signalement
-                        Container(
+                        SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
                             onPressed: () {
@@ -426,7 +448,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                               Navigator.of(context).pop();
                             },
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: primaryColor, // Utilisation de primaryColor
+                              backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
                               padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                               shape: RoundedRectangleBorder(
