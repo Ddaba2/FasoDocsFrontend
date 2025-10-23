@@ -9,6 +9,33 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: (){
+            Navigator.of(context).pop();
+          },
+          icon: Icon(
+            Icons.chevron_left,
+            color: Colors.green,
+
+          ),),
+        title:  Text(
+
+          'Historique',
+
+          style: TextStyle(
+
+            fontSize: 20,
+
+            fontWeight: FontWeight.bold,
+
+
+
+          ),
+
+        ),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -19,101 +46,7 @@ class HistoryScreen extends StatelessWidget {
             
             return Column(
               children: [
-                // Header avec logo FasoDocs et profil
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Logo FasoDocs
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/FasoDocs 1.png',
-                            width: screenWidth * 0.08,
-                            height: screenWidth * 0.08 * 0.6,
-                            fit: BoxFit.contain,
-                          ),
-                          SizedBox(width: screenWidth * 0.02),
-                          Text(
-                            'FasoDocs',
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.04,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Profil et notifications
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                              );
-                            },
-                            child: Container(
-                              width: screenWidth * 0.1,
-                              height: screenWidth * 0.1,
-                              decoration: BoxDecoration(
-                                color: Colors.grey[300],
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.grey[600],
-                                size: screenWidth * 0.05,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: screenWidth * 0.03),
-                          Stack(
-                            children: [
-                              Icon(
-                                Icons.notifications_outlined,
-                                color: Colors.grey[600],
-                                size: screenWidth * 0.06,
-                              ),
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  width: screenWidth * 0.03,
-                                  height: screenWidth * 0.03,
-                                  decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '3',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: screenWidth * 0.025,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(width: screenWidth * 0.03),
-                          GestureDetector(
-                            onTap: () => Navigator.of(context).pop(),
-                            child: Icon(
-                              Icons.more_vert,
-                              color: Colors.grey[600],
-                              size: screenWidth * 0.06,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+
                 
                 // Contenu principal
                 Expanded(
@@ -122,35 +55,7 @@ class HistoryScreen extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Titre avec bouton retour
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: Container(
-                                padding: EdgeInsets.all(screenWidth * 0.02),
-                                decoration: BoxDecoration(
-                                  color: Colors.green,
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.arrow_back,
-                                  color: Colors.white,
-                                  size: screenWidth * 0.05,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: screenWidth * 0.03),
-                            Text(
-                              'Historique',
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.05,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                              ),
-                            ),
-                          ],
-                        ),
+
                         
                         SizedBox(height: screenHeight * 0.04),
                         

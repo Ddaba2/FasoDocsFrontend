@@ -89,123 +89,23 @@ class ReportScreen extends StatelessWidget {
     final screenWidth = MediaQuery.of(context).size.width;
 
     return AppBar(
-      backgroundColor: appBarBgColor,
-      elevation: 0,
-      titleSpacing: 0,
-      automaticallyImplyLeading: false,
+    automaticallyImplyLeading: false,
+      centerTitle: true,
+    title:  Text(
 
-      title: Padding(
-        // Padding adapté pour le contenu de l'AppBar
-        padding: const EdgeInsets.only(left: 16.0, right: 8.0),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Logo FacoDocs avec drapeau du Mali (comme sur l'image)
-            Row(
-              children: [
-                _buildMaliLogo(screenWidth * 0.08),
-                const SizedBox(width: 8),
-                Text(
-                  'FacoDocs',
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: screenWidth * 0.045,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
+    'Signalement',
 
-            // Profil, Notification, Menu
-            Row(
-              children: [
-                // Photo de profil (simulée comme sur la photo)
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    // Simulateur de la photo de profil
-                    color: Colors.grey[300],
-                    border: Border.all(color: iconColor.withOpacity(0.3)),
-                  ),
-                  // Placeholder pour la photo si non disponible
-                  child: ClipOval(
-                      child: Image.network(
-                          'https://picsum.photos/36/36?random=1',
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Icon(Icons.person, color: Colors.grey[600], size: 20)
-                      )
-                  ),
-                ),
-                const SizedBox(width: 10),
-                // Icône de notification (avec badge rouge '3')
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.notifications_none, color: iconColor),
-                      onPressed: () {},
-                    ),
-                    Positioned(
-                      right: 8,
-                      top: 8,
-                      // CORRECTION CLÉ : Le widget interne doit être const si Positioned est const,
-                      // mais Positioned lui-même ne peut pas être const si son 'child' ne l'est pas.
-                      // Ici on retire le const devant Positioned et on s'assure que le Container est const
-                      // ou que ses propriétés le sont.
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: Colors.red,
-                          borderRadius: BorderRadius.all(Radius.circular(6)),
-                        ),
-                        constraints: const BoxConstraints(
-                          minWidth: 12,
-                          minHeight: 12,
-                        ),
-                        // Ajout du texte '3' dans le badge comme sur la photo
-                        child: const Text(
-                          '3',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 8,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                // Icône de menu (trois points)
-                IconButton(
-                  icon: Icon(Icons.more_vert, color: iconColor),
-                  onPressed: () {},
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      // Le grand titre "Signalement" est placé dans un PreferredSize
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(50.0),
-        child: Padding(
-          padding: const EdgeInsets.only(left: 16.0, bottom: 8.0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Signalement',
-              style: TextStyle(
-                fontSize: screenWidth * 0.07,
-                fontWeight: FontWeight.bold,
-                color: textColor,
-              ),
-            ),
-          ),
-        ),
-      ),
+    style: TextStyle(
+
+    fontSize: 20,
+
+    fontWeight: FontWeight.bold,
+
+    color: textColor,
+
+    ),
+
+    ),
     );
   }
 

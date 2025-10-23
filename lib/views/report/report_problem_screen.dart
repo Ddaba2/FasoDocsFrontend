@@ -77,6 +77,34 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor, // FOND: Couleur du thème
+
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+            onPressed: (){
+              Navigator.of(context).pop();
+            },
+          icon: Icon(
+          Icons.chevron_left,
+          color: Colors.green,
+
+        ),),
+        title:  Text(
+
+          'Signaler un problème',
+
+          style: TextStyle(
+
+            fontSize: 20,
+
+            fontWeight: FontWeight.bold,
+
+            color: textColor,
+
+          ),
+
+        ),
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -87,105 +115,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
 
             return Column(
               children: [
-                // Header avec logo FasoDocs et profil
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Logo FasoDocs
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/FasoDocs 1.png', // VÉRIFIEZ LE CHEMIN
-                            width: screenWidth * 0.08,
-                            height: screenWidth * 0.08,
-                            fit: BoxFit.contain,
-                          ),
-                          SizedBox(width: screenWidth * 0.02),
-                          Text(
-                            'FasoDocs',
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.04,
-                              fontWeight: FontWeight.bold,
-                              color: textColor, // TEXTE: Couleur du thème
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Profil et notifications
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                              );
-                            },
-                            child: Container(
-                              width: screenWidth * 0.1,
-                              height: screenWidth * 0.1,
-                              decoration: BoxDecoration(
-                                color: profileIconBg, // FOND: Couleur du thème
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                color: secondaryIconColor, // ICÔNE: Couleur du thème
-                                size: screenWidth * 0.05,
-                              ),
-                            ),
-                          ),
-                          SizedBox(width: screenWidth * 0.03),
-                          Stack(
-                            children: [
-                              Icon(
-                                Icons.notifications_outlined,
-                                color: iconColor, // ICÔNE: Couleur du thème
-                                size: screenWidth * 0.06,
-                              ),
-                              Positioned(
-                                right: 0,
-                                top: 0,
-                                child: Container(
-                                  width: screenWidth * 0.03,
-                                  height: screenWidth * 0.03,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Center(
-                                    child: Text(
-                                      '3',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: screenWidth * 0.025,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(width: screenWidth * 0.03),
-                          GestureDetector(
-                            onTap: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(builder: (_) => const HistoryScreen()),
-                              );
-                            },
-                            child: Icon(
-                              Icons.more_vert,
-                              color: iconColor, // ICÔNE: Couleur du thème
-                              size: screenWidth * 0.06,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
+
 
                 // Contenu principal
                 Expanded(
@@ -195,34 +125,6 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Titre avec bouton retour
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => Navigator.of(context).pop(),
-                              child: Container(
-                                padding: EdgeInsets.all(screenWidth * 0.02),
-                                decoration: const BoxDecoration(
-                                  color: primaryColor, // Reste vert
-                                  shape: BoxShape.circle,
-                                ),
-                                child: Icon(
-                                  Icons.chevron_left,
-                                  color: Colors.white,
-                                  size: screenWidth * 0.05,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: screenWidth * 0.03),
-                            Text(
-                              'Signaler un problème',
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.05,
-                                fontWeight: FontWeight.bold,
-                                color: textColor, // TEXTE: Couleur du thème
-                              ),
-                            ),
-                          ],
-                        ),
 
                         SizedBox(height: screenHeight * 0.04),
 

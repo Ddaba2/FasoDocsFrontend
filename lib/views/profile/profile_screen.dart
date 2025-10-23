@@ -25,6 +25,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   String userName = 'Daba Diarra';
   String userEmail = 'daba.diarra@gmail.com';
   String userPhone = '+223 76 00 00 00';
+  String editProfil = 'mettre a jour votre profil';
   String userAddress = 'Hamdallaye ACI 2000';
   String userBirthDate = '01/01/1990';
   String userGender = 'Femme';
@@ -96,6 +97,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.grey,
+        leading: IconButton(onPressed: (){
+          Navigator.of(context).pop();
+
+        },
+            icon: Icon(Icons.chevron_left, color: Colors.white,)),
+        title:  Text(
+          'Profil',
+          style: TextStyle(
+
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -106,65 +124,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
             return Column(
               children: [
-                // Header avec bouton fermeture (X), titre et menu
-                Padding(
-                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Bouton de fermeture (X)
-                      GestureDetector(
-                        onTap: () => Navigator.of(context).pop(),
-                        child: Container(
-                          padding: EdgeInsets.all(screenWidth * 0.02),
-                          decoration: const BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: Colors.transparent,
-                          ),
-                          child: Icon(
-                            Icons.close, // Icône de fermeture (X)
-                            color: Colors.black,
-                            size: screenWidth * 0.06,
-                          ),
-                        ),
-                      ),
-                      // Titre
-                      Text(
-                        'Profil',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.05,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                      // Menu trois points avec OPTION DÉCONNEXION SEULEMENT
-                      PopupMenuButton<String>(
-                        icon: Icon(
-                          Icons.more_vert,
-                          color: Colors.grey[600],
-                          size: screenWidth * 0.06,
-                        ),
-                        onSelected: (String value) {
-                          if (value == 'logout') {
-                            _showLogoutDialog(context);
-                          }
-                        },
-                        itemBuilder: (BuildContext context) => [
-                          PopupMenuItem<String>(
-                            value: 'logout',
-                            child: Row(
-                              children: [
-                                Icon(Icons.logout, color: primaryColor),
-                                SizedBox(width: 8),
-                                const Text('Déconnexion'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
 
                 // Contenu principal
                 Expanded(
@@ -213,11 +172,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ),
 
                         SizedBox(height: screenHeight * 0.04),
-
+                        // Cartes d'informations (Dynamiques)
+                        _buildProfileCard(
+                          context, screenWidth, screenHeight, Icons.edit,
+                          'Modifier Profile', editProfil, primaryColor, // <-- Utilisé la variable d'état
+                              () {
+                                _navigateToEditProfile(context); // fonction à exécuter quand on clique
+                          },
+                        ),
                         // Cartes d'informations (Dynamiques)
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.phone,
                           'Téléphone', userPhone, primaryColor, // <-- Utilisé la variable d'état
+                              () {
+                            // fonction à exécuter quand on clique
+                          },
                         ),
 
                         SizedBox(height: screenHeight * 0.02),
@@ -225,6 +194,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.location_on,
                           'Adresse', userAddress, primaryColor,
+                              () {
+                            // fonction à exécuter quand on clique
+                          },
                         ),
 
                         SizedBox(height: screenHeight * 0.02),
@@ -232,6 +204,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.calendar_today,
                           'Date de naissance', userBirthDate, primaryColor,
+                              () {
+                            // fonction à exécuter quand on clique
+                          },
                         ),
 
                         SizedBox(height: screenHeight * 0.02),
@@ -239,9 +214,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.person,
                           'Genre', userGender, primaryColor,
+                              () {
+                            // fonction à exécuter quand on clique
+                          },
                         ),
 
-                        SizedBox(height: screenHeight * 0.04),
+
+
                       ],
                     ),
                   ),
@@ -254,7 +233,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // Fonction pour construire une carte de profil
+  // Fonction pour construire une carte de profil avec onTap
   Widget _buildProfileCard(
       BuildContext context,
       double screenWidth,
@@ -263,72 +242,78 @@ class _ProfileScreenState extends State<ProfileScreen> {
       String label,
       String value,
       Color primaryColor,
+      VoidCallback onTap, // callback à exécuter quand on clique
       ) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(screenWidth * 0.04),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            spreadRadius: 1,
-            blurRadius: 3,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: screenWidth * 0.12,
-            height: screenWidth * 0.12,
-            decoration: BoxDecoration(
-              color: primaryColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
+    return GestureDetector(
+      onTap: onTap, // rend toute la carte cliquable
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.all(screenWidth * 0.04),
+        margin: EdgeInsets.symmetric(vertical: screenHeight * 0.008),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1),
             ),
-            child: Icon(
-              icon,
-              color: primaryColor,
-              size: screenWidth * 0.06,
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: screenWidth * 0.12,
+              height: screenWidth * 0.12,
+              decoration: BoxDecoration(
+                color: primaryColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: primaryColor,
+                size: screenWidth * 0.06,
+              ),
             ),
-          ),
-          SizedBox(width: screenWidth * 0.04),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.035,
-                    color: Colors.grey[600],
+            SizedBox(width: screenWidth * 0.04),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: Colors.grey[600],
+                    ),
                   ),
-                ),
-                SizedBox(height: screenHeight * 0.005),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: screenWidth * 0.04,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.black,
+                  SizedBox(height: screenHeight * 0.005),
+                  Text(
+                    value,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.04,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.black,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // Icône de navigation vers l'écran d'édition (Chevron droit)
-          GestureDetector(
-            onTap: () => _navigateToEditProfile(context), // Appelle la méthode de navigation/mise à jour
-            child: Icon(
-              Icons.chevron_right,
-              color: Colors.grey[600],
-              size: screenWidth * 0.08,
+            // Icône de navigation (Chevron droit)
+            GestureDetector(
+              onTap: onTap, // fait la même action que la carte
+              child: Icon(
+                Icons.chevron_right,
+                color: Colors.grey[600],
+                size: screenWidth * 0.08,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
+
 }

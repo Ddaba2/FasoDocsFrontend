@@ -8,135 +8,43 @@ class IdentityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final cardColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
+    final borderColor = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
+    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        backgroundColor: backgroundColor,
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: (){
+            Navigator.of(context).pop();
+          },
+          icon: Icon(
+            Icons.chevron_left,
+            color: Colors.green,
+          ),
+        ),
+        title: Text(
+          'Identité et citoyenneté',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
             // Header avec logo FasoDocs et profil utilisateur
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  // Logo FasoDocs
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/FasoDocs 1.png',
-                        width: 40,
-                        height: 40,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'FasoDocs',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // Profil utilisateur et notifications
-                  Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.grey,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Stack(
-                        children: [
-                          const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.black,
-                            size: 24,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '3',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const HistoryScreen()),
-                          );
-                        },
-                        child: const Icon(
-                          Icons.more_vert,
-                          color: Colors.black,
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+
             
-            // Titre de la section avec bouton retour
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF14B53A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text(
-                    'Identité et citoyenneté',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+
             
             const SizedBox(height: 20),
             
@@ -151,6 +59,7 @@ class IdentityScreen extends StatelessWidget {
                   children: [
                     // Extrait d'acte de naissance
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.person_outline,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
@@ -158,6 +67,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Extrait d'acte de mariage
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.favorite_border,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
@@ -165,6 +75,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Demande de divorce
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.favorite_border,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
@@ -172,6 +83,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Acte de décès
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.close,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
@@ -179,6 +91,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Certificat de nationalité
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.flag_outlined,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
@@ -186,6 +99,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Certificat de casier judiciaire
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.gavel,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
@@ -193,6 +107,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Carte d'identité nationale
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFF5F5F5),
                       iconColor: const Color(0xFF424242),
@@ -200,6 +115,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Passeport malien
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFF5F5F5),
                       iconColor: const Color(0xFF424242),
@@ -207,6 +123,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Nationalité (par voie de naturalisation, par mariage)
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.flag_circle_outlined,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
@@ -214,6 +131,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Carte d'électeur
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.how_to_vote_outlined,
                       backgroundColor: const Color(0xFFF5F5F5),
                       iconColor: const Color(0xFF424242),
@@ -221,6 +139,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Fiche de résidence
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.home_outlined,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
@@ -234,6 +153,7 @@ class IdentityScreen extends StatelessWidget {
                     ),
                     // Inscription liste électorale
                     _buildIdentityCard(
+                      context: context,
                       icon: Icons.ballot_outlined,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
@@ -251,13 +171,13 @@ class IdentityScreen extends StatelessWidget {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 1),
+          border: Border.all(color: borderColor, width: 1),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.headset_mic,
-          color: Colors.black,
+          color: textColor,
           size: 24,
         ),
       ),
@@ -265,20 +185,27 @@ class IdentityScreen extends StatelessWidget {
   }
 
   Widget _buildIdentityCard({
+    required BuildContext context,
     required IconData icon,
     required Color backgroundColor,
     required Color iconColor,
     required String title,
     VoidCallback? onTap,
   }) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textColor = isDarkMode ? Colors.white : Colors.black;
+    final cardColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
+    final borderColor = isDarkMode ? Colors.grey.shade800 : Colors.black;
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.black, width: 1),
-          boxShadow: [
+          border: Border.all(color: borderColor, width: 1),
+          boxShadow: isDarkMode ? [] : [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
@@ -294,7 +221,7 @@ class IdentityScreen extends StatelessWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: backgroundColor,
+                color: isDarkMode ? backgroundColor.withOpacity(0.2) : backgroundColor,
                 borderRadius: BorderRadius.circular(25),
               ),
               child: Icon(
@@ -309,10 +236,10 @@ class IdentityScreen extends StatelessWidget {
               child: Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
-                  color: Colors.black,
+                  color: textColor,
                 ),
               ),
             ),

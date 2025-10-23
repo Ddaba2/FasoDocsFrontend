@@ -74,165 +74,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     return Scaffold(
       backgroundColor: backgroundColor,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title:  Text(
+
+          'Paramètre',
+
+          style: TextStyle(
+
+            fontSize: 20,
+
+            fontWeight: FontWeight.bold,
+
+            color: textColor,
+
+          ),
+
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // Header avec logo FasoDocs et profil utilisateur
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  // Logo FasoDocs
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/FasoDocs 1.png',
-                        width: 40,
-                        height: 40,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'FasoDocs',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: textColor, // Utilisation de la couleur du thème
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // Profil utilisateur et notifications
-                  Row(
-                    children: [
-                      // Icône de profil
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[700] : Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.person,
-                          color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      // Icône de notifications
-                      Stack(
-                        children: [
-                          Icon(
-                            Icons.notifications_outlined,
-                            color: iconColor, // Utilisation de la couleur du thème
-                            size: 24,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '3',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      // Menu à trois points
-                      PopupMenuButton<String>(
-                        color: itemBackgroundColor, // Utilisation de la couleur du thème (cardColor)
-                        icon: Icon(
-                          Icons.more_vert,
-                          color: iconColor, // Utilisation de la couleur du thème
-                          size: 24,
-                        ),
-                        onSelected: (String value) {
-                          if (value == 'report') {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
-                            );
-                          }
-                        },
-                        itemBuilder: (BuildContext context) => [
-                          PopupMenuItem<String>(
-                            value: 'history',
-                            child: Row(
-                              children: [
-                                Icon(Icons.history, color: iconColor), // Utilisation de la couleur du thème
-                                const SizedBox(width: 8),
-                                Text('Historique', style: TextStyle(color: textColor)), // Utilisation de la couleur du thème
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'report',
-                            child: Row(
-                              children: [
-                                const Icon(Icons.report_problem, color: Colors.red),
-                                const SizedBox(width: 8),
-                                Text('Signaler un problème', style: TextStyle(color: textColor)), // Utilisation de la couleur du thème
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
 
-            // Titre de la page avec bouton retour
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.of(context).pop();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: primaryGreen.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back_ios,
-                        color: primaryGreen,
-                        size: 16,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Paramètres',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: textColor, // Utilisation de la couleur du thème
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height:2),
+
+            const SizedBox(height:20),
 
             // Contenu principal
             Expanded(

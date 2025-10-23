@@ -10,19 +10,36 @@ class OnboardingScreen extends StatefulWidget {
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
-class _OnboardingScreenState extends State<OnboardingScreen> {
+class _OnboardingScreenState extends State<OnboardingScreen> with TickerProviderStateMixin {
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  late AnimationController _fadeController;
+  late Animation<double> _fadeAnimation;
 
   @override
   void initState() {
     super.initState();
+
+    // Animation pour les transitions
+    _fadeController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
+    );
+    _fadeController.forward();
+
+    // Détection du mode sombre
+    final brightness = WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    final isDark = brightness == Brightness.dark;
+
     SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
+      SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+        systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
       ),
     );
   }
@@ -30,6 +47,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void dispose() {
     _pageController.dispose();
+    _fadeController.dispose();
     super.dispose();
   }
 
@@ -55,16 +73,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.black,
       body: PageView.builder(
         controller: _pageController,
+        physics: const BouncingScrollPhysics(), // Animation fluide
         onPageChanged: (index) {
           setState(() {
             _currentPage = index;
+            _fadeController.reset();
+            _fadeController.forward();
           });
         },
         itemCount: 3,
         itemBuilder: (context, index) {
-          return _buildOnboardingPage(index);
+          return FadeTransition(
+            opacity: _fadeAnimation,
+            child: _buildOnboardingPage(index),
+          );
         },
       ),
     );
@@ -75,21 +100,28 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
         final screenHeight = constraints.maxHeight;
-        
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
         // Calcul des tailles responsive
         final horizontalPadding = screenWidth * 0.05; // 5% de la largeur
         final verticalPadding = screenHeight * 0.02; // 2% de la hauteur
         final titleFontSize = screenWidth * 0.05; // 5% de la largeur
         final subtitleFontSize = screenWidth * 0.035; // 3.5% de la largeur
         final buttonFontSize = screenWidth * 0.04; // 4% de la largeur
-        
+
         return Container(
           decoration: BoxDecoration(
+            color: isDarkMode ? Colors.black : Colors.white,
             image: DecorationImage(
               image: AssetImage(_getImagePath(index)),
-              fit: index == 0 ? BoxFit.cover : BoxFit.cover,
-              alignment: index == 0 ? Alignment.center : (index == 2 ? Alignment(-0.5, 0) : Alignment.center),
-              scale: index == 0 ? 0.9 : 1.0,
+              fit: BoxFit.cover,
+              alignment: index == 0
+                ? Alignment.center
+                : (index == 2 ? Alignment(-0.5, 0) : Alignment.center),
+              opacity: isDarkMode ? 0.7 : 1.0, // Réduit l'opacité en mode sombre
+              colorFilter: isDarkMode
+                ? ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken)
+                : null,
             ),
           ),
           child: SafeArea(
@@ -108,8 +140,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Container(
                             padding: EdgeInsets.all(screenWidth * 0.02),
                             decoration: BoxDecoration(
-                              color: Colors.grey.withOpacity(0.8),
+                              color: isDarkMode
+                                ? Colors.grey.shade800.withOpacity(0.9)
+                                : Colors.grey.withOpacity(0.8),
                               borderRadius: BorderRadius.circular(8),
+                              border: isDarkMode
+                                ? Border.all(color: Colors.grey.shade700)
+                                : null,
                             ),
                             child: Icon(
                               Icons.skip_next,
@@ -121,7 +158,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                 ),
-                
+
                 Expanded(
                   child: Stack(
                     children: [
@@ -136,8 +173,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             vertical: screenHeight * 0.01,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.grey[800]!.withOpacity(0.85),
+                            color: isDarkMode
+                              ? Colors.black.withOpacity(0.9)
+                              : Colors.grey[800]!.withOpacity(0.85),
                             borderRadius: BorderRadius.circular(16),
+                            border: isDarkMode
+                              ? Border.all(color: Colors.grey.shade800, width: 1)
+                              : null,
                           ),
                           child: RichText(
                             textAlign: TextAlign.left,
@@ -147,7 +189,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           ),
                         ),
                       ),
-                      
+
                       // Contenu en bas (points et bouton)
                       Positioned(
                         bottom: 0,
@@ -156,7 +198,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         child: Column(
                           children: [
                             SizedBox(height: screenHeight * 0.025),
-                            
+
                             // Indicateurs de page (exactement comme la photo)
                             Row(
                               mainAxisAlignment: MainAxisAlignment.center,
@@ -167,7 +209,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   width: screenWidth * 0.02,
                                   height: screenWidth * 0.02,
                                   decoration: BoxDecoration(
-                                    color: i == _currentPage 
+                                    color: i == _currentPage
                                         ? const Color(0xFFFCD116)
                                         : Colors.white,
                                     shape: BoxShape.circle,
@@ -175,9 +217,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ),
                               ),
                             ),
-                            
+
                             SizedBox(height: screenHeight * 0.025),
-                            
+
                             // Bouton Continuer gris foncé (exactement comme la photo)
                             Container(
                               width: double.infinity,
@@ -185,11 +227,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               child: ElevatedButton(
                                 onPressed: _nextPage,
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.grey[800],
+                                  backgroundColor: isDarkMode ? Colors.grey.shade900 : Colors.grey[800],
                                   foregroundColor: Colors.white,
                                   padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
+                                  elevation: isDarkMode ? 0 : 2,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
+                                    side: isDarkMode
+                                      ? BorderSide(color: Colors.grey.shade800)
+                                      : BorderSide.none,
                                   ),
                                 ),
                                 child: Row(
@@ -211,7 +257,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                 ),
                               ),
                             ),
-                            
+
                             SizedBox(height: screenHeight * 0.025),
                           ],
                         ),

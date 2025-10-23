@@ -82,6 +82,26 @@ class CategoryScreen extends StatelessWidget {
 
       backgroundColor: backgroundColor,
 
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title:  Text(
+
+          'Catégories',
+
+          style: TextStyle(
+
+            fontSize: 20,
+
+            fontWeight: FontWeight.bold,
+
+            color: textColor,
+
+          ),
+
+        ),
+      ),
+
       body: SafeArea(
 
         child: Column(
@@ -90,243 +110,7 @@ class CategoryScreen extends StatelessWidget {
 
 // Header avec logo FasoDocs et profil utilisateur
 
-            Padding(
 
-              padding: const EdgeInsets.all(20),
-
-              child: Row(
-
-                children: [
-
-// Logo FasoDocs
-
-                  Row(
-
-                    children: [
-
-                      Image.asset(
-
-                        'assets/images/FasoDocs 1.png',
-
-                        width: 40,
-
-                        height: 40,
-
-                      ),
-
-                      const SizedBox(width: 8),
-
-                      Text(
-
-                        'FasoDocs',
-
-                        style: TextStyle(
-
-                          fontSize: 18,
-
-                          fontWeight: FontWeight.bold,
-
-                          color: textColor,
-
-                        ),
-
-                      ),
-
-                    ],
-
-                  ),
-
-                  const Spacer(),
-
-// Profil utilisateur et notifications
-
-                  Row(
-
-                    children: [
-
-                      Container(
-
-                        width: 32,
-
-                        height: 32,
-
-                        decoration: BoxDecoration(
-
-                          color: profileIconBg,
-
-                          shape: BoxShape.circle,
-
-                        ),
-
-                        child: Icon(
-
-                          Icons.person,
-
-                          color: profileIconColor,
-
-                          size: 20,
-
-                        ),
-
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      Stack(
-
-                        children: [
-
-                          Icon(
-
-                            Icons.notifications_outlined,
-
-                            color: iconColor,
-
-                            size: 24,
-
-                          ),
-
-                          Positioned( // Constante
-
-                            right: 0,
-
-                            top: 0,
-
-                            child: Container( // <--- CORRIGÉ : const ici
-
-                              width: 16,
-
-                              height: 16,
-
-                              decoration: const BoxDecoration( // et ici
-
-                                color: Colors.red,
-
-                                shape: BoxShape.circle,
-
-                              ),
-
-                              child: const Center( // et ici
-
-                                child: const Text( // et ici
-
-                                  '3',
-
-                                  style: TextStyle(
-
-                                    color: Colors.white,
-
-                                    fontSize: 10,
-
-                                    fontWeight: FontWeight.bold,
-
-                                  ),
-
-                                ),
-
-                              ),
-
-                            ),
-
-                          ),
-
-                        ],
-
-                      ),
-
-                      const SizedBox(width: 12),
-
-                      GestureDetector(
-
-                        onTap: () {
-
-                          Navigator.of(context).push(
-
-                            MaterialPageRoute(builder: (_) => const HistoryScreen()),
-
-                          );
-
-                        },
-
-                        child: Icon(
-
-                          Icons.more_vert,
-
-                          color: iconColor,
-
-                          size: 24,
-
-                        ),
-
-                      ),
-
-                    ],
-
-                  ),
-
-                ],
-
-              ),
-
-            ),
-
-
-
-// Titre de la section avec bouton retour
-
-            Padding(
-
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-
-              child: Row(
-
-                children: [
-
-// Bouton de retour
-
-                  GestureDetector(
-
-                    onTap: () => Navigator.of(context).pop(),
-
-                    child: Icon(
-
-                      Icons.chevron_left,
-
-                      color: primaryColor,
-
-                      size: 32,
-
-                    ),
-
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  Text(
-
-                    'Catégories',
-
-                    style: TextStyle(
-
-                      fontSize: 20,
-
-                      fontWeight: FontWeight.bold,
-
-                      color: textColor,
-
-                    ),
-
-                  ),
-
-                ],
-
-              ),
-
-            ),
-
-
-
-            const SizedBox(height: 20),
 
 
 
@@ -336,7 +120,7 @@ class CategoryScreen extends StatelessWidget {
 
               child: Padding(
 
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
 
                 child: GridView.count(
 
@@ -576,9 +360,9 @@ class CategoryScreen extends StatelessWidget {
 
       floatingActionButton: Container(
 
-        width: 56,
+        width: 50,
 
-        height: 56,
+        height: 50,
 
         decoration: BoxDecoration(
 
@@ -587,12 +371,19 @@ class CategoryScreen extends StatelessWidget {
           shape: BoxShape.circle,
 
           border: Border.all(color: iconColor, width: 1),
-
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(isDarkMode ? 0.8 : 0.5),
+              spreadRadius: 1,
+              blurRadius: 5,
+              offset: const Offset(0, 3),
+            ),
+          ],
         ),
 
         child: Icon(
 
-          Icons.headset_mic,
+          Icons.support_agent,
 
           color: iconColor,
 
