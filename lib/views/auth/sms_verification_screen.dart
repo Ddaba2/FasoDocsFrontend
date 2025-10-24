@@ -35,17 +35,19 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
     // Pour se concentrer automatiquement sur le premier champ au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _focusNodes.first.requestFocus();
+      
+      final brightness = Theme.of(context).brightness;
+      final isDark = brightness == Brightness.dark;
+      
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+          systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
+      );
     });
-
-    // Configuration de la barre de statut (gardée, mais souvent mieux gérée par le thème)
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
-    );
   }
 
   @override
@@ -86,9 +88,13 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
   }
 
   // Widget pour un seul champ de saisie (une boîte de l'OTP)
-  Widget _buildOTPField(int index, double boxSize, double screenWidth) {
+  Widget _buildOTPField(int index, double boxSize, double screenWidth, BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    
     const activeBorderColor = Color(0xFF14B53A); // Couleur verte
-    const defaultBorderColor = Color(0xFFE0E0E0); // Gris clair
+    final defaultBorderColor = isDarkMode ? Colors.grey.shade700 : const Color(0xFFE0E0E0); // Gris clair
 
     // Détermine la couleur de la bordure : verte si le champ n'est pas vide
     bool isFilled = _controllers[index].text.isNotEmpty;
@@ -102,7 +108,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
       width: boxSize,
       height: boxSize,
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
           color: borderColor,
@@ -122,7 +128,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
         style: TextStyle(
           fontSize: screenWidth * 0.06,
           fontWeight: FontWeight.bold,
-          color: Colors.black,
+          color: textColor,
         ),
         decoration: const InputDecoration(
           border: InputBorder.none,
@@ -153,8 +159,12 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       // AppBar pour la flèche de retour
       appBar: AppBar(
         automaticallyImplyLeading: false,
@@ -164,7 +174,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
         leading: Padding(
           padding: const EdgeInsets.only(left: 10.0),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.black),
+            icon: Icon(Icons.arrow_back, color: textColor),
             onPressed: () => Navigator.of(context).pop(),
           ),
         ),
@@ -211,7 +221,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.08,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: textColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -223,7 +233,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                     'Nous avons envoyé votre code au $_phoneNumber',
                     style: TextStyle(
                       fontSize: screenWidth * 0.04,
-                      color: Colors.black,
+                      color: textColor,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -234,7 +244,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: List.generate(_otpLength, (index) {
-                      return _buildOTPField(index, boxSize, screenWidth);
+                      return _buildOTPField(index, boxSize, screenWidth, context);
                     }),
                   ),
 

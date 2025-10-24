@@ -80,6 +80,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       String hintText, {
         bool isPassword = false,
       }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    
     return Container(
       width: double.infinity,
       padding: EdgeInsets.symmetric(
@@ -87,29 +91,30 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         vertical: screenHeight * 0.005,
       ),
       decoration: BoxDecoration(
+        color: cardColor,
         border: Border.all(color: primaryColor, width: 1),
         borderRadius: BorderRadius.circular(8),
       ),
       child: TextField(
         controller: controller,
         obscureText: isPassword,
+        style: TextStyle(
+          fontSize: screenWidth * 0.04,
+          color: textColor,
+        ),
         decoration: InputDecoration(
           prefixIcon: Icon(
             icon,
-            color: Colors.black,
+            color: textColor,
             size: screenWidth * 0.05,
           ),
           hintText: hintText,
           hintStyle: TextStyle(
             fontSize: screenWidth * 0.04,
-            color: Colors.grey[600],
+            color: isDarkMode ? Colors.grey.shade500 : Colors.grey[600],
           ),
           border: InputBorder.none,
           contentPadding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
-        ),
-        style: TextStyle(
-          fontSize: screenWidth * 0.04,
-          color: Colors.black,
         ),
       ),
     );
@@ -121,8 +126,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -153,7 +162,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                           ),
                           child: Icon(
                             Icons.close, // Icône de fermeture (X)
-                            color: Colors.black,
+                            color: textColor,
                             size: screenWidth * 0.06,
                           ),
                         ),
@@ -164,7 +173,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         style: TextStyle(
                           fontSize: screenWidth * 0.05,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black,
+                          color: textColor,
                         ),
                       ),
                       // EMPLACEMENT VIDE

@@ -7,15 +7,20 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
           onPressed: (){
             Navigator.of(context).pop();
           },
-          icon: Icon(
+          icon: const Icon(
             Icons.chevron_left,
             color: Colors.green,
 
@@ -30,7 +35,7 @@ class HistoryScreen extends StatelessWidget {
 
             fontWeight: FontWeight.bold,
 
-
+            color: textColor,
 
           ),
 
@@ -68,6 +73,9 @@ class HistoryScreen extends StatelessWidget {
                           Colors.orange,
                           'Demande de passport',
                           'Il y a 2 heures',
+                          isDarkMode,
+                          textColor,
+                          cardColor,
                         ),
                         
                         SizedBox(height: screenHeight * 0.02),
@@ -80,6 +88,9 @@ class HistoryScreen extends StatelessWidget {
                           Colors.blue,
                           'Acte de naissance',
                           'Il y a 1 j',
+                          isDarkMode,
+                          textColor,
+                          cardColor,
                         ),
                         
                         SizedBox(height: screenHeight * 0.02),
@@ -92,6 +103,9 @@ class HistoryScreen extends StatelessWidget {
                           Colors.red,
                           'Signalement du tribunal de hamdallaye',
                           '15 Avril 2025',
+                          isDarkMode,
+                          textColor,
+                          cardColor,
                         ),
                       ],
                     ),
@@ -113,14 +127,18 @@ class HistoryScreen extends StatelessWidget {
     Color iconColor,
     String title,
     String time,
+    bool isDarkMode,
+    Color textColor,
+    Color cardColor,
   ) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(screenWidth * 0.04),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: isDarkMode ? cardColor : Colors.grey[100],
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
+        border: isDarkMode ? Border.all(color: Colors.grey.shade700, width: 1) : null,
+        boxShadow: isDarkMode ? null : [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
@@ -154,7 +172,7 @@ class HistoryScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: screenWidth * 0.04,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black,
+                    color: textColor,
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.005),
@@ -162,7 +180,7 @@ class HistoryScreen extends StatelessWidget {
                   time,
                   style: TextStyle(
                     fontSize: screenWidth * 0.035,
-                    color: Colors.grey[600],
+                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey[600],
                   ),
                 ),
               ],

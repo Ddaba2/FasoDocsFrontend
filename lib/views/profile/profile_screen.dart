@@ -95,16 +95,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ====================================================================
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.grey,
+        backgroundColor: isDarkMode ? Colors.grey.shade800 : Colors.grey,
         leading: IconButton(onPressed: (){
           Navigator.of(context).pop();
 
         },
-            icon: Icon(Icons.chevron_left, color: Colors.white,)),
-        title:  Text(
+            icon: const Icon(Icons.chevron_left, color: Colors.white,)),
+        title:  const Text(
           'Profil',
           style: TextStyle(
 
@@ -138,12 +143,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           width: screenWidth * 0.3,
                           height: screenWidth * 0.3,
                           decoration: BoxDecoration(
-                            color: Colors.grey[300],
+                            color: isDarkMode ? Colors.grey.shade700 : Colors.grey[300],
                             shape: BoxShape.circle,
                           ),
                           child: Icon(
                             Icons.person,
-                            color: Colors.grey[600],
+                            color: isDarkMode ? Colors.grey.shade500 : Colors.grey[600],
                             size: screenWidth * 0.15,
                           ),
                         ),
@@ -156,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.05,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            color: textColor,
                           ),
                         ),
 
@@ -167,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           userEmail, // <-- Utilisez la variable d'état mise à jour
                           style: TextStyle(
                             fontSize: screenWidth * 0.04,
-                            color: Colors.black,
+                            color: textColor,
                           ),
                         ),
 
@@ -175,7 +180,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // Cartes d'informations (Dynamiques)
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.edit,
-                          'Modifier Profile', editProfil, primaryColor, // <-- Utilisé la variable d'état
+                          'Modifier Profile', editProfil, primaryColor, cardColor, textColor, // <-- Utilisé la variable d'état
                               () {
                                 _navigateToEditProfile(context); // fonction à exécuter quand on clique
                           },
@@ -183,7 +188,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // Cartes d'informations (Dynamiques)
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.phone,
-                          'Téléphone', userPhone, primaryColor, // <-- Utilisé la variable d'état
+                          'Téléphone', userPhone, primaryColor, cardColor, textColor, // <-- Utilisé la variable d'état
                               () {
                             // fonction à exécuter quand on clique
                           },
@@ -193,7 +198,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.location_on,
-                          'Adresse', userAddress, primaryColor,
+                          'Adresse', userAddress, primaryColor, cardColor, textColor,
                               () {
                             // fonction à exécuter quand on clique
                           },
@@ -203,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.calendar_today,
-                          'Date de naissance', userBirthDate, primaryColor,
+                          'Date de naissance', userBirthDate, primaryColor, cardColor, textColor,
                               () {
                             // fonction à exécuter quand on clique
                           },
@@ -213,7 +218,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.person,
-                          'Genre', userGender, primaryColor,
+                          'Genre', userGender, primaryColor, cardColor, textColor,
                               () {
                             // fonction à exécuter quand on clique
                           },
@@ -242,8 +247,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       String label,
       String value,
       Color primaryColor,
+      Color cardColor,
+      Color textColor,
       VoidCallback onTap, // callback à exécuter quand on clique
       ) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     return GestureDetector(
       onTap: onTap, // rend toute la carte cliquable
       child: Container(
@@ -251,9 +260,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         padding: EdgeInsets.all(screenWidth * 0.04),
         margin: EdgeInsets.symmetric(vertical: screenHeight * 0.008),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [
+          border: isDarkMode ? Border.all(color: Colors.grey.shade700, width: 1) : null,
+          boxShadow: isDarkMode ? null : [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,
@@ -286,7 +296,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     label,
                     style: TextStyle(
                       fontSize: screenWidth * 0.035,
-                      color: Colors.grey[600],
+                      color: isDarkMode ? Colors.grey.shade400 : Colors.grey[600],
                     ),
                   ),
                   SizedBox(height: screenHeight * 0.005),
@@ -295,7 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     style: TextStyle(
                       fontSize: screenWidth * 0.04,
                       fontWeight: FontWeight.w500,
-                      color: Colors.black,
+                      color: textColor,
                     ),
                   ),
                 ],
@@ -306,7 +316,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               onTap: onTap, // fait la même action que la carte
               child: Icon(
                 Icons.chevron_right,
-                color: Colors.grey[600],
+                color: isDarkMode ? Colors.grey.shade500 : Colors.grey[600],
                 size: screenWidth * 0.08,
               ),
             ),

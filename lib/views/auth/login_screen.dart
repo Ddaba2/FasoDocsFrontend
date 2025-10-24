@@ -14,18 +14,26 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
+  String _completeNumber = '';
+  bool _showError = false;
+  String _errorMessage = '';
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final brightness = Theme.of(context).brightness;
+      final isDark = brightness == Brightness.dark;
+      
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+          systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
+      );
+    });
   }
 
   @override
@@ -35,8 +43,63 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SMSVerificationScreen()),
+    final phoneText = _phoneController.text.trim();
+
+    if (phoneText.isEmpty) {
+      setState(() {
+        _showError = true;
+        _errorMessage = 'Le numéro de téléphone est obligatoire';
+      });
+
+      _showErrorSnackbar(_errorMessage);
+    } else {
+      // Compter uniquement les chiffres (sans espaces, sans indicatif)
+      final phoneDigits = phoneText.replaceAll(RegExp(r'[^0-9]'), '');
+
+      if (phoneDigits.length < 8) {
+        setState(() {
+          _showError = true;
+          _errorMessage = 'Le numéro doit contenir au moins 8 chiffres';
+        });
+
+        _showErrorSnackbar(_errorMessage);
+      } else if (phoneDigits.length > 15) {
+        setState(() {
+          _showError = true;
+          _errorMessage = 'Le numéro est trop long (max 15 chiffres)';
+        });
+
+        _showErrorSnackbar(_errorMessage);
+      } else {
+        setState(() {
+          _showError = false;
+          _errorMessage = '';
+        });
+        // Le formulaire est valide, on peut procéder
+        Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const SMSVerificationScreen()),
+        );
+      }
+    }
+  }
+
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
     );
   }
 
@@ -48,8 +111,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -85,7 +153,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: TextStyle(
                             fontSize: screenWidth * 0.08,
                             fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                            color: textColor,
                             letterSpacing: 0.5,
                           ),
                         ),
@@ -101,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: titleFontSize,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: textColor,
                     ),
                   ),
 
@@ -112,7 +180,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     style: TextStyle(
                       fontSize: subtitleFontSize,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: textColor,
                     ),
                   ),
 
@@ -126,26 +194,77 @@ class _LoginScreenState extends State<LoginScreen> {
                         IntlPhoneField(
                           controller: _phoneController,
                           initialCountryCode: 'ML', // Mali par défaut
-                          style: TextStyle(fontSize: inputFontSize),
+                          style: TextStyle(
+                            fontSize: inputFontSize,
+                            color: textColor,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Numéro de téléphone',
                             labelStyle: TextStyle(
-                              color: Colors.grey,
+                              color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
                               fontSize: inputFontSize,
                             ),
+                            hintText: 'Ex: 76 12 34 56',
+                            hintStyle: TextStyle(
+                              color: isDarkMode ? Colors.grey.shade500 : Colors.grey.withOpacity(0.7),
+                              fontSize: inputFontSize * 0.9,
+                            ),
+                            fillColor: cardColor,
+                            filled: true,
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF14B53A)),
+                              borderSide: BorderSide(
+                                color: _showError ? Colors.red : const Color(0xFF14B53A),
+                              ),
                             ),
                             focusedBorder: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(12),
-                              borderSide: const BorderSide(color: Color(0xFF14B53A), width: 2),
+                              borderSide: BorderSide(
+                                  color: _showError ? Colors.red : const Color(0xFF14B53A),
+                                  width: 2
+                              ),
+                            ),
+                            errorText: _showError ? _errorMessage : null,
+                            errorStyle: TextStyle(
+                              color: Colors.red,
+                              fontSize: screenWidth * 0.03,
                             ),
                           ),
-                          dropdownIcon: const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                          dropdownIcon: Icon(
+                            Icons.arrow_drop_down,
+                            color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
+                          ),
                           onChanged: (phone) {
-                            print(phone.completeNumber);
+                            if (phone != null) {
+                              _completeNumber = phone.completeNumber;
+                              // Cacher l'erreur quand l'utilisateur commence à taper
+                              if (_showError) {
+                                setState(() {
+                                  _showError = false;
+                                  _errorMessage = '';
+                                });
+                              }
+                            }
                           },
+                          // Configuration des limites
+                          keyboardType: TextInputType.phone,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                            LengthLimitingTextInputFormatter(15), // Maximum 15 chiffres
+                          ],
+                        ),
+
+                        // Indication sur la longueur du numéro
+                        Padding(
+                          padding: EdgeInsets.only(top: screenHeight * 0.01),
+                          child: Text(
+                            'Le numéro doit contenir entre 8 et 15 chiffres',
+                            style: TextStyle(
+                              color: isDarkMode ? Colors.grey.shade500 : Colors.grey,
+                              fontSize: screenWidth * 0.03,
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
                         ),
 
                         SizedBox(height: screenHeight * 0.04),
@@ -182,7 +301,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             text: TextSpan(
                               text: "Nouveau sur FasoDocs? ",
                               style: TextStyle(
-                                color: Colors.grey,
+                                color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
                                 fontSize: screenWidth * 0.035,
                               ),
                               children: [

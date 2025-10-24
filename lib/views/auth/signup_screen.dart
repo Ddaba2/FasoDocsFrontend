@@ -25,14 +25,19 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.dark,
-        systemNavigationBarColor: Colors.white,
-        systemNavigationBarIconBrightness: Brightness.dark,
-      ),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final brightness = Theme.of(context).brightness;
+      final isDark = brightness == Brightness.dark;
+      
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+          systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
+      );
+    });
   }
 
   @override
@@ -61,6 +66,10 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -77,7 +86,7 @@ class _SignupScreenState extends State<SignupScreen> {
               end: Alignment.bottomCenter,
               colors: [
                 Colors.transparent,
-                Colors.black.withOpacity(0.7),
+                (isDarkMode ? Colors.black : Colors.black).withOpacity(0.7),
               ],
             ),
           ),
@@ -126,9 +135,9 @@ class _SignupScreenState extends State<SignupScreen> {
                 Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   padding: const EdgeInsets.all(24),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    color: cardColor,
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(20),
                       topRight: Radius.circular(20),
                     ),
@@ -140,11 +149,13 @@ class _SignupScreenState extends State<SignupScreen> {
                       TextFormField(
                         controller: _phoneController,
                         keyboardType: TextInputType.phone,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Téléphone',
-                          prefixIcon: const Icon(
+                          labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                          prefixIcon: Icon(
                             Icons.phone_outlined,
-                            color: Colors.black,
+                            color: textColor,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -167,11 +178,13 @@ class _SignupScreenState extends State<SignupScreen> {
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Email',
-                          prefixIcon: const Icon(
+                          labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                          prefixIcon: Icon(
                             Icons.email_outlined,
-                            color: Colors.black,
+                            color: textColor,
                           ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -194,18 +207,20 @@ class _SignupScreenState extends State<SignupScreen> {
                       TextFormField(
                         controller: _passwordController,
                         obscureText: !_isPasswordVisible,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Mot de passe',
-                          prefixIcon: const Icon(
+                          labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                          prefixIcon: Icon(
                             Icons.lock_outline,
-                            color: Colors.black,
+                            color: textColor,
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isPasswordVisible
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.black,
+                              color: textColor,
                             ),
                             onPressed: () {
                               setState(() {
@@ -234,18 +249,20 @@ class _SignupScreenState extends State<SignupScreen> {
                       TextFormField(
                         controller: _confirmPasswordController,
                         obscureText: !_isConfirmPasswordVisible,
+                        style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Confirmer votre mot de passe',
-                          prefixIcon: const Icon(
+                          labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                          prefixIcon: Icon(
                             Icons.lock_outline,
-                            color: Colors.black,
+                            color: textColor,
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _isConfirmPasswordVisible
                                   ? Icons.visibility_off
                                   : Icons.visibility,
-                              color: Colors.black,
+                              color: textColor,
                             ),
                             onPressed: () {
                               setState(() {
@@ -287,17 +304,17 @@ class _SignupScreenState extends State<SignupScreen> {
                             child: Padding(
                               padding: const EdgeInsets.only(top: 12),
                               child: RichText(
-                                text: const TextSpan(
+                                text: TextSpan(
                                   text: "J'accepte les ",
                                   style: TextStyle(
-                                    color: Colors.black,
+                                    color: textColor,
                                     fontSize: 14,
                                   ),
                                   children: [
                                     TextSpan(
                                       text: "conditions d'utilisation",
                                       style: TextStyle(
-                                        color: Color(0xFF14B53A),
+                                        color: const Color(0xFF14B53A),
                                         fontWeight: FontWeight.w600,
                                         decoration: TextDecoration.underline,
                                       ),
@@ -342,17 +359,17 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: TextButton(
                           onPressed: _goToLogin,
                           child: RichText(
-                            text: const TextSpan(
+                            text: TextSpan(
                               text: "Vous avez déjà un compte ? ",
                               style: TextStyle(
-                                color: Color(0xFF757575),
+                                color: isDarkMode ? Colors.grey.shade400 : const Color(0xFF757575),
                                 fontSize: 14,
                               ),
                               children: [
                                 TextSpan(
                                   text: "Se connecter",
                                   style: TextStyle(
-                                    color: Color(0xFF14B53A),
+                                    color: const Color(0xFF14B53A),
                                     fontWeight: FontWeight.w600,
                                     decoration: TextDecoration.underline,
                                   ),

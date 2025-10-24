@@ -72,8 +72,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: backgroundColor,
       body: PageView.builder(
         controller: _pageController,
         physics: const BouncingScrollPhysics(), // Animation fluide
@@ -116,12 +119,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
               image: AssetImage(_getImagePath(index)),
               fit: BoxFit.cover,
               alignment: index == 0
-                ? Alignment.center
-                : (index == 2 ? Alignment(-0.5, 0) : Alignment.center),
+                  ? Alignment.center
+                  : (index == 2 ? const Alignment(-0.5, 0) : Alignment.center),
               opacity: isDarkMode ? 0.7 : 1.0, // Réduit l'opacité en mode sombre
               colorFilter: isDarkMode
-                ? ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken)
-                : null,
+                  ? ColorFilter.mode(Colors.black.withOpacity(0.3), BlendMode.darken)
+                  : null,
             ),
           ),
           child: SafeArea(
@@ -141,12 +144,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                             padding: EdgeInsets.all(screenWidth * 0.02),
                             decoration: BoxDecoration(
                               color: isDarkMode
-                                ? Colors.grey.shade800.withOpacity(0.9)
-                                : Colors.grey.withOpacity(0.8),
+                                  ? Colors.grey.shade800.withOpacity(0.9)
+                                  : Colors.grey.withOpacity(0.8),
                               borderRadius: BorderRadius.circular(8),
                               border: isDarkMode
-                                ? Border.all(color: Colors.grey.shade700)
-                                : null,
+                                  ? Border.all(color: Colors.grey.shade700)
+                                  : null,
                             ),
                             child: Icon(
                               Icons.skip_next,
@@ -162,11 +165,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                 Expanded(
                   child: Stack(
                     children: [
-                      // Rectangle de texte positionné exactement comme sur la photo
+                      // Rectangle de texte positionné - PREMIÈRE IMAGE MONTÉE ENCORE PLUS HAUT
                       Positioned(
                         left: screenWidth * 0.07,
                         right: screenWidth * 0.07,
-                           top: index == 0 ? screenHeight * 0.68 : (index == 2 ? screenHeight * 0.58 : screenHeight * 0.62),
+                        // SEULEMENT la première image montée plus haut (0.55 au lieu de 0.62)
+                        top: index == 0 ? screenHeight * 0.53 : (index == 2 ? screenHeight * 0.52 : screenHeight * 0.56),
                         child: Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: screenWidth * 0.03,
@@ -174,12 +178,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                           ),
                           decoration: BoxDecoration(
                             color: isDarkMode
-                              ? Colors.black.withOpacity(0.9)
-                              : Colors.grey[800]!.withOpacity(0.85),
+                                ? Colors.black.withOpacity(0.9)
+                                : Colors.grey[800]!.withOpacity(0.85),
                             borderRadius: BorderRadius.circular(16),
                             border: isDarkMode
-                              ? Border.all(color: Colors.grey.shade800, width: 1)
-                              : null,
+                                ? Border.all(color: Colors.grey.shade800, width: 1)
+                                : null,
                           ),
                           child: RichText(
                             textAlign: TextAlign.left,
@@ -204,7 +208,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: List.generate(
                                 3,
-                                (i) => Container(
+                                    (i) => Container(
                                   margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.015),
                                   width: screenWidth * 0.02,
                                   height: screenWidth * 0.02,
@@ -234,8 +238,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     side: isDarkMode
-                                      ? BorderSide(color: Colors.grey.shade800)
-                                      : BorderSide.none,
+                                        ? BorderSide(color: Colors.grey.shade800)
+                                        : BorderSide.none,
                                   ),
                                 ),
                                 child: Row(
@@ -290,22 +294,22 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     switch (index) {
       case 0:
         return [
-          TextSpan(text: "Obtenir un ", style: TextStyle(fontSize: fontSize, color: Colors.white)),
+          TextSpan(text: "Comment obtenir mes ", style: TextStyle(fontSize: fontSize, color: Colors.white),),
           TextSpan(
-            text: "document administratif",
+            text: "documents administratifs",
             style: TextStyle(
               fontSize: fontSize,
               fontWeight: FontWeight.bold,
               color: const Color(0xFFFCD116),
             ),
           ),
-          TextSpan(text: " au Mali ? C'est souvent la promesse de longues files d'attente, de paperasse incompréhensible et de frais imprévus.", style: TextStyle(fontSize: fontSize, color: Colors.white)),
+          TextSpan(text: " au Mali en toute simplicité ?", style: TextStyle(fontSize: fontSize, color: Colors.white)),
         ];
       case 1:
-        return [TextSpan(text: "Vos démarches administratives sans complexité. Des procédures guidées et des informations fiables enfin accessibles à tous.", style: TextStyle(fontSize: fontSize, color: Colors.white))];
+        return [TextSpan(text: "FasoDocs est là avec des procédures guidées et des informations fiables enfin accessibles à tous.", style: TextStyle(fontSize: fontSize, color: Colors.white))];
       case 2:
         return [
-          TextSpan(text: "La complexité, nous la gérons.\n", style: TextStyle(fontSize: fontSize, color: Colors.white)),
+          TextSpan(text: "La complexité, nous la gérons & \n", style: TextStyle(fontSize: fontSize, color: Colors.white)),
           TextSpan(text: "La simplicité, nous vous la livrons.", style: TextStyle(fontSize: fontSize, color: Colors.white)),
         ];
       default:

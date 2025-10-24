@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'centre_screen.dart';
+import 'montant_screen.dart';
+import 'document_screen.dart';
+import 'loi_screen.dart';
 
 class CertificatResidenceScreen extends StatelessWidget {
   const CertificatResidenceScreen({super.key});
@@ -88,18 +91,36 @@ class CertificatResidenceScreen extends StatelessWidget {
                     value: 'Gratuit',
                     iconColor: const Color(0xFF4CAF50),
                     isBold: true,
+                    onTap: () {
+                      // Navigation vers la page des montants
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const MontantScreen()),
+                      );
+                    },
                   ),
                   _InfoItemWithIcon(
                     icon: Icons.description,
                     title: 'Documents',
                     value: '4',
                     iconColor: const Color(0xFFFF9800),
+                    onTap: () {
+                      // Navigation vers la page des documents
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const DocumentScreen()),
+                      );
+                    },
                   ),
                   _InfoItemWithIcon(
                     icon: Icons.gavel,
                     title: 'Loi(s)',
                     value: '1',
                     iconColor: const Color(0xFF9C27B0),
+                    onTap: () {
+                      // Navigation vers la page des lois
+                      Navigator.of(context).push(
+                        MaterialPageRoute(builder: (_) => const LoiScreen()),
+                      );
+                    },
                   ),
                   _InfoItemWithIcon(
                     icon: Icons.location_on,

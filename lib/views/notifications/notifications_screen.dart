@@ -8,15 +8,20 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         automaticallyImplyLeading: false,
         leading: IconButton(
           onPressed: (){
             Navigator.of(context).pop();
           },
-          icon: Icon(
+          icon: const Icon(
             Icons.chevron_left,
             color: Colors.green,
 
@@ -31,7 +36,7 @@ class NotificationsScreen extends StatelessWidget {
 
             fontWeight: FontWeight.bold,
 
-
+            color: textColor,
 
           ),
 
@@ -54,6 +59,7 @@ class NotificationsScreen extends StatelessWidget {
                   children: [
                     // Notification 1: Mise à jour passeport
                     _buildNotificationCard(
+                      context,
                       icon: Icons.check_circle,
                       iconColor: Colors.green,
                       title: 'Mise à jour de la procédure de passport',
@@ -65,6 +71,7 @@ class NotificationsScreen extends StatelessWidget {
 
                     // Notification 2: Nouveau centre
                     _buildNotificationCard(
+                      context,
                       icon: Icons.info,
                       iconColor: Colors.blue,
                       title: 'Nouveau centre pour les cartes biométriques',
@@ -76,6 +83,7 @@ class NotificationsScreen extends StatelessWidget {
 
                     // Notification 3: Perturbation service
                     _buildNotificationCard(
+                      context,
                       icon: Icons.warning,
                       iconColor: Colors.red,
                       title: 'Perturbation de service',
@@ -96,7 +104,7 @@ class NotificationsScreen extends StatelessWidget {
                 width: 40,
                 height: 4,
                 decoration: BoxDecoration(
-                  color: Colors.black,
+                  color: textColor,
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
@@ -107,18 +115,24 @@ class NotificationsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildNotificationCard({
+  Widget _buildNotificationCard(
+    BuildContext context, {
     required IconData icon,
     required Color iconColor,
     required String title,
     required String description,
     required String time,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: isDarkMode ? cardColor : Colors.grey[50],
         borderRadius: BorderRadius.circular(12),
+        border: isDarkMode ? Border.all(color: Colors.grey.shade700, width: 1) : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,10 +161,10 @@ class NotificationsScreen extends StatelessWidget {
                   children: [
                     Text(
                       title,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black,
+                        color: textColor,
                       ),
                     ),
                     const SizedBox(height: 8),
@@ -158,7 +172,7 @@ class NotificationsScreen extends StatelessWidget {
                       description,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.grey[600],
+                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey[600],
                         height: 1.4,
                       ),
                     ),
@@ -175,7 +189,7 @@ class NotificationsScreen extends StatelessWidget {
                 time,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[500],
+                  color: isDarkMode ? Colors.grey.shade500 : Colors.grey[500],
                 ),
               ),
               const Spacer(),

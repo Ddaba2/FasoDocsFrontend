@@ -448,20 +448,9 @@ class _HomeContent extends StatelessWidget {
                     },
                     child: const Row(
                       children: [
-                        Text(
-                          'Tout voir',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: primaryColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+
                         SizedBox(width: 4),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 12,
-                          color: primaryColor,
-                        ),
+
                       ],
                     ),
                   ),

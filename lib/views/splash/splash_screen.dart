@@ -31,15 +31,20 @@ class _SplashScreenState extends State<SplashScreen> {
     // ========================================================================================
     // CONFIGURATION DE L'INTERFACE SYSTÈME
     // ========================================================================================
-    // Configure l'apparence de la barre de statut et de navigation
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,        // Barre de statut transparente
-        statusBarIconBrightness: Brightness.dark, // Icônes sombres sur fond clair
-        systemNavigationBarColor: Colors.white,    // Barre de navigation blanche
-        systemNavigationBarIconBrightness: Brightness.dark, // Icônes sombres
-      ),
-    );
+    // Configure l'apparence de la barre de statut et de navigation selon le thème
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final brightness = Theme.of(context).brightness;
+      final isDark = brightness == Brightness.dark;
+      
+      SystemChrome.setSystemUIOverlayStyle(
+        SystemUiOverlayStyle(
+          statusBarColor: Colors.transparent,
+          statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+          systemNavigationBarColor: isDark ? Colors.black : Colors.white,
+          systemNavigationBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        ),
+      );
+    });
 
     // ========================================================================================
     // NAVIGATION AUTOMATIQUE VERS L'ONBOARDING
@@ -63,8 +68,12 @@ class _SplashScreenState extends State<SplashScreen> {
   /// Affiche le logo FasoDocs centré avec le texte de l'application
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    
     return Scaffold(
-      backgroundColor: Colors.white,  // Fond blanc pour l'écran de splash
+      backgroundColor: backgroundColor,
       body: SafeArea(  // Zone sûre qui évite les encoches et la barre de statut
         child: LayoutBuilder(  // Builder qui fournit les contraintes de taille
           builder: (context, constraints) {
@@ -97,7 +106,7 @@ class _SplashScreenState extends State<SplashScreen> {
                     style: TextStyle(
                       fontSize: fontSize,
                       fontWeight: FontWeight.bold,
-                      color: Colors.black,
+                      color: textColor,
                       letterSpacing: 0.5,
                     ),
                   ),

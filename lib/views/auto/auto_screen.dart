@@ -22,129 +22,37 @@ class AutoScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    final iconColor = Theme.of(context).iconTheme.color!;
+    
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: backgroundColor,
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        leading: IconButton(
+          onPressed: (){
+            Navigator.of(context).pop();
+          },
+          icon: const Icon(
+            Icons.chevron_left,
+            color: Colors.green,
+          ),
+        ),
+        title: Text(
+          'Documents Auto',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+          ),
+        ),
+      ),
       body: SafeArea(
         child: Column(
           children: [
-            // Header avec logo FasoDocs et profil utilisateur
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  // Logo FasoDocs
-                  Row(
-                    children: [
-                      Image.asset(
-                        'assets/images/FasoDocs.png',
-                        width: 40,
-                        height: 40,
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'FasoDocs',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // Profil utilisateur et notifications
-                  Row(
-                    children: [
-                      Container(
-                        width: 32,
-                        height: 32,
-                        decoration: BoxDecoration(
-                          color: Colors.grey[300],
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.person,
-                          color: Colors.grey,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Stack(
-                        children: [
-                          const Icon(
-                            Icons.notifications_outlined,
-                            color: Colors.black,
-                            size: 24,
-                          ),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              width: 16,
-                              height: 16,
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Text(
-                                  '3',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(width: 12),
-                      const Icon(
-                        Icons.more_vert,
-                        color: Colors.black,
-                        size: 24,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Titre de la section avec bouton retour
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.of(context).pop(),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF14B53A),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  const Text(
-                    'Documents auto',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
             const SizedBox(height: 20),
 
             // Grille des sous-catégories
@@ -158,6 +66,7 @@ class AutoScreen extends StatelessWidget {
                   children: [
                     // Permis de conduire
                     _buildAutoCard(
+                      context: context,
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
@@ -165,6 +74,7 @@ class AutoScreen extends StatelessWidget {
                     ),
                     // Carte grise
                     _buildAutoCard(
+                      context: context,
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
@@ -172,6 +82,7 @@ class AutoScreen extends StatelessWidget {
                     ),
                     // Visite technique
                     _buildAutoCard(
+                      context: context,
                       icon: Icons.build,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
@@ -179,6 +90,7 @@ class AutoScreen extends StatelessWidget {
                     ),
                     // Vignette
                     _buildAutoCard(
+                      context: context,
                       icon: Icons.label,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
@@ -186,6 +98,7 @@ class AutoScreen extends StatelessWidget {
                     ),
                     // Changement de couleur de plaque
                     _buildAutoCard(
+                      context: context,
                       icon: Icons.color_lens,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
@@ -203,13 +116,13 @@ class AutoScreen extends StatelessWidget {
         width: 56,
         height: 56,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: cardColor,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 1),
+          border: Border.all(color: isDarkMode ? Colors.grey.shade700 : Colors.black, width: 1),
         ),
-        child: const Icon(
+        child: Icon(
           Icons.headset_mic,
-          color: Colors.black,
+          color: iconColor,
           size: 24,
         ),
       ),
@@ -217,23 +130,28 @@ class AutoScreen extends StatelessWidget {
   }
 
   /// Construit une carte de procédure auto avec icône, couleur et titre
-  /// 
+  ///
   /// [icon] : L'icône à afficher
   /// [backgroundColor] : Couleur de fond de l'icône
   /// [iconColor] : Couleur de l'icône
   /// [title] : Titre de la procédure
   Widget _buildAutoCard({
+    required BuildContext context,
     required IconData icon,
     required Color backgroundColor,
     required Color iconColor,
     required String title,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black, width: 1),
-        boxShadow: [
+        border: Border.all(color: isDarkMode ? Colors.grey.shade700 : Colors.black, width: 1),
+        boxShadow: isDarkMode ? null : [
           BoxShadow(
             color: Colors.grey.withOpacity(0.1),
             spreadRadius: 1,
@@ -249,7 +167,7 @@ class AutoScreen extends StatelessWidget {
             width: 50,
             height: 50,
             decoration: BoxDecoration(
-              color: backgroundColor,
+              color: isDarkMode ? backgroundColor.withOpacity(0.2) : backgroundColor,
               borderRadius: BorderRadius.circular(25),
             ),
             child: Icon(
@@ -264,10 +182,10 @@ class AutoScreen extends StatelessWidget {
             child: Text(
               title,
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
-                color: Colors.black,
+                color: textColor,
               ),
             ),
           ),
