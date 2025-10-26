@@ -101,24 +101,31 @@ class CategorieResponse {
 /// Modèle pour une sous-catégorie
 class SousCategorieResponse {
   final String id;
-  final String nom;
+  final String titre;
   final String? description;
-  final String? icone;
+  final String? iconeUrl;
+  final String? nomSousCategorie;
   final String categorieId;
 
   SousCategorieResponse({
     required this.id,
-    required this.nom,
+    required this.titre,
     this.description,
-    this.icone,
+    this.iconeUrl,
+    this.nomSousCategorie,
     required this.categorieId,
   });
+  
+  // Getter pour compatibilité avec le code existant
+  String get nom => titre;
+  String? get icone => iconeUrl;
 
   factory SousCategorieResponse.fromJson(Map<String, dynamic> json) => SousCategorieResponse(
     id: json['id']?.toString() ?? '',
-    nom: json['nom'] ?? '',
+    titre: json['titre'] ?? json['nom'] ?? '',
     description: json['description'],
-    icone: json['icone'],
+    iconeUrl: json['iconeUrl'] ?? json['icone'],
+    nomSousCategorie: json['nomSousCategorie'],
     categorieId: json['categorieId']?.toString() ?? '',
   );
 }

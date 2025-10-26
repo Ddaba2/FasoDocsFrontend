@@ -30,6 +30,7 @@ import '../../core/services/category_service.dart';
 import '../../core/services/procedure_service.dart';
 import '../../models/api_models.dart';
 import '../procedure/procedure_list_screen.dart';
+import '../subcategory/subcategory_list_screen.dart';
 import '../../core/config/category_mapping.dart';
 import '../../core/config/emoji_to_icon.dart';
 
@@ -298,10 +299,14 @@ class _CategoryScreenState extends State<CategoryScreen> {
   
   /// Gère le tap sur une catégorie
   void _onCategoryTap(CategorieResponse category) {
-    // Charger les procédures de cette catégorie
+    // Charger les sous-catégories de cette catégorie
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ProcedureListScreen(categorieId: category.id, categorieNom: category.nom),
+        builder: (_) => SubcategoryListScreen(
+          categorieId: category.id,
+          categorieNom: category.titre,
+          categorieEmoji: category.iconeUrl,
+        ),
       ),
     );
   }
