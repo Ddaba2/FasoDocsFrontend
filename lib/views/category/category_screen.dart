@@ -26,20 +26,62 @@ import '../justice/justice_screen.dart';
 
 import '../tax/tax_screen.dart';
 import '../../locale/locale_helper.dart';
-
-
+import '../../core/services/category_service.dart';
+import '../../core/services/procedure_service.dart';
+import '../../models/api_models.dart';
+import '../procedure/procedure_list_screen.dart';
+import '../../core/config/category_mapping.dart';
+import '../../core/config/emoji_to_icon.dart';
 
 /// Écran des catégories de démarches administratives
 
-class CategoryScreen extends StatelessWidget {
+class CategoryScreen extends StatefulWidget {
 
   const CategoryScreen({super.key});
 
+  @override
+  State<CategoryScreen> createState() => _CategoryScreenState();
+}
 
-
-// Définition de la couleur principale (Vert) de l'application
-
+class _CategoryScreenState extends State<CategoryScreen> {
+  // Définition de la couleur principale (Vert) de l'application
   final Color primaryColor = const Color(0xFF14B53A);
+  
+  // Liste des catégories récupérées du backend
+  List<CategorieResponse> _categories = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+  
+  @override
+  void initState() {
+    super.initState();
+    _loadCategories();
+  }
+  
+  // Charger les catégories depuis l'API
+  Future<void> _loadCategories() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+    
+    try {
+      print('🔍 Chargement des catégories depuis l\'API...');
+      final categories = await categoryService.getAllCategories();
+      print('✅ ${categories.length} catégorie(s) chargée(s) depuis la base de données');
+      
+      setState(() {
+        _categories = categories;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Erreur lors du chargement des catégories: $e');
+      setState(() {
+        _errorMessage = 'Impossible de charger les catégories depuis le serveur. Vérifiez que votre backend Spring Boot est en cours d\'exécution.';
+        _isLoading = false;
+      });
+    }
+  }
 
 
 
@@ -119,235 +161,7 @@ class CategoryScreen extends StatelessWidget {
 
             Expanded(
 
-              child: Padding(
-
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-
-                child: GridView.count(
-
-                  crossAxisCount: 2,
-
-                  mainAxisSpacing: 16,
-
-                  crossAxisSpacing: 16,
-
-                  children: [
-
-// Identité et citoyenneté
-
-                    _buildCategoryCard(
-
-                      context: context,
-
-                      icon: Icons.perm_identity,
-
-                      backgroundColor: const Color(0xFFE8F5E8),
-
-                      iconColor: const Color(0xFF4CAF50),
-
-                      title: LocaleHelper.getText(context, 'identityAndCitizenship'),
-
-                      onTap: () {
-
-                        Navigator.of(context).push(
-
-                          MaterialPageRoute(
-
-                            builder: (_) => const IdentityScreen(),
-
-                          ),
-
-                        );
-
-                      },
-
-                    ),
-
-// Création d'entreprise
-
-                    _buildCategoryCard(
-
-                      context: context,
-
-                      icon: Icons.business,
-
-                      backgroundColor: const Color(0xFFFFF9C4),
-
-                      iconColor: const Color(0xFFFFB300),
-
-                      title: LocaleHelper.getText(context, 'businessCreation'),
-
-                      onTap: () {
-
-                        Navigator.of(context).push(
-
-                          MaterialPageRoute(
-
-                            builder: (_) => const BusinessScreen(),
-
-                          ),
-
-                        );
-
-                      },
-
-                    ),
-
-// Documents auto
-
-                    _buildCategoryCard(
-
-                      context: context,
-
-                      icon: Icons.directions_car,
-
-                      backgroundColor: const Color(0xFFFFEBEE),
-
-                      iconColor: const Color(0xFFE91E63),
-
-                      title: LocaleHelper.getText(context, 'autoDocuments'),
-
-                      onTap: () {
-
-                        Navigator.of(context).push(
-
-                          MaterialPageRoute(
-
-                            builder: (_) => const AutoScreen(),
-
-                          ),
-
-                        );
-
-                      },
-
-                    ),
-
-// Services fonciers
-
-                    _buildCategoryCard(
-
-                      context: context,
-
-                      icon: Icons.home,
-
-                      backgroundColor: const Color(0xFFE8F5E8),
-
-                      iconColor: const Color(0xFF4CAF50),
-
-                      title: LocaleHelper.getText(context, 'landServices'),
-
-                      onTap: () {
-
-                        Navigator.of(context).push(
-
-                          MaterialPageRoute(
-
-                            builder: (_) => const LandScreen(),
-
-                          ),
-
-                        );
-
-                      },
-
-                    ),
-
-// Eau et électricité
-
-                    _buildCategoryCard(
-
-                      context: context,
-
-                      icon: Icons.flash_on,
-
-                      backgroundColor: const Color(0xFFFFF9C4),
-
-                      iconColor: const Color(0xFFFFB300),
-
-                      title: LocaleHelper.getText(context, 'utilities'),
-
-                      onTap: () {
-
-                        Navigator.of(context).push(
-
-                          MaterialPageRoute(
-
-                            builder: (_) => const UtilitiesScreen(),
-
-                          ),
-
-                        );
-
-                      },
-
-                    ),
-
-// Justice
-
-                    _buildCategoryCard(
-
-                      context: context,
-
-                      icon: Icons.balance,
-
-                      backgroundColor: const Color(0xFFFFEBEE),
-
-                      iconColor: const Color(0xFF424242),
-
-                      title: LocaleHelper.getText(context, 'justice'),
-
-                      onTap: () {
-
-                        Navigator.of(context).push(
-
-                          MaterialPageRoute(
-
-                            builder: (_) => const JusticeScreen(),
-
-                          ),
-
-                        );
-
-                      },
-
-                    ),
-
-// Impôt et douane
-
-                    _buildCategoryCard(
-
-                      context: context,
-
-                      icon: Icons.account_balance,
-
-                      backgroundColor: const Color(0xFFE3F2FD),
-
-                      iconColor: const Color(0xFF2196F3),
-
-                      title: LocaleHelper.getText(context, 'taxAndCustoms'),
-
-                      onTap: () {
-
-                        Navigator.of(context).push(
-
-                          MaterialPageRoute(
-
-                            builder: (_) => const TaxScreen(),
-
-                          ),
-
-                        );
-
-                      },
-
-                    ),
-
-                  ],
-
-                ),
-
-              ),
+              child: _buildCategoryContent(),
 
             ),
 
@@ -397,22 +211,118 @@ class CategoryScreen extends StatelessWidget {
     );
 
   }
+  
+  /// Construit le contenu des catégories (chargement, erreur ou liste)
+  Widget _buildCategoryContent() {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+    
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              size: 64,
+              color: Colors.grey,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadCategories,
+              child: const Text('Réessayer'),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    if (_categories.isEmpty) {
+      return const Center(
+        child: Text('Aucune catégorie disponible'),
+      );
+    }
+    
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: GridView.builder(
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 0.85,
+        ),
+        itemCount: _categories.length,
+        itemBuilder: (context, index) {
+          final category = _categories[index];
+          
+          // Utiliser les couleurs et icônes basées sur l'emoji du backend
+          final IconData icon = EmojiToIcon.getIcon(category.iconeUrl);
+          final Color backgroundColor = EmojiToIcon.getBackgroundColor(category.iconeUrl);
+          final Color iconColor = EmojiToIcon.getIconColor(category.iconeUrl);
+          
+          print('📦 Catégorie ${index + 1}: ${category.titre} - Emoji: ${category.iconeUrl}');
+          
+          return _buildCategoryCard(
+            context: context,
+            icon: icon,
+            backgroundColor: backgroundColor,
+            iconColor: iconColor,
+            title: category.titre, // Utiliser titre au lieu de nom
+            emoji: category.iconeUrl, // Passer l'emoji du backend
+            onTap: () => _onCategoryTap(category),
+          );
+        },
+      ),
+    );
+  }
+  
+  /// Détermine les couleurs selon la catégorie et l'index
+  Map<String, Color> _getCategoryColors(String categoryName, int index) {
+    return CategoryMapping.getColors(categoryName, index);
+  }
+  
+  /// Détermine l'icône selon le nom exact de la catégorie
+  IconData _getCategoryIcon(String categoryName) {
+    return CategoryMapping.getIcon(categoryName);
+  }
+  
+  /// Gère le tap sur une catégorie
+  void _onCategoryTap(CategorieResponse category) {
+    // Charger les procédures de cette catégorie
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProcedureListScreen(categorieId: category.id, categorieNom: category.nom),
+      ),
+    );
+  }
 
 
 
-  /// Construit une carte de catégorie avec icône, couleur et titre
+  /// Construit une carte de catégorie avec emoji, couleur et titre
 
   Widget _buildCategoryCard({
 
     required BuildContext context,
 
-    required IconData icon,
+    required IconData icon, // Gardé pour compatibilité mais pas utilisé
 
     required Color backgroundColor,
 
     required Color iconColor,
 
     required String title,
+    
+    String? emoji, // Nouvel argument pour l'emoji
 
     VoidCallback? onTap,
 
@@ -484,13 +394,21 @@ class CategoryScreen extends StatelessWidget {
 
               ),
 
-              child: Icon(
+              child: Center(
 
-                icon,
+                child: Text(
 
-                size: 30,
+                  emoji ?? '📋', // Afficher l'emoji ou un emoji par défaut
 
-                color: iconColor,
+                  style: TextStyle(
+
+                    fontSize: 30,
+
+                    color: iconColor,
+
+                  ),
+
+                ),
 
               ),
 

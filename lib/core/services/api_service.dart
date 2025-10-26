@@ -19,6 +19,7 @@ class ApiService {
         },
         connectTimeout: const Duration(seconds: 30),
         receiveTimeout: const Duration(seconds: 30),
+        validateStatus: (status) => status! < 500, // Accepter les codes < 500
       ),
     );
     
@@ -35,12 +36,20 @@ class ApiService {
   // GET request
   Future<Response> get(String endpoint, {Map<String, dynamic>? queryParameters}) async {
     try {
+      final url = ApiConfig.baseUrl + endpoint;
+      print('🌐 Appel API: GET $url');
+      
       final response = await _dio.get(
         endpoint,
         queryParameters: queryParameters,
       );
+      
+      print('✅ Réponse reçue: ${response.statusCode}');
       return response;
     } on DioException catch (e) {
+      print('❌ Erreur DioException: ${e.message}');
+      print('❌ Type: ${e.type}');
+      print('❌ URL: ${e.requestOptions.uri}');
       throw _handleError(e);
     }
   }

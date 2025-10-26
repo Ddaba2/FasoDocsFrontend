@@ -8,73 +8,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
 import '../config/api_config.dart';
 import '../../models/user_model.dart';
+import '../../models/api_models.dart';
 
 class AuthService {
   final ApiService _apiService = apiService;
   
-  // Connexion (Login)
-  Future<User> login(String phone, String password) async {
-    try {
-      final response = await _apiService.post(
-        ApiConfig.auth + '/login',
-        data: {
-          'phone': phone,
-          'password': password,
-        },
-      );
-      
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        final userData = response.data['user'] ?? response.data;
-        final token = response.data['token'];
-        
-        // Sauvegarder le token
-        await _saveToken(token);
-        
-        // Créer et sauvegarder l'utilisateur
-        final user = User.fromJson(userData);
-        await _saveUser(user);
-        
-        return user;
-      } else {
-        throw Exception('Échec de la connexion');
-      }
-    } catch (e) {
-      throw Exception('Erreur de connexion: $e');
-    }
-  }
-  
-  // Inscription (Signup)
-  Future<User> signup({
-    required String firstName,
-    required String lastName,
-    required String phone,
-    required String password,
-    String? email,
+  // Inscription d'un nouveau citoyen
+  Future<MessageResponse> inscription({
+    required String nomComplet,
+    required String telephone,
+    required String email,
+    required String motDePasse,
   }) async {
     try {
       final response = await _apiService.post(
-        ApiConfig.auth + '/register',
+        ApiConfig.authInscription,
         data: {
-          'firstName': firstName,
-          'lastName': lastName,
-          'phone': phone,
-          'password': password,
-          if (email != null) 'email': email,
+          'nomComplet': nomComplet,
+          'telephone': telephone,
+          'email': email,
+          'motDePasse': motDePasse,
         },
       );
       
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final userData = response.data['user'] ?? response.data;
-        final token = response.data['token'];
-        
-        // Sauvegarder le token
-        await _saveToken(token);
-        
-        // Créer et sauvegarder l'utilisateur
-        final user = User.fromJson(userData);
-        await _saveUser(user);
-        
-        return user;
+        return MessageResponse.fromJson(response.data);
       } else {
         throw Exception('Échec de l\'inscription');
       }
@@ -83,13 +41,112 @@ class AuthService {
     }
   }
   
+  // Connexion par téléphone - Envoie un code SMS
+  Future<MessageResponse> connexionTelephone(String telephone) async {
+    try {
+      final response = await _apiService.post(
+        ApiConfig.authConnexionTelephone,
+        data: {'telephone': telephone},
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return MessageResponse.fromJson(response.data);
+      } else {
+        throw Exception('Échec de l\'envoi du code SMS');
+      }
+    } catch (e) {
+      throw Exception('Erreur: $e');
+    }
+  }
+  
+  // Vérification SMS et connexion
+  Future<JwtResponse> verifierSms(String telephone, String code) async {
+    try {
+      final response = await _apiService.post(
+        ApiConfig.authVerifierSms,
+        data: {
+          'telephone': telephone,
+          'code': code,
+        },
+      );
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jwtResponse = JwtResponse.fromJson(response.data);
+        
+        // Sauvegarder le token
+        await _saveToken(jwtResponse.token);
+        
+        return jwtResponse;
+      } else {
+        throw Exception('Code invalide');
+      }
+    } catch (e) {
+      throw Exception('Erreur de vérification: $e');
+    }
+  }
+  
+  // Vérification de l'email
+  Future<MessageResponse> verifyEmail(String code) async {
+    try {
+      final response = await _apiService.get(
+        ApiConfig.authVerify,
+        queryParameters: {'code': code},
+      );
+      
+      if (response.statusCode == 200) {
+        return MessageResponse.fromJson(response.data);
+      } else {
+        throw Exception('Code invalide');
+      }
+    } catch (e) {
+      throw Exception('Erreur de vérification: $e');
+    }
+  }
+  
+  // Obtenir le profil de l'utilisateur
+  Future<User> getProfil() async {
+    try {
+      final response = await _apiService.get(ApiConfig.authProfil);
+      
+      if (response.statusCode == 200) {
+        final user = User.fromJson(response.data);
+        await _saveUser(user);
+        return user;
+      } else {
+        throw Exception('Erreur lors de la récupération du profil');
+      }
+    } catch (e) {
+      throw Exception('Erreur: $e');
+    }
+  }
+  
+  // Mettre à jour le profil
+  Future<MessageResponse> updateProfil(Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.put(
+        ApiConfig.authProfil,
+        data: data,
+      );
+      
+      if (response.statusCode == 200) {
+        // Recharger le profil
+        await getProfil();
+        return MessageResponse.fromJson(response.data);
+      } else {
+        throw Exception('Erreur lors de la mise à jour');
+      }
+    } catch (e) {
+      throw Exception('Erreur: $e');
+    }
+  }
+  
   // Déconnexion (Logout)
   Future<void> logout() async {
     try {
-      // Appeler l'endpoint de déconnexion du backend (optionnel)
-      await _apiService.post(ApiConfig.auth + '/logout');
+      // Appeler l'endpoint de déconnexion du backend
+      await _apiService.post(ApiConfig.authDeconnexion);
     } catch (e) {
-      // Ignorer l'erreur si le backend n'a pas d'endpoint de déconnexion
+      // Ignorer l'erreur
       debugPrint('Erreur logout: $e');
     } finally {
       // Supprimer le token localement

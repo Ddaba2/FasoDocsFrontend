@@ -1,0 +1,456 @@
+// ========================================================================================
+// API MODELS - Modèles de données pour l'API FasoDocs
+// ========================================================================================
+
+/// Modèle pour les requêtes d'inscription
+class InscriptionRequest {
+  final String nomComplet;
+  final String telephone;
+  final String email;
+  final String motDePasse;
+
+  InscriptionRequest({
+    required this.nomComplet,
+    required this.telephone,
+    required this.email,
+    required this.motDePasse,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'nomComplet': nomComplet,
+    'telephone': telephone,
+    'email': email,
+    'motDePasse': motDePasse,
+  };
+}
+
+/// Modèle pour la connexion par téléphone
+class ConnexionTelephoneRequest {
+  final String telephone;
+
+  ConnexionTelephoneRequest({required this.telephone});
+
+  Map<String, dynamic> toJson() => {'telephone': telephone};
+}
+
+/// Modèle pour la vérification SMS
+class VerificationSmsRequest {
+  final String telephone;
+  final String code;
+
+  VerificationSmsRequest({required this.telephone, required this.code});
+
+  Map<String, dynamic> toJson() => {
+    'telephone': telephone,
+    'code': code,
+  };
+}
+
+/// Modèle pour la réponse JWT
+class JwtResponse {
+  final String token;
+  final String message;
+
+  JwtResponse({required this.token, required this.message});
+
+  factory JwtResponse.fromJson(Map<String, dynamic> json) => JwtResponse(
+    token: json['token'] ?? '',
+    message: json['message'] ?? '',
+  );
+}
+
+/// Modèle pour une réponse de message
+class MessageResponse {
+  final String message;
+
+  MessageResponse({required this.message});
+
+  factory MessageResponse.fromJson(Map<String, dynamic> json) => MessageResponse(
+    message: json['message'] ?? '',
+  );
+}
+
+/// Modèle pour une catégorie
+class CategorieResponse {
+  final String id;
+  final String titre;
+  final String? description;
+  final String? iconeUrl;
+  final String? nomCategorie;
+
+  CategorieResponse({
+    required this.id,
+    required this.titre,
+    this.description,
+    this.iconeUrl,
+    this.nomCategorie,
+  });
+
+  // Getter pour compatibilité (utilisé dans le code existant)
+  String get nom => titre;
+
+  factory CategorieResponse.fromJson(Map<String, dynamic> json) => CategorieResponse(
+    id: json['id']?.toString() ?? '',
+    titre: json['titre'] ?? '',
+    description: json['description'],
+    iconeUrl: json['iconeUrl'] ?? json['icone'],
+    nomCategorie: json['nomCategorie'],
+  );
+}
+
+/// Modèle pour une sous-catégorie
+class SousCategorieResponse {
+  final String id;
+  final String nom;
+  final String? description;
+  final String? icone;
+  final String categorieId;
+
+  SousCategorieResponse({
+    required this.id,
+    required this.nom,
+    this.description,
+    this.icone,
+    required this.categorieId,
+  });
+
+  factory SousCategorieResponse.fromJson(Map<String, dynamic> json) => SousCategorieResponse(
+    id: json['id']?.toString() ?? '',
+    nom: json['nom'] ?? '',
+    description: json['description'],
+    icone: json['icone'],
+    categorieId: json['categorieId']?.toString() ?? '',
+  );
+}
+
+/// Modèle pour une référence légale
+class ReferenceLegale {
+  final String description;
+  final String article;
+  final String? audioUrl;
+
+  ReferenceLegale({
+    required this.description,
+    required this.article,
+    this.audioUrl,
+  });
+
+  factory ReferenceLegale.fromJson(Map<String, dynamic> json) => ReferenceLegale(
+    description: json['description'] ?? '',
+    article: json['article'] ?? '',
+    audioUrl: json['audioUrl'],
+  );
+}
+
+/// Modèle pour une étape de procédure
+class EtapeProcedure {
+  final String nom;
+  final String description;
+  final int niveauOrdre;
+
+  EtapeProcedure({
+    required this.nom,
+    required this.description,
+    required this.niveauOrdre,
+  });
+
+  factory EtapeProcedure.fromJson(Map<String, dynamic> json) => EtapeProcedure(
+    nom: json['nom'] ?? '',
+    description: json['description'] ?? '',
+    niveauOrdre: json['niveauOrdre'] ?? 0,
+  );
+}
+
+/// Modèle pour un document requis
+class DocumentRequis {
+  final String nom;
+  final String? description;
+  final bool obligatoire;
+  final String? modeleUrl;
+
+  DocumentRequis({
+    required this.nom,
+    this.description,
+    required this.obligatoire,
+    this.modeleUrl,
+  });
+
+  factory DocumentRequis.fromJson(Map<String, dynamic> json) => DocumentRequis(
+    nom: json['nom'] ?? '',
+    description: json['description'],
+    obligatoire: json['obligatoire'] ?? true,
+    modeleUrl: json['modeleUrl'],
+  );
+}
+
+/// Modèle pour un centre de traitement
+class CentreDeTraitement {
+  final String nom;
+  final String adresse;
+  final String? horaires;
+  final String? latitude;
+  final String? longitude;
+  final String? telephone;
+  final String? email;
+
+  CentreDeTraitement({
+    required this.nom,
+    required this.adresse,
+    this.horaires,
+    this.latitude,
+    this.longitude,
+    this.telephone,
+    this.email,
+  });
+
+  factory CentreDeTraitement.fromJson(Map<String, dynamic> json) => CentreDeTraitement(
+    nom: json['nom'] ?? '',
+    adresse: json['adresse'] ?? '',
+    horaires: json['horaires'],
+    latitude: json['latitude']?.toString(),
+    longitude: json['longitude']?.toString(),
+    telephone: json['telephone'],
+    email: json['email'],
+  );
+}
+
+/// Modèle pour un coût
+class Cout {
+  final String nom;
+  final double prix;
+  final String? description;
+
+  Cout({
+    required this.nom,
+    required this.prix,
+    this.description,
+  });
+
+  factory Cout.fromJson(Map<String, dynamic> json) => Cout(
+    nom: json['nom'] ?? '',
+    prix: (json['prix'] ?? 0).toDouble(),
+    description: json['description'],
+  );
+}
+
+/// Modèle pour une procédure
+class ProcedureResponse {
+  final String id;
+  final String nom;
+  final String titre;
+  final String? description;
+  final String? delai;
+  final String? urlFormulaire;
+  final CategorieResponse? categorie;
+  final SousCategorieResponse? sousCategorie;
+  final List<CentreDeTraitement> centres;
+  final List<Cout>? couts;
+  final List<DocumentRequis> documentsRequis;
+  final List<EtapeProcedure>? etapes;
+  final List<ReferenceLegale>? referencesLegales;
+
+  ProcedureResponse({
+    required this.id,
+    required this.nom,
+    required this.titre,
+    this.description,
+    this.delai,
+    this.urlFormulaire,
+    this.categorie,
+    this.sousCategorie,
+    required this.centres,
+    this.couts,
+    required this.documentsRequis,
+    this.etapes,
+    this.referencesLegales,
+  });
+
+  factory ProcedureResponse.fromJson(Map<String, dynamic> json) => ProcedureResponse(
+    id: json['id']?.toString() ?? '',
+    nom: json['nom'] ?? '',
+    titre: json['titre'] ?? '',
+    description: json['description'],
+    delai: json['delai'],
+    urlFormulaire: json['urlFormulaire'],
+    categorie: json['categorie'] != null ? CategorieResponse.fromJson(json['categorie']) : null,
+    sousCategorie: json['sousCategorie'] != null 
+      ? SousCategorieResponse.fromJson(json['sousCategorie']) 
+      : null,
+    centres: (json['centres'] as List?)?.map((e) => CentreDeTraitement.fromJson(e)).toList() ?? [],
+    couts: json['couts'] != null 
+      ? (json['couts'] as List).map((e) => Cout.fromJson(e)).toList()
+      : null,
+    documentsRequis: (json['documentsRequis'] as List?)
+      ?.map((e) => DocumentRequis.fromJson(e))
+      .toList() ?? [],
+    etapes: json['etapes'] != null
+      ? (json['etapes'] as List).map((e) => EtapeProcedure.fromJson(e)).toList()
+      : null,
+    referencesLegales: json['referencesLegales'] != null
+      ? (json['referencesLegales'] as List).map((e) => ReferenceLegale.fromJson(e)).toList()
+      : null,
+  );
+}
+
+/// Modèle pour les requêtes de chatbot
+class ChatRequest {
+  final String question;
+  final String langue;
+
+  ChatRequest({required this.question, required this.langue});
+
+  Map<String, dynamic> toJson() => {
+    'question': question,
+    'langue': langue,
+  };
+}
+
+/// Modèle pour la réponse du chatbot
+class ChatResponse {
+  final String reponse;
+  final String? audioUrl;
+  final String langue;
+
+  ChatResponse({
+    required this.reponse,
+    this.audioUrl,
+    required this.langue,
+  });
+
+  factory ChatResponse.fromJson(Map<String, dynamic> json) => ChatResponse(
+    reponse: json['reponse'] ?? '',
+    audioUrl: json['audioUrl'],
+    langue: json['langue'] ?? 'fr',
+  );
+}
+
+/// Modèle pour la traduction
+class TranslationRequest {
+  final String texte;
+  final String fromLang;
+  final String toLang;
+
+  TranslationRequest({
+    required this.texte,
+    required this.fromLang,
+    required this.toLang,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'texte': texte,
+    'fromLang': fromLang,
+    'toLang': toLang,
+  };
+}
+
+class TranslationResponse {
+  final String texteOriginal;
+  final String texteTraduit;
+
+  TranslationResponse({
+    required this.texteOriginal,
+    required this.texteTraduit,
+  });
+
+  factory TranslationResponse.fromJson(Map<String, dynamic> json) => TranslationResponse(
+    texteOriginal: json['texteOriginal'] ?? '',
+    texteTraduit: json['texteTraduit'] ?? '',
+  );
+}
+
+/// Modèle pour la synthèse vocale
+class SpeakRequest {
+  final String texte;
+  final String langue;
+
+  SpeakRequest({required this.texte, required this.langue});
+
+  Map<String, dynamic> toJson() => {
+    'texte': texte,
+    'langue': langue,
+  };
+}
+
+class SpeakResponse {
+  final String audioUrl;
+  final String texte;
+
+  SpeakResponse({
+    required this.audioUrl,
+    required this.texte,
+  });
+
+  factory SpeakResponse.fromJson(Map<String, dynamic> json) => SpeakResponse(
+    audioUrl: json['audioUrl'] ?? '',
+    texte: json['texte'] ?? '',
+  );
+}
+
+/// Modèle pour les notifications
+class NotificationResponse {
+  final String id;
+  final String titre;
+  final String message;
+  final bool lue;
+  final DateTime dateCreation;
+
+  NotificationResponse({
+    required this.id,
+    required this.titre,
+    required this.message,
+    required this.lue,
+    required this.dateCreation,
+  });
+
+  factory NotificationResponse.fromJson(Map<String, dynamic> json) => NotificationResponse(
+    id: json['id']?.toString() ?? '',
+    titre: json['titre'] ?? '',
+    message: json['message'] ?? '',
+    lue: json['lue'] ?? false,
+    dateCreation: DateTime.tryParse(json['dateCreation'] ?? '') ?? DateTime.now(),
+  );
+}
+
+/// Modèle pour les signalements
+class SignalementRequest {
+  final String type;
+  final String message;
+  final String? procedureId;
+
+  SignalementRequest({
+    required this.type,
+    required this.message,
+    this.procedureId,
+  });
+
+  Map<String, dynamic> toJson() => {
+    'type': type,
+    'message': message,
+    if (procedureId != null) 'procedureId': procedureId,
+  };
+}
+
+class SignalementResponse {
+  final String id;
+  final String type;
+  final String message;
+  final DateTime dateCreation;
+  final String? statut;
+
+  SignalementResponse({
+    required this.id,
+    required this.type,
+    required this.message,
+    required this.dateCreation,
+    this.statut,
+  });
+
+  factory SignalementResponse.fromJson(Map<String, dynamic> json) => SignalementResponse(
+    id: json['id']?.toString() ?? '',
+    type: json['type'] ?? '',
+    message: json['message'] ?? '',
+    dateCreation: DateTime.tryParse(json['dateCreation'] ?? '') ?? DateTime.now(),
+    statut: json['statut'],
+  );
+}
+
