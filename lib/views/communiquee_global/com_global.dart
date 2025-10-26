@@ -1,6 +1,7 @@
 // Fichier : communiquee_global/com_global.dart
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 // Définition de l'écran principal
 class ComGlobalScreen extends StatelessWidget {
@@ -37,7 +38,7 @@ class ComGlobalScreen extends StatelessWidget {
         centerTitle: true,
         title:  Text(
 
-          'Toutes les lois d\'article',
+          LocaleHelper.getText(context, 'allArticleLaws'),
 
           style: TextStyle(
 

@@ -1,5 +1,6 @@
 // ÉCRAN: SIGNALER UN PROBLÈME
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
@@ -91,7 +92,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
         ),),
         title:  Text(
 
-          'Signaler un problème',
+          LocaleHelper.getText(context, 'reportProblem'),
 
           style: TextStyle(
 

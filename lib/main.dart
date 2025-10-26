@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart'; // NÉCESSAIRE POUR LA GESTION DE THÈME
 
 // Imports des vues
@@ -31,6 +32,9 @@ import 'views/land/land_screen.dart';
 import 'views/utilities/utilities_screen.dart';
 import 'views/justice/justice_screen.dart';
 import 'views/tax/tax_screen.dart';
+
+// Import des providers
+import 'locale/locale_provider.dart';
 
 
 // ----------------------------------------------------------------------
@@ -185,13 +189,26 @@ class FasoDocsApp extends StatelessWidget {
       DeviceOrientation.portraitDown,
     ]);
 
-    // On écoute le ThemeModeProvider pour obtenir le thème actuel
+    // On écoute les providers pour obtenir les états actuels
     // Le Provider doit être accessible depuis le main()
     final themeProvider = Provider.of<ThemeModeProvider>(context);
+    final localeProvider = Provider.of<LocaleProvider>(context);
 
     return MaterialApp(
       title: 'FasoDocs',
       debugShowCheckedModeBanner: false,
+
+      // Configuration de la Locale
+      locale: localeProvider.locale,
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('fr'),
+        Locale('en'),
+      ],
 
       // Configuration du Thème (Clair et Sombre)
       themeMode: themeProvider.themeMode, // Utilise le mode stocké dans le Provider
@@ -227,10 +244,13 @@ class FasoDocsApp extends StatelessWidget {
 
 /// Point d'entrée principal de l'application FasoDocs
 void main() {
-  // Enveloppe l'application entière dans le ChangeNotifierProvider.
+  // Enveloppe l'application entière dans les ChangeNotifierProviders.
   runApp(
-    ChangeNotifierProvider(
-      create: (context) => ThemeModeProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ThemeModeProvider()),
+        ChangeNotifierProvider(create: (context) => LocaleProvider()),
+      ],
       child: const FasoDocsApp(),
     ),
   );

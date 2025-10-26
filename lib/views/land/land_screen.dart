@@ -12,6 +12,7 @@
 // ========================================================================================
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 /// Écran des services fonciers
 /// 
@@ -42,7 +43,7 @@ class LandScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Services Fonciers',
+          LocaleHelper.getText(context, 'landScreenTitle'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,

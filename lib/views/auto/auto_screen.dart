@@ -12,6 +12,7 @@
 // ========================================================================================
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 /// Écran des documents automobiles
 /// 
@@ -42,7 +43,7 @@ class AutoScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Documents Auto',
+          LocaleHelper.getText(context, 'autoScreenTitle'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -70,7 +71,7 @@ class AutoScreen extends StatelessWidget {
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Permis de conduire (renouvellement)',
+                      title: LocaleHelper.getText(context, 'drivingLicense'),
                     ),
                     // Carte grise
                     _buildAutoCard(
@@ -78,7 +79,7 @@ class AutoScreen extends StatelessWidget {
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Carte grise (obtention, mutation et renouvellement)',
+                      title: LocaleHelper.getText(context, 'vehicleCard'),
                     ),
                     // Visite technique
                     _buildAutoCard(
@@ -86,7 +87,7 @@ class AutoScreen extends StatelessWidget {
                       icon: Icons.build,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Visite technique',
+                      title: LocaleHelper.getText(context, 'technicalInspection'),
                     ),
                     // Vignette
                     _buildAutoCard(
@@ -94,7 +95,7 @@ class AutoScreen extends StatelessWidget {
                       icon: Icons.label,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Vignette',
+                      title: LocaleHelper.getText(context, 'vignette'),
                     ),
                     // Changement de couleur de plaque
                     _buildAutoCard(
@@ -102,7 +103,7 @@ class AutoScreen extends StatelessWidget {
                       icon: Icons.color_lens,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Changement de couleur de plaque',
+                      title: LocaleHelper.getText(context, 'plateColorChange'),
                     ),
                   ],
                 ),

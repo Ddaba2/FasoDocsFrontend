@@ -12,6 +12,7 @@
 // ========================================================================================
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 /// Écran des services d'eau et d'électricité
 /// 
@@ -42,7 +43,7 @@ class UtilitiesScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Eau et Électricité',
+          LocaleHelper.getText(context, 'utilitiesScreenTitle'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,

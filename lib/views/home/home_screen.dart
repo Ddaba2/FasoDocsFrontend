@@ -1,6 +1,7 @@
 // Fichier: home/home_screen.dart
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 // Import de la page de détail
 import 'certificat_residence_screen.dart';
@@ -113,7 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // 0: Accueil
               _buildNavItem(
                 icon: Icons.home_outlined,
-                label: 'Accueil',
+                label: LocaleHelper.getText(context, 'home'),
                 index: 0,
                 selectedIndex: _selectedIndex,
                 activeColor: primaryColor,
@@ -123,7 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // 1: Catégorie
               _buildNavItem(
                 icon: Icons.grid_view_outlined,
-                label: 'Catégorie',
+                label: LocaleHelper.getText(context, 'category'),
                 index: 1,
                 selectedIndex: _selectedIndex,
                 activeColor: primaryColor,
@@ -133,7 +134,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // 2: Alerte
               _buildNavItem(
                 icon: Icons.warning_amber_outlined,
-                label: 'Alerte',
+                label: LocaleHelper.getText(context, 'alert'),
                 index: 2,
                 selectedIndex: _selectedIndex,
                 activeColor: primaryColor,
@@ -143,7 +144,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // 3: Communiqués
               _buildNavItem(
                 icon: Icons.record_voice_over,
-                label: 'Communiqués',
+                label: LocaleHelper.getText(context, 'announcements'),
                 index: 3,
                 selectedIndex: _selectedIndex,
                 activeColor: primaryColor,
@@ -153,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
               // 4: Options
               _buildNavItem(
                 icon: Icons.settings_outlined,
-                label: 'Options',
+                label: LocaleHelper.getText(context, 'options'),
                 index: 4,
                 selectedIndex: _selectedIndex,
                 activeColor: primaryColor,
@@ -354,7 +355,7 @@ class _HomeContent extends StatelessWidget {
                 child: TextField(
                   style: TextStyle(color: textColor),
                   decoration: InputDecoration(
-                    hintText: 'Rechercher une procedure',
+                    hintText: LocaleHelper.getText(context, 'searchProcedure'),
                     // Utilisation d'un secours non-nullable pour Colors.grey[xxx]
                     hintStyle: TextStyle(color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54), fontSize: 16),
                     border: InputBorder.none,
@@ -394,26 +395,30 @@ class _HomeContent extends StatelessWidget {
                     ],
                   ),
                 ),
-                child: const Padding(
-                  padding: EdgeInsets.all(20),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.end,
                     children: [
-                      Text(
-                        'Bienvenue sur FasoDocs',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      Builder(
+                        builder: (context) => Text(
+                          LocaleHelper.getText(context, 'welcomeMessage'),
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
-                      SizedBox(height: 8),
-                      Text(
-                        'Vos démarches administratives simplifiées',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.white,
+                      const SizedBox(height: 8),
+                      Builder(
+                        builder: (context) => Text(
+                          LocaleHelper.getText(context, 'subtitleMessage'),
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.white,
+                          ),
                         ),
                       ),
                     ],
@@ -432,7 +437,7 @@ class _HomeContent extends StatelessWidget {
               child: Row(
                 children: [
                   Text(
-                    'Démarches Populaires',
+                    LocaleHelper.getText(context, 'popularProcedures'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,

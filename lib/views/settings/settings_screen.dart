@@ -10,6 +10,8 @@ import 'package:fasodocs/views/auth/login_screen.dart';
 // >>> CORRECTION DE L'IMPORTATION DU PROVIDER DE THÈME <<<
 // Maintenant, on importe directement le fichier main.dart
 import '../../main.dart';
+import '../../locale/locale_provider.dart';
+import '../../locale/locale_helper.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -25,6 +27,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
   String _selectedLanguage = 'Français';
 
   static const Color primaryGreen = Color(0xFF14B53A); // Couleur verte de l'icône de retour
+  
+  @override
+  void initState() {
+    super.initState();
+    // Initialiser la langue actuelle
+    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+    _selectedLanguage = localeProvider.locale.languageCode == 'en' ? 'English' : 'Français';
+  }
 
   // --- LOGIQUE DE GESTION DES NOTIFICATIONS ---
   void _toggleNotifications(bool value) {
@@ -77,9 +87,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         automaticallyImplyLeading: false,
         centerTitle: true,
-        title:  Text(
+          title:  Text(
 
-          'Paramètre',
+          LocaleHelper.getText(context, 'paramettre'),
 
           style: TextStyle(
 
@@ -110,7 +120,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   children: [
                     // Section Préférences
                     Text(
-                      'Préférences',
+                      LocaleHelper.getText(context, 'preferences'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -122,7 +132,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // Langue
                     _buildSettingsItem(
                       icon: Icons.language,
-                      title: 'Langue',
+                      title: LocaleHelper.getText(context, 'language'),
                       itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
                       titleColor: textColor, // Utilisation de la couleur du thème
                       iconColor: iconColor, // Utilisation de la couleur du thème
@@ -148,7 +158,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // Notifications
                     _buildSettingsItem(
                       icon: Icons.notifications_outlined,
-                      title: 'Notification',
+                      title: LocaleHelper.getText(context, 'notification'),
                       itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
                       titleColor: textColor, // Utilisation de la couleur du thème
                       iconColor: iconColor, // Utilisation de la couleur du thème
@@ -164,7 +174,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // Mode sombre
                     _buildSettingsItem(
                       icon: Icons.dark_mode_outlined,
-                      title: 'Mode sombre',
+                      title: LocaleHelper.getText(context, 'darkMode'),
                       itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
                       titleColor: textColor, // Utilisation de la couleur du thème
                       iconColor: iconColor, // Utilisation de la couleur du thème
@@ -179,7 +189,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
                     // Section Support
                     Text(
-                      'Support',
+                      LocaleHelper.getText(context, 'support'),
                       style: TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -191,7 +201,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // Aide et support
                     _buildSettingsItem(
                       icon: Icons.help_outline,
-                      title: 'Aide et support',
+                      title: LocaleHelper.getText(context, 'help'),
                       itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
                       titleColor: textColor, // Utilisation de la couleur du thème
                       iconColor: iconColor, // Utilisation de la couleur du thème
@@ -212,7 +222,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     // Se déconnecter
                     _buildSettingsItem(
                       icon: Icons.logout,
-                      title: 'Se déconnecter',
+                      title: LocaleHelper.getText(context, 'logOut'),
                       itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
                       iconColor: Colors.red,
                       titleColor: Colors.red,
@@ -239,7 +249,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '© 2025 FasoDocs. Tous droits réservés.',
+                            LocaleHelper.getText(context, 'copyright'),
                             style: TextStyle(
                               fontSize: 12,
                               color: isDarkMode ? Colors.grey[600] : Colors.grey,
@@ -310,18 +320,24 @@ class _SettingsScreenState extends State<SettingsScreen> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
         return AlertDialog(
           // Utilise les couleurs de texte et de fond définies dans main.dart
-          title: const Text('Choisir la langue'),
+          title: Text(
+            LocaleHelper.getText(context, 'chooseLanguage'),
+            style: TextStyle(color: textColor),
+          ),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                title: const Text('Français'),
+                title: Text('Français', style: TextStyle(color: textColor)),
                 leading: Radio<String>(
                   value: 'Français',
                   groupValue: _selectedLanguage,
                   onChanged: (String? value) {
+                    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+                    localeProvider.setLocale(const Locale('fr'));
                     setState(() {
                       _selectedLanguage = value!;
                     });
@@ -330,11 +346,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               ListTile(
-                title: const Text('English'),
+                title: Text('English', style: TextStyle(color: textColor)),
                 leading: Radio<String>(
                   value: 'English',
                   groupValue: _selectedLanguage,
                   onChanged: (String? value) {
+                    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
+                    localeProvider.setLocale(const Locale('en'));
                     setState(() {
                       _selectedLanguage = value!;
                     });
@@ -356,14 +374,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
       builder: (BuildContext context) {
         return AlertDialog(
           // Utilise les couleurs de texte et de fond définies dans main.dart
-          title: const Text('Se déconnecter'),
-          content: const Text('Êtes-vous sûr de vouloir vous déconnecter ?'),
+          title: Text(LocaleHelper.getText(context, 'logOut')),
+          content: Text(LocaleHelper.getText(context, 'logOutConfirmation')),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop(); // Ferme la boîte de dialogue
               },
-              child: Text('Annuler', style: TextStyle(color: Theme.of(context).primaryColor)),
+              child: Text(LocaleHelper.getText(context, 'cancel'), style: TextStyle(color: Theme.of(context).primaryColor)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -382,7 +400,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 backgroundColor: Colors.red,
                 foregroundColor: Colors.white,
               ),
-              child: const Text('Se déconnecter'),
+              child: Text(LocaleHelper.getText(context, 'logOut')),
             ),
           ],
         );

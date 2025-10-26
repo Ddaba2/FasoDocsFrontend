@@ -1,6 +1,7 @@
 // ÉCRAN 6: IDENTITY SCREEN (sous-catégorie Identité et citoyenneté)
 import 'package:flutter/material.dart';
 import '../history/history_screen.dart';
+import '../../locale/locale_helper.dart';
 // import '../residence_screen.dart'; // TODO: Create ResidenceScreen
 
 class IdentityScreen extends StatelessWidget {
@@ -8,12 +9,11 @@ class IdentityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final textColor = isDarkMode ? Colors.white : Colors.black;
-    final cardColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
-    final borderColor = isDarkMode ? Colors.grey.shade800 : Colors.grey.shade300;
-    final backgroundColor = isDarkMode ? Colors.black : Colors.white;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final cardColor = Theme.of(context).cardColor;
+    final iconColor = Theme.of(context).iconTheme.color!;
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -30,7 +30,7 @@ class IdentityScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Identité et citoyenneté',
+          LocaleHelper.getText(context, 'identityScreenTitle'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -63,7 +63,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.person_outline,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Extrait d\'acte de naissance',
+                      title: LocaleHelper.getText(context, 'birthCertificate'),
                     ),
                     // Extrait d'acte de mariage
                     _buildIdentityCard(
@@ -71,7 +71,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.favorite_border,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Extrait d\'acte de mariage',
+                      title: LocaleHelper.getText(context, 'marriageCertificate'),
                     ),
                     // Demande de divorce
                     _buildIdentityCard(
@@ -79,7 +79,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.favorite_border,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Demande de divorce',
+                      title: LocaleHelper.getText(context, 'divorceRequest'),
                     ),
                     // Acte de décès
                     _buildIdentityCard(
@@ -87,7 +87,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.close,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Acte de décès',
+                      title: LocaleHelper.getText(context, 'deathCertificate'),
                     ),
                     // Certificat de nationalité
                     _buildIdentityCard(
@@ -95,7 +95,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.flag_outlined,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Certificat de nationalité',
+                      title: LocaleHelper.getText(context, 'nationalityCertificate'),
                     ),
                     // Certificat de casier judiciaire
                     _buildIdentityCard(
@@ -103,7 +103,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.gavel,
                       backgroundColor: const Color(0xFFFFEBEE),
                       iconColor: const Color(0xFFE91E63),
-                      title: 'Certificat de casier judiciaire',
+                      title: LocaleHelper.getText(context, 'criminalRecord'),
                     ),
                     // Carte d'identité nationale
                     _buildIdentityCard(
@@ -111,7 +111,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFF5F5F5),
                       iconColor: const Color(0xFF424242),
-                      title: 'Carte d\'identité nationale',
+                      title: LocaleHelper.getText(context, 'nationalIdCard'),
                     ),
                     // Passeport malien
                     _buildIdentityCard(
@@ -119,7 +119,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.credit_card,
                       backgroundColor: const Color(0xFFF5F5F5),
                       iconColor: const Color(0xFF424242),
-                      title: 'Passeport malien',
+                      title: LocaleHelper.getText(context, 'passport'),
                     ),
                     // Nationalité (par voie de naturalisation, par mariage)
                     _buildIdentityCard(
@@ -127,7 +127,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.flag_circle_outlined,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Nationalité (par voie de naturalisation, par mariage)',
+                      title: LocaleHelper.getText(context, 'nationality'),
                     ),
                     // Carte d'électeur
                     _buildIdentityCard(
@@ -135,7 +135,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.how_to_vote_outlined,
                       backgroundColor: const Color(0xFFF5F5F5),
                       iconColor: const Color(0xFF424242),
-                      title: 'Carte d\'électeur',
+                      title: LocaleHelper.getText(context, 'voterCard'),
                     ),
                     // Fiche de résidence
                     _buildIdentityCard(
@@ -143,7 +143,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.home_outlined,
                       backgroundColor: const Color(0xFFE8F5E8),
                       iconColor: const Color(0xFF4CAF50),
-                      title: 'Fiche de résidence',
+                      title: LocaleHelper.getText(context, 'residenceCard'),
                       onTap: () {
                         // TODO: Implement ResidenceScreen
                         ScaffoldMessenger.of(context).showSnackBar(
@@ -157,7 +157,7 @@ class IdentityScreen extends StatelessWidget {
                       icon: Icons.ballot_outlined,
                       backgroundColor: const Color(0xFFFFF9C4),
                       iconColor: const Color(0xFFFFB300),
-                      title: 'Inscription liste électorale',
+                      title: LocaleHelper.getText(context, 'electoralRegistration'),
                     ),
                   ],
                 ),
@@ -173,11 +173,11 @@ class IdentityScreen extends StatelessWidget {
         decoration: BoxDecoration(
           color: cardColor,
           shape: BoxShape.circle,
-          border: Border.all(color: borderColor, width: 1),
+          border: Border.all(color: isDarkMode ? Colors.grey.shade700 : Colors.black, width: 1),
         ),
         child: Icon(
           Icons.headset_mic,
-          color: textColor,
+          color: iconColor,
           size: 24,
         ),
       ),
@@ -192,11 +192,10 @@ class IdentityScreen extends StatelessWidget {
     required String title,
     VoidCallback? onTap,
   }) {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final textColor = isDarkMode ? Colors.white : Colors.black;
-    final cardColor = isDarkMode ? Colors.grey.shade900 : Colors.white;
-    final borderColor = isDarkMode ? Colors.grey.shade800 : Colors.black;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = Theme.of(context).cardColor;
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final borderColor = isDarkMode ? Colors.grey.shade700 : Colors.black;
 
     return GestureDetector(
       onTap: onTap,
@@ -205,7 +204,7 @@ class IdentityScreen extends StatelessWidget {
           color: cardColor,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: borderColor, width: 1),
-          boxShadow: isDarkMode ? [] : [
+          boxShadow: isDarkMode ? null : [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
               spreadRadius: 1,

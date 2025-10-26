@@ -12,6 +12,7 @@
 // ========================================================================================
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 /// Écran de création d'entreprise
 /// 
@@ -42,7 +43,7 @@ class BusinessScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Creation d\'entreprise',
+          LocaleHelper.getText(context, 'businessScreenTitle'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,

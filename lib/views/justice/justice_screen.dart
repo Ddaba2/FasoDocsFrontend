@@ -12,6 +12,7 @@
 // ========================================================================================
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 /// Écran des procédures judiciaires
 /// 
@@ -42,7 +43,7 @@ class JusticeScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Justice',
+          LocaleHelper.getText(context, 'justiceScreenTitle'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,

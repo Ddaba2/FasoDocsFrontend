@@ -25,6 +25,7 @@ import '../utilities/utilities_screen.dart';
 import '../justice/justice_screen.dart';
 
 import '../tax/tax_screen.dart';
+import '../../locale/locale_helper.dart';
 
 
 
@@ -87,7 +88,7 @@ class CategoryScreen extends StatelessWidget {
         centerTitle: true,
         title:  Text(
 
-          'Catégories',
+          LocaleHelper.getText(context, 'categories'),
 
           style: TextStyle(
 
@@ -144,7 +145,7 @@ class CategoryScreen extends StatelessWidget {
 
                       iconColor: const Color(0xFF4CAF50),
 
-                      title: 'Identité et citoyenneté',
+                      title: LocaleHelper.getText(context, 'identityAndCitizenship'),
 
                       onTap: () {
 
@@ -174,7 +175,7 @@ class CategoryScreen extends StatelessWidget {
 
                       iconColor: const Color(0xFFFFB300),
 
-                      title: 'Création d\'entreprise',
+                      title: LocaleHelper.getText(context, 'businessCreation'),
 
                       onTap: () {
 
@@ -204,7 +205,7 @@ class CategoryScreen extends StatelessWidget {
 
                       iconColor: const Color(0xFFE91E63),
 
-                      title: 'Documents auto',
+                      title: LocaleHelper.getText(context, 'autoDocuments'),
 
                       onTap: () {
 
@@ -234,7 +235,7 @@ class CategoryScreen extends StatelessWidget {
 
                       iconColor: const Color(0xFF4CAF50),
 
-                      title: 'Services fonciers',
+                      title: LocaleHelper.getText(context, 'landServices'),
 
                       onTap: () {
 
@@ -264,7 +265,7 @@ class CategoryScreen extends StatelessWidget {
 
                       iconColor: const Color(0xFFFFB300),
 
-                      title: 'Eau et électricité',
+                      title: LocaleHelper.getText(context, 'utilities'),
 
                       onTap: () {
 
@@ -294,7 +295,7 @@ class CategoryScreen extends StatelessWidget {
 
                       iconColor: const Color(0xFF424242),
 
-                      title: 'Justice',
+                      title: LocaleHelper.getText(context, 'justice'),
 
                       onTap: () {
 
@@ -324,7 +325,7 @@ class CategoryScreen extends StatelessWidget {
 
                       iconColor: const Color(0xFF2196F3),
 
-                      title: 'Impôt et douane',
+                      title: LocaleHelper.getText(context, 'taxAndCustoms'),
 
                       onTap: () {
 
@@ -431,7 +432,7 @@ class CategoryScreen extends StatelessWidget {
 
     final Color borderColor = isDarkMode
 
-        ? Theme.of(context).colorScheme.surface
+        ? Colors.grey.shade700
 
         : (Colors.grey[300] ?? const Color(0xFFCCCCCC));
 
@@ -452,6 +453,14 @@ class CategoryScreen extends StatelessWidget {
 // Bordure dynamique
 
           border: Border.all(color: borderColor, width: 1),
+          boxShadow: isDarkMode ? null : [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              spreadRadius: 1,
+              blurRadius: 3,
+              offset: const Offset(0, 1),
+            ),
+          ],
 
         ),
 
@@ -469,7 +478,7 @@ class CategoryScreen extends StatelessWidget {
 
               decoration: BoxDecoration(
 
-                color: backgroundColor,
+                color: isDarkMode ? backgroundColor.withOpacity(0.2) : backgroundColor,
 
                 borderRadius: BorderRadius.circular(30),
 

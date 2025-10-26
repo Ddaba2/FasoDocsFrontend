@@ -12,6 +12,7 @@
 // ========================================================================================
 
 import 'package:flutter/material.dart';
+import '../../locale/locale_helper.dart';
 
 /// Écran des procédures fiscales et douanières
 /// 
@@ -42,7 +43,7 @@ class TaxScreen extends StatelessWidget {
           ),
         ),
         title: Text(
-          'Impot et Douane',
+          LocaleHelper.getText(context, 'taxScreenTitle'),
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
