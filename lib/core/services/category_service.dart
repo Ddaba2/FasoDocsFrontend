@@ -12,8 +12,7 @@ class CategoryService {
   /// Obtenir toutes les catégories
   Future<List<CategorieResponse>> getAllCategories() async {
     try {
-      final url = ApiConfig.baseUrl + ApiConfig.categories;
-      print('🌐 Appel API: GET $url');
+      print('🔍 Chargement des catégories depuis l\'API...');
       
       final response = await _apiService.get(ApiConfig.categories);
       

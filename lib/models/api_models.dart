@@ -162,9 +162,9 @@ class EtapeProcedure {
   });
 
   factory EtapeProcedure.fromJson(Map<String, dynamic> json) => EtapeProcedure(
-    nom: json['nom'] ?? '',
+    nom: json['titre'] ?? json['nom'] ?? '',
     description: json['description'] ?? '',
-    niveauOrdre: json['niveauOrdre'] ?? 0,
+    niveauOrdre: json['ordre'] ?? json['niveauOrdre'] ?? 0,
   );
 }
 
@@ -186,7 +186,7 @@ class DocumentRequis {
     nom: json['nom'] ?? '',
     description: json['description'],
     obligatoire: json['obligatoire'] ?? true,
-    modeleUrl: json['modeleUrl'],
+    modeleUrl: json['urlModele'] ?? json['modeleUrl'],
   );
 }
 
@@ -214,8 +214,8 @@ class CentreDeTraitement {
     nom: json['nom'] ?? '',
     adresse: json['adresse'] ?? '',
     horaires: json['horaires'],
-    latitude: json['latitude']?.toString(),
-    longitude: json['longitude']?.toString(),
+    latitude: json['coordonneesGPS']?.toString() ?? json['latitude']?.toString(),
+    longitude: json['coordonneesGPS']?.toString() ?? json['longitude']?.toString(),
     telephone: json['telephone'],
     email: json['email'],
   );
@@ -278,23 +278,27 @@ class ProcedureResponse {
     titre: json['titre'] ?? '',
     description: json['description'],
     delai: json['delai'],
-    urlFormulaire: json['urlFormulaire'],
+    urlFormulaire: json['urlVersFormulaire'],
     categorie: json['categorie'] != null ? CategorieResponse.fromJson(json['categorie']) : null,
     sousCategorie: json['sousCategorie'] != null 
       ? SousCategorieResponse.fromJson(json['sousCategorie']) 
       : null,
-    centres: (json['centres'] as List?)?.map((e) => CentreDeTraitement.fromJson(e)).toList() ?? [],
-    couts: json['couts'] != null 
-      ? (json['couts'] as List).map((e) => Cout.fromJson(e)).toList()
-      : null,
+    centres: json['centre'] != null 
+      ? [CentreDeTraitement.fromJson(json['centre'])] 
+      : (json['centres'] as List?)?.map((e) => CentreDeTraitement.fromJson(e)).toList() ?? [],
+    couts: json['cout'] != null 
+      ? (json['cout'] is double || json['cout'] is int)
+        ? [Cout(nom: json['coutDescription'] ?? 'Coût', prix: (json['cout'] as num).toDouble())]
+        : null
+      : (json['couts'] as List?)?.map((e) => Cout.fromJson(e)).toList() ?? null,
     documentsRequis: (json['documentsRequis'] as List?)
       ?.map((e) => DocumentRequis.fromJson(e))
       .toList() ?? [],
     etapes: json['etapes'] != null
       ? (json['etapes'] as List).map((e) => EtapeProcedure.fromJson(e)).toList()
       : null,
-    referencesLegales: json['referencesLegales'] != null
-      ? (json['referencesLegales'] as List).map((e) => ReferenceLegale.fromJson(e)).toList()
+    referencesLegales: json['loisArticles'] != null
+      ? (json['loisArticles'] as List).map((e) => ReferenceLegale.fromJson(e)).toList()
       : null,
   );
 }

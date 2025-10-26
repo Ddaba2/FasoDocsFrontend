@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../core/services/procedure_service.dart';
 import '../../models/api_models.dart';
 import '../../locale/locale_helper.dart';
+import 'procedure_detail_screen.dart';
 
 class ProcedureListScreen extends StatefulWidget {
   final String categorieId;
@@ -165,7 +166,16 @@ class _ProcedureListScreenState extends State<ProcedureListScreen> {
     final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
     final colors = _getProcedureColors(procedure.titre.toLowerCase());
     
-    return Container(
+    return GestureDetector(
+      onTap: () {
+        // Naviguer vers l'écran de détail
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProcedureDetailScreen(procedure: procedure),
+          ),
+        );
+      },
+      child: Container(
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(12),
@@ -214,6 +224,7 @@ class _ProcedureListScreenState extends State<ProcedureListScreen> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

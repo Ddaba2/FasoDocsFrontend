@@ -36,8 +36,7 @@ class ApiService {
   // GET request
   Future<Response> get(String endpoint, {Map<String, dynamic>? queryParameters}) async {
     try {
-      final url = ApiConfig.baseUrl + endpoint;
-      print('🌐 Appel API: GET $url');
+      print('🌐 Appel API: GET $endpoint');
       
       final response = await _dio.get(
         endpoint,

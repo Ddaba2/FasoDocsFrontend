@@ -7,6 +7,7 @@ import '../../core/services/category_service.dart';
 import '../../core/services/procedure_service.dart';
 import '../../models/api_models.dart';
 import '../procedure/procedure_list_screen.dart';
+import '../procedure/procedure_detail_screen.dart';
 
 class SubcategoryListScreen extends StatefulWidget {
   final String categorieId;
@@ -237,10 +238,49 @@ class _SubcategoryListScreenState extends State<SubcategoryListScreen> {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: () {
-          // Navigation vers les procédures de cette sous-catégorie
+        onTap: () async {
           print('📋 Clic sur sous-catégorie: ${sousCategorie.nom}');
-          // TODO: Naviguer vers les procédures de cette sous-catégorie
+          
+          try {
+            // Charger les procédures de cette sous-catégorie
+            final procedures = await procedureService.getProceduresBySousCategorie(sousCategorie.id);
+            print('✅ ${procedures.length} procédure(s) trouvée(s) pour cette sous-catégorie');
+            
+            if (procedures.isEmpty) {
+              // Aucune procédure, afficher un message
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Aucune procédure disponible pour cette sous-catégorie'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            } else if (procedures.length == 1) {
+              // Une seule procédure, afficher directement le détail
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ProcedureDetailScreen(procedure: procedures[0]),
+                ),
+              );
+            } else {
+              // Plusieurs procédures, afficher la liste
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => ProcedureListScreen(
+                    categorieId: sousCategorie.categorieId,
+                    categorieNom: sousCategorie.nom,
+                  ),
+                ),
+              );
+            }
+          } catch (e) {
+            print('❌ Erreur: $e');
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Erreur: $e'),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
         },
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
