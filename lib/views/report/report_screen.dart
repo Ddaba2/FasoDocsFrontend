@@ -1,30 +1,73 @@
 import 'package:flutter/material.dart';
+import 'report_problem_screen.dart';
+import '../../core/services/signalement_service.dart';
+import '../../models/api_models.dart';
+import 'package:intl/intl.dart';
 
-// Import du fichier de destination pour la navigation
-import 'report_problem_screen.dart'; // ASSUREZ-VOUS QUE LE CHEMIN EST CORRECT
-
-class ReportScreen extends StatelessWidget {
+class ReportScreen extends StatefulWidget {
   const ReportScreen({super.key});
 
+  @override
+  State<ReportScreen> createState() => _ReportScreenState();
+}
+
+class _ReportScreenState extends State<ReportScreen> {
   // Couleur principale (Verte)
   static const Color primaryColor = Color(0xFF14B53A);
+  
+  final SignalementService _signalementService = signalementService;
+  List<SignalementResponse> _signalements = [];
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  // Données de démonstration basées sur l'image Signalement.png
-  final List<Map<String, String>> reports = const [
-    {
-      'type': 'Latence du service',
-      'description': 'Le service est top lent sous prétexte qu\'il y a pas de réseau j\'ai fais deux(2) d\'attente',
-      'time': 'Il y a 2 heures',
-      'source': 'EDM kalaban',
-    },
-    {
-      'type': 'Fraude',
-      'description': 'On m\'a facturé 20 000F CFA pour une carte biométrique',
-      'time': 'Il y a 20 minutes',
-      'source': 'Commissariat de l\'ACI 200',
-    },
-    // Ajoutez plus de signalements ici si nécessaire
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadSignalements();
+  }
+
+  Future<void> _loadSignalements() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final signalements = await _signalementService.getMySignalements();
+      setState(() {
+        _signalements = signalements;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Erreur chargement signalements: $e');
+      setState(() {
+        _errorMessage = 'Erreur de chargement des signalements';
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(ReportScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Recharger les signalements quand on revient sur l'écran
+    _loadSignalements();
+  }
+
+  String _formatTime(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return 'Il y a ${difference.inDays} jour${difference.inDays > 1 ? 's' : ''}';
+    } else if (difference.inHours > 0) {
+      return 'Il y a ${difference.inHours} heure${difference.inHours > 1 ? 's' : ''}';
+    } else if (difference.inMinutes > 0) {
+      return 'Il y a ${difference.inMinutes} minute${difference.inMinutes > 1 ? 's' : ''}';
+    } else {
+      return 'À l\'instant';
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -56,24 +99,110 @@ class ReportScreen extends StatelessWidget {
         elevation: 4.0, // Ajout de l'élévation pour coller à l'image
       ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: reports.map((report) {
-            return _buildReportCard(
-              context,
-              report['type']!,
-              report['description']!,
-              report['time']!,
-              report['source']!,
-              cardColor,
-              textColor,
-              isDarkMode,
-            );
-          }).toList(),
-        ),
-      ),
+      body: _isLoading
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(color: primaryColor),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Chargement des signalements...',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: textColor,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        size: 64,
+                        color: Colors.red,
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: textColor,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _loadSignalements,
+                        child: const Text('Réessayer'),
+                      ),
+                    ],
+                  ),
+                )
+              : _signalements.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.inbox_outlined,
+                            size: 64,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Aucun signalement',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: textColor,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Vous n\'avez encore aucun signalement',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: textColor.withOpacity(0.7),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: _signalements.map((signalement) {
+                          // Extraire la structure si elle existe dans le message
+                          String source = 'Structure non spécifiée';
+                          String description = signalement.message;
+                          
+                          if (signalement.message.startsWith('Structure:')) {
+                            final lines = signalement.message.split('\n\n');
+                            if (lines.length > 1) {
+                              source = lines[0].replaceFirst('Structure: ', '');
+                              description = lines.sublist(1).join('\n');
+                            }
+                          }
+                          
+                          return _buildReportCard(
+                            context,
+                            signalement.type,
+                            description,
+                            _formatTime(signalement.dateCreation),
+                            source,
+                            cardColor,
+                            textColor,
+                            isDarkMode,
+                          );
+                        }).toList(),
+                      ),
+                    ),
     );
   }
 

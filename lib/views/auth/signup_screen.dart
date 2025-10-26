@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../home/home_screen.dart';
+import '../../core/services/auth_service.dart';
+import '../../models/api_models.dart';
 
 // ASSUREZ-VOUS QUE CE CHEMIN EST CORRECT
 import '../auth/login_screen.dart'; // <--- NOUVELLE IMPORTATION POUR LA NAVIGATION
@@ -14,6 +16,8 @@ class SignupScreen extends StatefulWidget {
 }
 
 class _SignupScreenState extends State<SignupScreen> {
+  final _nomController = TextEditingController();
+  final _prenomController = TextEditingController();
   final _phoneController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -21,6 +25,7 @@ class _SignupScreenState extends State<SignupScreen> {
   bool _isPasswordVisible = false;
   bool _isConfirmPasswordVisible = false;
   bool _acceptTerms = false;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -42,6 +47,8 @@ class _SignupScreenState extends State<SignupScreen> {
 
   @override
   void dispose() {
+    _nomController.dispose();
+    _prenomController.dispose();
     _phoneController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -49,11 +56,99 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void _handleSignup() {
-    // Redirection vers la page de vérification SMS si nécessaire, ou l'accueil
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-    );
+  // Inscription dans la table "citoyen" du backend
+  Future<void> _handleSignup() async {
+    // Validation des champs
+    if (_nomController.text.isEmpty || _prenomController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez remplir tous les champs'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_passwordController.text != _confirmPasswordController.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Les mots de passe ne correspondent pas'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (!_acceptTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez accepter les conditions d\'utilisation'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final authService = AuthService();
+      await authService.inscription(
+        nom: _nomController.text.trim(),
+        prenom: _prenomController.text.trim(),
+        telephone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        motDePasse: _passwordController.text,
+        confirmerMotDePasse: _confirmPasswordController.text,
+      );
+
+      // Après inscription réussie, créer un utilisateur et le sauvegarder comme connecté
+      final newUser = User(
+        id: DateTime.now().millisecondsSinceEpoch.toString(), // ID temporaire
+        nomComplet: '${_prenomController.text.trim()} ${_nomController.text.trim()}',
+        telephone: _phoneController.text.trim(),
+        email: _emailController.text.trim(),
+        adresse: null,
+        dateNaissance: null,
+        genre: null,
+        photoUrl: null,
+      );
+      
+      // Sauvegarder l'utilisateur comme connecté
+      await authService.saveUser(newUser);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Inscription réussie ! Vous êtes maintenant connecté.'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Redirection vers l'accueil (l'utilisateur est maintenant connecté)
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } catch (e) {
+      print('❌ Erreur inscription: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur d\'inscription: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   // FONCTION MISE À JOUR POUR REDIRIGER VERS LOGINSCREEN
@@ -145,6 +240,64 @@ class _SignupScreenState extends State<SignupScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Champ Nom
+                      TextFormField(
+                        controller: _nomController,
+                        keyboardType: TextInputType.name,
+                        style: TextStyle(color: textColor),
+                        decoration: InputDecoration(
+                          labelText: 'Nom',
+                          labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                          prefixIcon: Icon(
+                            Icons.person_outline,
+                            color: textColor,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF14B53A)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF14B53A)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF14B53A), width: 2),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
+                      // Champ Prénom
+                      TextFormField(
+                        controller: _prenomController,
+                        keyboardType: TextInputType.name,
+                        style: TextStyle(color: textColor),
+                        decoration: InputDecoration(
+                          labelText: 'Prénom',
+                          labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                          prefixIcon: Icon(
+                            Icons.person_outline,
+                            color: textColor,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF14B53A)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF14B53A)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: Color(0xFF14B53A), width: 2),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 20),
+
                       // Champ Téléphone
                       TextFormField(
                         controller: _phoneController,
@@ -333,7 +486,7 @@ class _SignupScreenState extends State<SignupScreen> {
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton(
-                          onPressed: _handleSignup,
+                          onPressed: _isLoading ? null : _handleSignup,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF14B53A),
                             foregroundColor: Colors.white,
@@ -342,13 +495,22 @@ class _SignupScreenState extends State<SignupScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'S\'inscrire',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  'S\'inscrire',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
                         ),
                       ),
 

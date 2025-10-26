@@ -2,6 +2,9 @@
 // API MODELS - Modèles de données pour l'API FasoDocs
 // ========================================================================================
 
+import 'dart:convert';
+import 'dart:math';
+
 /// Modèle pour les requêtes d'inscription
 class InscriptionRequest {
   final String nomComplet;
@@ -21,6 +24,51 @@ class InscriptionRequest {
     'telephone': telephone,
     'email': email,
     'motDePasse': motDePasse,
+  };
+}
+
+/// Modèle pour l'utilisateur
+class User {
+  final String id;
+  final String nomComplet;
+  final String telephone;
+  final String email;
+  final String? adresse;
+  final String? dateNaissance;
+  final String? genre;
+  final String? photoUrl;
+
+  User({
+    required this.id,
+    required this.nomComplet,
+    required this.telephone,
+    required this.email,
+    this.adresse,
+    this.dateNaissance,
+    this.genre,
+    this.photoUrl,
+  });
+
+  factory User.fromJson(Map<String, dynamic> json) => User(
+    id: json['id']?.toString() ?? '',
+    nomComplet: json['nomComplet'] ?? json['fullName'] ?? '',
+    telephone: json['telephone'] ?? json['phoneNumber'] ?? '',
+    email: json['email'] ?? '',
+    adresse: json['adresse'],
+    dateNaissance: json['dateNaissance'],
+    genre: json['genre'],
+    photoUrl: json['photoUrl'],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'nomComplet': nomComplet,
+    'telephone': telephone,
+    'email': email,
+    'adresse': adresse,
+    'dateNaissance': dateNaissance,
+    'genre': genre,
+    'photoUrl': photoUrl,
   };
 }
 
@@ -363,10 +411,41 @@ class TranslationResponse {
     required this.texteTraduit,
   });
 
-  factory TranslationResponse.fromJson(Map<String, dynamic> json) => TranslationResponse(
-    texteOriginal: json['texteOriginal'] ?? '',
-    texteTraduit: json['texteTraduit'] ?? '',
-  );
+  factory TranslationResponse.fromJson(Map<String, dynamic> json) {
+    print('🔍 Parsing TranslationResponse: $json');
+    
+    // Le backend retourne 'originalText' et 'texte'
+    // Mais originalText semble être une string JSON encodée
+    final originalText = json['originalText'];
+    final texteTraduit = json['texte'];
+    
+    final origLen = originalText != null ? originalText.toString().length : 0;
+    final tradLen = texteTraduit != null ? texteTraduit.toString().length : 0;
+    print('🔍 originalText: ${originalText != null ? originalText.toString().substring(0, min(origLen, 100)) : 'NULL'}');
+    print('🔍 texteTraduit: ${texteTraduit != null ? texteTraduit.toString().substring(0, min(tradLen, 100)) : 'NULL'}');
+    
+    // Le backend retourne la traduction dans 'originalText' comme string JSON
+    // Format: "{\"texte\":\"texte traduit\"}"
+    String finalTexteTraduit = '';
+    
+    if (texteTraduit != null && texteTraduit.toString().isNotEmpty) {
+      finalTexteTraduit = texteTraduit.toString();
+    } else if (originalText != null && originalText.toString().startsWith('{')) {
+      // Essayer de parser originalText comme JSON pour extraire la traduction
+      try {
+        final decoded = jsonDecode(originalText.toString()) as Map<String, dynamic>;
+        finalTexteTraduit = decoded['texte']?.toString() ?? '';
+        print('✅ Texte traduit extrait du JSON: ${finalTexteTraduit.substring(0, min(finalTexteTraduit.length, 100))}');
+      } catch (e) {
+        print('❌ Erreur parsing originalText: $e');
+      }
+    }
+    
+    return TranslationResponse(
+      texteOriginal: json['texteOriginal']?.toString() ?? '',
+      texteTraduit: finalTexteTraduit.isNotEmpty ? finalTexteTraduit : (json['texteTraduit']?.toString() ?? ''),
+    );
+  }
 }
 
 /// Modèle pour la synthèse vocale

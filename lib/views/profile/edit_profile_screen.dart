@@ -7,7 +7,16 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({super.key});
+  final String? currentName;
+  final String? currentEmail;
+  final String? currentPhone;
+  
+  const EditProfileScreen({
+    super.key,
+    this.currentName,
+    this.currentEmail,
+    this.currentPhone,
+  });
 
   @override
   State<EditProfileScreen> createState() => _EditProfileScreenState();
@@ -20,10 +29,19 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // ========================================================================================
   // CONTRÔLEURS DE CHAMPS DE TEXTE
   // ========================================================================================
-  final TextEditingController _nameController = TextEditingController(text: 'Tenen M Sylla');
-  final TextEditingController _emailController = TextEditingController(text: 'madyehsylla427@gmail.com');
-  final TextEditingController _passwordController = TextEditingController(text: '••••••••••••');
-  final TextEditingController _phoneController = TextEditingController(text: '+223 74323874');
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
+  late final TextEditingController _passwordController;
+  late final TextEditingController _phoneController;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.currentName ?? 'Tenen M Sylla');
+    _emailController = TextEditingController(text: widget.currentEmail ?? 'madyehsylla427@gmail.com');
+    _passwordController = TextEditingController(text: '••••••••••••');
+    _phoneController = TextEditingController(text: widget.currentPhone ?? '+223 74323874');
+  }
 
   // ========================================================================================
   // VARIABLES D'ÉTAT POUR LA GESTION DE L'IMAGE DE PROFIL

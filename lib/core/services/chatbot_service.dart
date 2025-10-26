@@ -88,17 +88,29 @@ class ChatbotService {
   /// Traduire FR vers BM
   Future<TranslationResponse> translateFrToBm(String texte) async {
     try {
+      final preview = texte.length > 50 ? texte.substring(0, 50) : texte;
+      print('🌐 Envoi traduction FR->BM: $preview...');
+      
       final response = await _apiService.post(
         ApiConfig.chatbotTranslateFrToBm,
-        data: texte,
+        data: {'texte': texte}, // Envoyer en format JSON
       );
       
+      print('📦 Réponse backend: ${response.data}');
+      print('📦 Type: ${response.data.runtimeType}');
+      
       if (response.statusCode == 200 || response.statusCode == 201) {
-        return TranslationResponse.fromJson(response.data);
+        final translated = TranslationResponse.fromJson(response.data);
+        final previewTrans = translated.texteTraduit.length > 50 
+            ? translated.texteTraduit.substring(0, 50) 
+            : translated.texteTraduit;
+        print('✅ Texte traduit extrait: $previewTrans...');
+        return translated;
       } else {
         throw Exception('Erreur lors de la traduction');
       }
     } catch (e) {
+      print('❌ Erreur traduction: $e');
       throw Exception('Erreur: $e');
     }
   }
@@ -108,7 +120,7 @@ class ChatbotService {
     try {
       final response = await _apiService.post(
         ApiConfig.chatbotTranslateBmToFr,
-        data: texte,
+        data: {'texte': texte}, // Envoyer en format JSON
       );
       
       if (response.statusCode == 200 || response.statusCode == 201) {

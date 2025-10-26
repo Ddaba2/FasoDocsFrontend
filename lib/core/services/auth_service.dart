@@ -14,29 +14,40 @@ class AuthService {
   final ApiService _apiService = apiService;
   
   // Inscription d'un nouveau citoyen
+  // Enregistre dans la table "citoyen" du backend avec les champs requis
   Future<MessageResponse> inscription({
-    required String nomComplet,
+    required String nom,
+    required String prenom,
     required String telephone,
     required String email,
     required String motDePasse,
+    required String confirmerMotDePasse,
   }) async {
     try {
+      print('📝 Inscription avec: nom=$nom, prenom=$prenom, telephone=$telephone, email=$email');
+      
       final response = await _apiService.post(
         ApiConfig.authInscription,
         data: {
-          'nomComplet': nomComplet,
+          'nom': nom,
+          'prenom': prenom,
           'telephone': telephone,
           'email': email,
-          'motDePasse': motDePasse,
+          'motDePasse': motDePasse, // camelCase pour le backend Spring Boot
+          'confirmerMotDePasse': confirmerMotDePasse, // camelCase pour le backend
         },
       );
       
       if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ Inscription réussie');
         return MessageResponse.fromJson(response.data);
       } else {
-        throw Exception('Échec de l\'inscription');
+        final errorMsg = response.data['message'] ?? 'Échec de l\'inscription';
+        print('❌ Erreur inscription: $errorMsg');
+        throw Exception(errorMsg);
       }
     } catch (e) {
+      print('❌ Erreur inscription: $e');
       throw Exception('Erreur d\'inscription: $e');
     }
   }
@@ -112,11 +123,17 @@ class AuthService {
         final user = User.fromJson(response.data);
         await _saveUser(user);
         return user;
+      } else if (response.statusCode == 400) {
+        // Erreur d'authentification - l'utilisateur n'est probablement pas connecté
+        final errorMsg = response.data['message'] ?? 'Non authentifié';
+        throw Exception('Authentification requise: $errorMsg');
       } else {
-        throw Exception('Erreur lors de la récupération du profil');
+        final errorMsg = response.data['message'] ?? 'Erreur inconnue';
+        throw Exception('Erreur ${response.statusCode}: $errorMsg');
       }
     } catch (e) {
-      throw Exception('Erreur: $e');
+      print('❌ Erreur getProfil: $e');
+      rethrow;
     }
   }
   
@@ -200,10 +217,15 @@ class AuthService {
     await prefs.remove('auth_token');
   }
   
-  // Sauvegarder l'utilisateur
+  // Sauvegarder l'utilisateur (public pour permettre la sauvegarde après inscription)
   Future<void> _saveUser(User user) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('current_user', json.encode(user.toJson()));
+  }
+  
+  // Méthode publique pour sauvegarder l'utilisateur
+  Future<void> saveUser(User user) async {
+    await _saveUser(user);
   }
   
   // Supprimer l'utilisateur

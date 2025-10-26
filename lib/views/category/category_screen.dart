@@ -45,7 +45,7 @@ class CategoryScreen extends StatefulWidget {
 }
 
 class _CategoryScreenState extends State<CategoryScreen> {
-  // Définition de la couleur principale (Vert) de l'application
+// Définition de la couleur principale (Vert) de l'application
   final Color primaryColor = const Color(0xFF14B53A);
   
   // Liste des catégories récupérées du backend
@@ -409,7 +409,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
                     fontSize: 30,
 
-                    color: iconColor,
+                color: iconColor,
 
                   ),
 

@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'edit_profile_screen.dart'; // Import de l'écran d'édition
 import '../history/history_screen.dart';
 import '../../controllers/report_controller.dart'; // Supposé existant
+import '../../core/services/auth_service.dart';
+import '../../models/api_models.dart';
 
 // ====================================================================
 // CONVERSION EN STATEFULWIDGET pour gérer la mise à jour
@@ -17,42 +19,110 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   // Définition de la couleur principale (le vert)
   final Color primaryColor = const Color(0xFF14B53A);
+  
+  // Service d'authentification
+  final AuthService _authService = authService;
 
   // ====================================================================
-  // SIMULATION DES DONNÉES UTILISATEUR
+  // DONNÉES UTILISATEUR CHARGÉES DEPUIS LE BACKEND
   // ====================================================================
-  // Ces données vont être mises à jour via setState
-  String userName = 'Daba Diarra';
-  String userEmail = 'daba.diarra@gmail.com';
-  String userPhone = '+223 76 00 00 00';
-  String editProfil = 'mettre a jour votre profil';
-  String userAddress = 'Hamdallaye ACI 2000';
-  String userBirthDate = '01/01/1990';
-  String userGender = 'Femme';
+  User? _user;
+  bool _isLoading = true;
+  String? _errorMessage;
 
+  String userName = 'Chargement...';
+  String userEmail = '';
+  String userPhone = '';
+  String userAddress = '';
+  String userBirthDate = '';
+  String userGender = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  // ====================================================================
+  // CHARGEMENT DU PROFIL DEPUIS LE BACKEND
+  // ====================================================================
+  Future<void> _loadUserProfile() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final user = await _authService.getProfil();
+      
+      setState(() {
+        _user = user;
+        userName = user.nomComplet;
+        userEmail = user.email;
+        userPhone = user.telephone;
+        userAddress = user.adresse ?? '';
+        userBirthDate = user.dateNaissance ?? '';
+        userGender = user.genre ?? '';
+        _isLoading = false;
+      });
+      
+      print('✅ Profil utilisateur chargé: ${user.nomComplet}');
+    } catch (e) {
+      print('❌ Erreur chargement profil: $e');
+      setState(() {
+        _errorMessage = 'Erreur de chargement: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   // ====================================================================
   // MÉTHODE DE NAVIGATION ET MISE À JOUR
   // ====================================================================
   void _navigateToEditProfile(BuildContext context) async {
-    // Naviguer vers l'écran de modification et attendre un résultat (Map des données mises à jour)
+    // Naviguer vers l'écran de modification avec les données actuelles
     final result = await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const EditProfileScreen()),
+      MaterialPageRoute(
+        builder: (_) => EditProfileScreen(
+          currentName: userName,
+          currentEmail: userEmail,
+          currentPhone: userPhone,
+        ),
+      ),
     );
 
     // Vérifier si le résultat est un Map (données mises à jour)
     if (result != null && result is Map<String, String>) {
-      setState(() {
-        // Mettre à jour les variables d'état avec les nouvelles données renvoyées
-        userName = result['name'] ?? userName;
-        userEmail = result['email'] ?? userEmail;
-        userPhone = result['phone'] ?? userPhone;
-
-        // Note: Les autres champs (adresse, date, genre) ne sont pas modifiés
-        // par l'écran d'édition, donc ils conservent leur valeur actuelle.
-
-        print('Profil mis à jour avec les nouvelles données. Reconstruction de ProfileScreen.');
-      });
+      try {
+        // Appeler l'API pour mettre à jour le profil
+        await _authService.updateProfil({
+          'nomComplet': result['name'] ?? userName,
+          'email': result['email'] ?? userEmail,
+          'telephone': result['phone'] ?? userPhone,
+        });
+        
+        // Recharger le profil depuis le backend
+        await _loadUserProfile();
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil mis à jour avec succès !'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        print('❌ Erreur mise à jour profil: $e');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Erreur lors de la mise à jour: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 
@@ -134,7 +204,64 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Expanded(
                   child: SingleChildScrollView(
                     padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
-                    child: Column(
+                    child: _isLoading
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                CircularProgressIndicator(color: primaryColor),
+                                SizedBox(height: screenHeight * 0.02),
+                                Text(
+                                  'Chargement du profil...',
+                                  style: TextStyle(
+                                    fontSize: screenWidth * 0.04,
+                                    color: textColor,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : _errorMessage != null
+                            ? Center(
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.error_outline,
+                                      size: screenWidth * 0.2,
+                                      color: Colors.red,
+                                    ),
+                                    SizedBox(height: screenHeight * 0.02),
+                                    Text(
+                                      _errorMessage!,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.04,
+                                        color: textColor,
+                                      ),
+                                    ),
+                                    SizedBox(height: screenHeight * 0.03),
+                                    ElevatedButton(
+                                      onPressed: _loadUserProfile,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: primaryColor,
+                                        padding: EdgeInsets.symmetric(
+                                          horizontal: screenWidth * 0.08,
+                                          vertical: screenHeight * 0.015,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        'Réessayer',
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.04,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            : Column(
                       children: [
                         SizedBox(height: screenHeight * 0.04),
 
@@ -180,7 +307,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         // Cartes d'informations (Dynamiques)
                         _buildProfileCard(
                           context, screenWidth, screenHeight, Icons.edit,
-                          'Modifier Profile', editProfil, primaryColor, cardColor, textColor, // <-- Utilisé la variable d'état
+                          'Modifier Profile', 'mettre à jour votre profil', primaryColor, cardColor, textColor,
                               () {
                                 _navigateToEditProfile(context); // fonction à exécuter quand on clique
                           },

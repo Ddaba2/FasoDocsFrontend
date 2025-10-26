@@ -4,7 +4,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:just_audio/just_audio.dart';
 import '../../models/api_models.dart';
+import '../../core/services/chatbot_service.dart';
 
 class ProcedureDetailScreen extends StatefulWidget {
   final ProcedureResponse procedure;
@@ -22,6 +24,9 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTab = 0;
+  late AudioPlayer _audioPlayer;
+  bool _isPlaying = false;
+  bool _isLoadingAudio = false;
 
   @override
   void initState() {
@@ -32,11 +37,13 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
         _selectedTab = _tabController.index;
       });
     });
+    _audioPlayer = AudioPlayer();
   }
 
   @override
   void dispose() {
     _tabController.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -66,12 +73,23 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.volume_up, color: Colors.green),
-            onPressed: () {
-              // TODO: Implémenter la lecture audio
-            },
-          ),
+          if (_isLoadingAudio)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            )
+          else
+            IconButton(
+              icon: Icon(
+                _isPlaying ? Icons.pause_circle_outline : Icons.volume_up,
+                color: Colors.green,
+              ),
+              onPressed: _isPlaying ? _stopAudio : _playAudioBambara,
+            ),
         ],
       ),
       body: Column(
@@ -784,5 +802,163 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
+  }
+
+  Future<void> _playAudioBambara() async {
+    try {
+      setState(() {
+        _isLoadingAudio = true;
+      });
+
+      // Construire le texte complet de la procédure
+      final StringBuffer texte = StringBuffer();
+      
+      texte.writeln(widget.procedure.titre);
+      
+      if (widget.procedure.description != null && 
+          widget.procedure.description!.isNotEmpty) {
+        texte.writeln(widget.procedure.description);
+      }
+      
+      if (widget.procedure.delai != null && widget.procedure.delai!.isNotEmpty) {
+        texte.writeln('Délai: ${widget.procedure.delai}');
+      }
+      
+      // Ajouter les étapes si disponibles
+      if (widget.procedure.etapes != null && widget.procedure.etapes!.isNotEmpty) {
+        texte.writeln('Les étapes à suivre:');
+        for (var etape in widget.procedure.etapes!) {
+          texte.writeln('${etape.niveauOrdre}. ${etape.nom}: ${etape.description}');
+        }
+      }
+      
+      // Ajouter les documents requis
+      if (widget.procedure.documentsRequis.isNotEmpty) {
+        texte.writeln('Documents requis:');
+        for (var doc in widget.procedure.documentsRequis) {
+          texte.writeln('- ${doc.nom}');
+        }
+      }
+      
+      // Ajouter les centres de traitement
+      if (widget.procedure.centres.isNotEmpty) {
+        texte.writeln('Centres de traitement:');
+        for (var centre in widget.procedure.centres) {
+          texte.writeln('- ${centre.nom}, ${centre.adresse}');
+        }
+      }
+
+      final texteFinal = texte.toString();
+      
+      print('🔊 Texte à lire en Bambara (${texteFinal.length} caractères)');
+      
+      // ÉTAPE 1: Traduire le contenu en Bambara avec Djelia AI
+      print('🌐 Traduction en Bambara...');
+      final translated = await chatbotService.translateFrToBm(texteFinal);
+      
+      if (mounted) {
+        setState(() {
+          _isLoadingAudio = false;
+        });
+        
+        if (translated.texteTraduit != null && translated.texteTraduit!.isNotEmpty) {
+          final preview = translated.texteTraduit!.length > 100 
+              ? translated.texteTraduit!.substring(0, 100) 
+              : translated.texteTraduit!;
+          print('✅ Texte traduit en Bambara: $preview...');
+          
+          // ÉTAPE 2: Utiliser la synthèse vocale de Djelia AI
+          print('🎵 Génération audio avec Djelia AI...');
+          final speakResponse = await chatbotService.speak(
+            translated.texteTraduit!,
+            'bm',
+          );
+          
+          print('🎵 URL audio de Djelia AI: ${speakResponse.audioUrl}');
+          
+          if (speakResponse.audioUrl != null && speakResponse.audioUrl!.isNotEmpty) {
+            // L'URL audio générée par Djelia AI
+            var audioUrl = speakResponse.audioUrl!;
+            
+            // Remplacer localhost par 10.0.2.2 pour l'émulateur Android
+            if (audioUrl.contains('localhost')) {
+              audioUrl = audioUrl.replaceAll('localhost', '10.0.2.2');
+              print('🔄 URL corrigée pour émulateur: $audioUrl');
+            }
+            
+            try {
+              // Jouer l'audio généré par Djelia AI
+              await _audioPlayer.setUrl(audioUrl);
+              setState(() {
+                _isPlaying = true;
+              });
+              
+              // Écouter la fin de la lecture
+              _audioPlayer.playerStateStream.listen((state) {
+                if (state.processingState == ProcessingState.completed) {
+                  setState(() {
+                    _isPlaying = false;
+                  });
+                }
+              });
+              
+              await _audioPlayer.play();
+            } catch (e) {
+              print('❌ Erreur lecture audio URL: $e');
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Erreur lecture audio: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          } else {
+            print('❌ Pas d\'URL audio dans la réponse de Djelia AI');
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Erreur: Djelia AI n\'a pas retourné d\'URL audio'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
+        } else {
+          print('❌ Traduction échouée ou vide');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Erreur: impossible de traduire en Bambara'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      }
+    } catch (e) {
+      print('❌ Erreur lecture audio: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingAudio = false;
+          _isPlaying = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la lecture: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _stopAudio() async {
+    await _audioPlayer.stop();
+    setState(() {
+      _isPlaying = false;
+    });
   }
 }

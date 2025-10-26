@@ -16,6 +16,7 @@ Quand Hibernate essaie de calculer le `hashCode()`, il y a une boucle infinie.
 
 ## ✅ Solution : Modifier vos entités
 
+
 ### Option 1 : Utiliser `@ToString.Exclude` et `@EqualsAndHashCode.Exclude`
 
 Dans vos entités Java, ajoutez :

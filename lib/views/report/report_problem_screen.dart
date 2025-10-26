@@ -3,10 +3,8 @@ import 'package:flutter/material.dart';
 import '../../locale/locale_helper.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-
-// CORRECTION : Imports absolus basés sur le paquet pour résoudre les erreurs de chemin
-import 'package:fasodocs/views/profile/profile_screen.dart'; // REMPLACER 'fasodocs' si nécessaire
-import 'package:fasodocs/views/history/history_screen.dart';   // REMPLACER 'fasodocs' si nécessaire
+import '../../core/services/signalement_service.dart';
+import '../../models/api_models.dart';
 
 class ReportProblemScreen extends StatefulWidget {
   const ReportProblemScreen({super.key});
@@ -21,6 +19,9 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
   String? _selectedReportType;
   final TextEditingController _structureController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
+  
+  final SignalementService _signalementService = signalementService;
+  bool _isSubmitting = false;
 
   final List<String> _reportTypes = const [
     'Problème technique',
@@ -58,6 +59,79 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Erreur lors de la sélection de l\'image: $e')),
       );
+    }
+  }
+
+  // Envoyer le signalement au backend
+  Future<void> _submitSignalement() async {
+    // Validation des champs
+    if (_selectedReportType == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez sélectionner un type de signalement'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (_descriptionController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez décrire le problème'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      // Créer le message du signalement
+      String message = _descriptionController.text.trim();
+      if (_structureController.text.isNotEmpty) {
+        message = 'Structure: ${_structureController.text.trim()}\n\n$message';
+      }
+
+      // Créer la requête de signalement
+      final signalementRequest = SignalementRequest(
+        type: _selectedReportType!,
+        message: message,
+      );
+
+      // Envoyer au backend
+      await _signalementService.createSignalement(signalementRequest);
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Signalement envoyé avec succès !'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        
+        // Retourner à l'écran précédent
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      print('❌ Erreur envoi signalement: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de l\'envoi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
     }
   }
 
@@ -343,13 +417,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: () {
-                              // TODO: Implémenter la logique d'envoi du signalement
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Signalement envoyé (Logique non implémentée)')),
-                              );
-                              Navigator.of(context).pop();
-                            },
+                            onPressed: _isSubmitting ? null : _submitSignalement,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: primaryColor,
                               foregroundColor: Colors.white,
@@ -358,23 +426,32 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                                 borderRadius: BorderRadius.circular(8),
                               ),
                             ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  'Envoyer le report',
-                                  style: TextStyle(
-                                    fontSize: screenWidth * 0.04,
-                                    fontWeight: FontWeight.w600,
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Envoyer le report',
+                                        style: TextStyle(
+                                          fontSize: screenWidth * 0.04,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                      SizedBox(width: screenWidth * 0.02),
+                                      Icon(
+                                        Icons.send,
+                                        size: screenWidth * 0.05,
+                                      ),
+                                    ],
                                   ),
-                                ),
-                                SizedBox(width: screenWidth * 0.02),
-                                Icon(
-                                  Icons.send,
-                                  size: screenWidth * 0.05,
-                                ),
-                              ],
-                            ),
                           ),
                         ),
 
