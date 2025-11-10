@@ -81,12 +81,14 @@ class _SplashScreenState extends State<SplashScreen> {
             // CALCUL DES DIMENSIONS RESPONSIVES
             // ========================================================================================
             final screenWidth = constraints.maxWidth;     // Largeur de l'écran
-            final logoSize = screenWidth * 0.3;           // Taille du logo (30% de la largeur)
+            final screenHeight = constraints.maxHeight;   // Hauteur de l'écran
+            final logoSize = screenWidth * 0.7;           // Taille du logo (70% de la largeur)
             final fontSize = screenWidth * 0.08;          // Taille de police (8% de la largeur)
             
             return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,  // Colonne centrée verticalement
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   // ========================================================================================
                   // LOGO FASODOCS - Image principale du splash screen
@@ -94,7 +96,6 @@ class _SplashScreenState extends State<SplashScreen> {
                   Image.asset(
                     'assets/images/FasoDocs 1.png',
                     width: logoSize,
-                    height: logoSize * 0.6,
                     fit: BoxFit.contain,
                   ),
                   

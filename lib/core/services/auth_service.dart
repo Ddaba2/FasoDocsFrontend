@@ -237,4 +237,3 @@ class AuthService {
 
 // Instance globale du service d'authentification
 final AuthService authService = AuthService();
-

@@ -1,9 +1,9 @@
 // ÉCRAN 4: SIGNUP SCREEN (exactement comme la photo)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../home/home_screen.dart';
+
 import '../../core/services/auth_service.dart';
-import '../../models/api_models.dart';
+import 'conditions_utilisation_screen.dart';
 
 // ASSUREZ-VOUS QUE CE CHEMIN EST CORRECT
 import '../auth/login_screen.dart'; // <--- NOUVELLE IMPORTATION POUR LA NAVIGATION
@@ -95,7 +95,9 @@ class _SignupScreenState extends State<SignupScreen> {
 
     try {
       final authService = AuthService();
-      await authService.inscription(
+      
+      // 1. Inscription de l'utilisateur
+      final messageResponse = await authService.inscription(
         nom: _nomController.text.trim(),
         prenom: _prenomController.text.trim(),
         telephone: _phoneController.text.trim(),
@@ -104,32 +106,22 @@ class _SignupScreenState extends State<SignupScreen> {
         confirmerMotDePasse: _confirmPasswordController.text,
       );
 
-      // Après inscription réussie, créer un utilisateur et le sauvegarder comme connecté
-      final newUser = User(
-        id: DateTime.now().millisecondsSinceEpoch.toString(), // ID temporaire
-        nomComplet: '${_prenomController.text.trim()} ${_nomController.text.trim()}',
-        telephone: _phoneController.text.trim(),
-        email: _emailController.text.trim(),
-        adresse: null,
-        dateNaissance: null,
-        genre: null,
-        photoUrl: null,
-      );
-      
-      // Sauvegarder l'utilisateur comme connecté
-      await authService.saveUser(newUser);
-
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Inscription réussie ! Vous êtes maintenant connecté.'),
+          SnackBar(
+            content: Text(messageResponse.message),
             backgroundColor: Colors.green,
           ),
         );
-        
-        // Redirection vers l'accueil (l'utilisateur est maintenant connecté)
+      }
+
+      // 2. Après l'inscription, rediriger vers l'écran de connexion
+      // pour que l'utilisateur puisse s'authentifier avec son numéro de téléphone
+      if (mounted) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const HomeScreen()),
+          MaterialPageRoute(
+            builder: (_) => const LoginScreen(),
+          ),
         );
       }
     } catch (e) {
@@ -456,6 +448,14 @@ class _SignupScreenState extends State<SignupScreen> {
                           Expanded(
                             child: Padding(
                               padding: const EdgeInsets.only(top: 12),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => const ConditionsUtilisationScreen(),
+                                    ),
+                                  );
+                                },
                               child: RichText(
                                 text: TextSpan(
                                   text: "J'accepte les ",
@@ -473,6 +473,7 @@ class _SignupScreenState extends State<SignupScreen> {
                                       ),
                                     ),
                                   ],
+                                  ),
                                 ),
                               ),
                             ),

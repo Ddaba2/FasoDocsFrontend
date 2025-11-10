@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../locale/locale_helper.dart';
+import '../../core/services/procedure_service.dart';
 
 // Import de la page de détail
 import 'certificat_residence_screen.dart';
@@ -12,6 +13,7 @@ import '../notifications/notifications_screen.dart';
 import '../history/history_screen.dart';
 import '../identity/identity_screen.dart';
 import '../category/category_screen.dart';
+import '../procedure/procedure_list_screen.dart';
 import '../report/report_screen.dart';
 import '../settings/settings_screen.dart';
 import '../communiquee_global/com_global.dart';
@@ -91,8 +93,8 @@ class _HomeScreenState extends State<HomeScreen> {
             ],
           ),
           child: Icon(
-            Icons.support_agent,
-            color: defaultIconColor,
+            Icons.mic,
+            color: Colors.green,
             size: 24,
           ),
         ),
@@ -173,8 +175,89 @@ class _HomeScreenState extends State<HomeScreen> {
 // WIDGET SÉPARÉ POUR LE CONTENU D'ACCUEIL ORIGINAL (Sensible au thème)
 // ==============================================================================
 
-class _HomeContent extends StatelessWidget {
+class _HomeContent extends StatefulWidget {
   const _HomeContent();
+
+  @override
+  State<_HomeContent> createState() => _HomeContentState();
+}
+
+class _HomeContentState extends State<_HomeContent> {
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // Fonction pour gérer la recherche
+  void _performSearch(BuildContext context, String query) async {
+    if (query.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez entrer un terme de recherche'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    // Afficher un indicateur de chargement
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+
+    try {
+      // Appel du service de procédures
+      final procedureService = ProcedureService();
+      final procedures = await procedureService.searchProcedures(query);
+      
+      // Fermer le dialog de chargement
+      if (context.mounted) Navigator.pop(context);
+
+      if (procedures.isEmpty) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Aucune procédure trouvée pour "$query"'),
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+      } else {
+        // Naviguer vers l'écran des résultats de recherche
+        if (context.mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => ProcedureListScreen(
+                procedures: procedures,
+                title: 'Résultats de recherche',
+              ),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Fermer le dialog de chargement
+      if (context.mounted) Navigator.pop(context);
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la recherche: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
+  }
 
   // Liste des démarches populaires pour l'affichage en grille
   final List<Map<String, dynamic>> popularSteps = const [
@@ -319,7 +402,7 @@ class _HomeContent extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Icône d'options (trois points)
+                      // Icône historique (trois points)
                       GestureDetector(
                         onTap: () {
                           Navigator.of(context).push(
@@ -353,17 +436,32 @@ class _HomeContent extends StatelessWidget {
                   border: Border.all(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300, width: 1),
                 ),
                 child: TextField(
+                  controller: _searchController,
                   style: TextStyle(color: textColor),
                   decoration: InputDecoration(
                     hintText: LocaleHelper.getText(context, 'searchProcedure'),
-                    // Utilisation d'un secours non-nullable pour Colors.grey[xxx]
                     hintStyle: TextStyle(color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54), fontSize: 16),
                     border: InputBorder.none,
                     prefixIcon: Icon(Icons.search, color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54), size: 24),
+                    suffixIcon: _searchController.text.isNotEmpty
+                        ? IconButton(
+                            icon: Icon(Icons.clear, color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54)),
+                            onPressed: () {
+                              setState(() {
+                                _searchController.clear();
+                              });
+                            },
+                          )
+                        : null,
                     contentPadding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  enabled: true,
-                  readOnly: false,
+                  textInputAction: TextInputAction.search,
+                  onChanged: (value) {
+                    setState(() {}); // Pour afficher/cacher le bouton clear
+                  },
+                  onSubmitted: (query) {
+                    _performSearch(context, query);
+                  },
                 ),
               ),
             ),
@@ -379,7 +477,7 @@ class _HomeContent extends StatelessWidget {
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 image: const DecorationImage(
-                  image: AssetImage('assets/images/acceuil.png'),
+                  image: AssetImage('assets/images/Acceuil.png'),
                   fit: BoxFit.cover,
                 ),
               ),

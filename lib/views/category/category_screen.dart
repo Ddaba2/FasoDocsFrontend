@@ -199,9 +199,9 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
         child: Icon(
 
-          Icons.support_agent,
+          Icons.mic,
 
-          color: iconColor,
+          color: Colors.green,
 
           size: 24,
 
@@ -306,6 +306,7 @@ class _CategoryScreenState extends State<CategoryScreen> {
           categorieId: category.id,
           categorieNom: category.titre,
           categorieEmoji: category.iconeUrl,
+          category: category, // Passer l'objet catégorie complet
         ),
       ),
     );

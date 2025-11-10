@@ -33,7 +33,7 @@ class _ReportScreenState extends State<ReportScreen> {
     });
 
     try {
-      final signalements = await _signalementService.getMySignalements();
+      final signalements = await _signalementService.getAllSignalements();
       setState(() {
         _signalements = signalements;
         _isLoading = false;
@@ -87,11 +87,14 @@ class _ReportScreenState extends State<ReportScreen> {
       // 2. Bouton flottant pour signaler un nouveau problème
       floatingActionButton: FloatingActionButton(
         heroTag: 'add_report_btn',
-        onPressed: () {
-          // REDIRECTION VERS report_problem_screen.dart
-          Navigator.of(context).push(
+        onPressed: () async {
+          // Ouvrir le formulaire puis recharger la liste au retour
+          await Navigator.of(context).push(
             MaterialPageRoute(builder: (_) => const ReportProblemScreen()),
           );
+          if (mounted) {
+            _loadSignalements();
+          }
         },
         backgroundColor: primaryColor,
         shape: const CircleBorder(),
@@ -178,22 +181,15 @@ class _ReportScreenState extends State<ReportScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: _signalements.map((signalement) {
-                          // Extraire la structure si elle existe dans le message
-                          String source = 'Structure non spécifiée';
-                          String description = signalement.message;
-                          
-                          if (signalement.message.startsWith('Structure:')) {
-                            final lines = signalement.message.split('\n\n');
-                            if (lines.length > 1) {
-                              source = lines[0].replaceFirst('Structure: ', '');
-                              description = lines.sublist(1).join('\n');
-                            }
-                          }
+                          // Use the structure field directly from the model
+                          String source = signalement.structure.isNotEmpty 
+                            ? signalement.structure 
+                            : 'Structure non spécifiée';
                           
                           return _buildReportCard(
                             context,
-                            signalement.type,
-                            description,
+                            signalement.titre, // Use titre instead of type for the title
+                            signalement.description,
                             _formatTime(signalement.dateCreation),
                             source,
                             cardColor,

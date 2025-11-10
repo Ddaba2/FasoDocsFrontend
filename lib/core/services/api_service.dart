@@ -18,7 +18,8 @@ class ApiService {
           'Accept': 'application/json',
         },
         connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 120), // Increased from 30 to 120 seconds to handle large audio files
+        sendTimeout: const Duration(seconds: 30),
         validateStatus: (status) => status! < 500, // Accepter les codes < 500
       ),
     );
@@ -43,106 +44,99 @@ class ApiService {
         queryParameters: queryParameters,
       );
       
-      print('✅ Réponse reçue: ${response.statusCode}');
+      print('✅ Réponse API: ${response.statusCode} - ${response.statusMessage}');
       return response;
-    } on DioException catch (e) {
-      print('❌ Erreur DioException: ${e.message}');
-      print('❌ Type: ${e.type}');
-      print('❌ URL: ${e.requestOptions.uri}');
-      throw _handleError(e);
+    } catch (e) {
+      print('❌ Erreur API GET $endpoint: $e');
+      rethrow;
     }
   }
   
   // POST request
-  Future<Response> post(String endpoint, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+  Future<Response> post(String endpoint, {dynamic data, Options? options}) async {
     try {
+      print('🌐 Appel API: POST $endpoint');
+      
       final response = await _dio.post(
         endpoint,
         data: data,
-        queryParameters: queryParameters,
+        options: options,
       );
+      
+      print('✅ Réponse API: ${response.statusCode} - ${response.statusMessage}');
       return response;
-    } on DioException catch (e) {
-      throw _handleError(e);
+    } catch (e) {
+      print('❌ Erreur API POST $endpoint: $e');
+      rethrow;
     }
   }
   
   // PUT request
-  Future<Response> put(String endpoint, {dynamic data, Map<String, dynamic>? queryParameters}) async {
+  Future<Response> put(String endpoint, {dynamic data}) async {
     try {
+      print('🌐 Appel API: PUT $endpoint');
+      
       final response = await _dio.put(
         endpoint,
         data: data,
-        queryParameters: queryParameters,
       );
+      
+      print('✅ Réponse API: ${response.statusCode} - ${response.statusMessage}');
       return response;
-    } on DioException catch (e) {
-      throw _handleError(e);
+    } catch (e) {
+      print('❌ Erreur API PUT $endpoint: $e');
+      rethrow;
     }
   }
   
   // DELETE request
-  Future<Response> delete(String endpoint, {Map<String, dynamic>? queryParameters}) async {
+  Future<Response> delete(String endpoint) async {
     try {
-      final response = await _dio.delete(
-        endpoint,
-        queryParameters: queryParameters,
-      );
+      print('🌐 Appel API: DELETE $endpoint');
+      
+      final response = await _dio.delete(endpoint);
+      
+      print('✅ Réponse API: ${response.statusCode} - ${response.statusMessage}');
       return response;
-    } on DioException catch (e) {
-      throw _handleError(e);
+    } catch (e) {
+      print('❌ Erreur API DELETE $endpoint: $e');
+      rethrow;
     }
   }
   
-  // Méthode pour ajouter un token d'authentification
+  // GET audio file with extended timeout
+  Future<Response> getAudio(String endpoint, {Map<String, dynamic>? queryParameters}) async {
+    try {
+      print('🎵 Appel API Audio: GET $endpoint');
+      
+      final response = await _dio.get(
+        endpoint,
+        queryParameters: queryParameters,
+        options: Options(
+          receiveTimeout: const Duration(seconds: 180), // Extended timeout for audio files
+          sendTimeout: const Duration(seconds: 30),
+          responseType: ResponseType.bytes, // For audio file download
+        ),
+      );
+      
+      print('✅ Réponse API Audio: ${response.statusCode} - ${response.statusMessage}');
+      return response;
+    } catch (e) {
+      print('❌ Erreur API GET Audio $endpoint: $e');
+      rethrow;
+    }
+  }
+  
+  // Set auth token in headers
   void setAuthToken(String token) {
     _dio.options.headers['Authorization'] = 'Bearer $token';
   }
   
-  // Méthode pour supprimer le token d'authentification
+  // Remove auth token from headers
   void removeAuthToken() {
     _dio.options.headers.remove('Authorization');
-  }
-  
-  // Gestion des erreurs
-  String _handleError(DioException error) {
-    switch (error.type) {
-      case DioExceptionType.connectionTimeout:
-      case DioExceptionType.sendTimeout:
-      case DioExceptionType.receiveTimeout:
-        return 'Timeout de connexion. Veuillez réessayer.';
-      
-      case DioExceptionType.badResponse:
-        if (error.response != null) {
-          switch (error.response!.statusCode) {
-            case 400:
-              return 'Requête invalide';
-            case 401:
-              return 'Non autorisé. Veuillez vous connecter.';
-            case 403:
-              return 'Accès refusé';
-            case 404:
-              return 'Ressource non trouvée';
-            case 500:
-              return 'Erreur serveur. Veuillez réessayer plus tard.';
-            default:
-              return 'Erreur: ${error.response!.statusCode}';
-          }
-        }
-        return 'Erreur de réponse du serveur';
-      
-      case DioExceptionType.cancel:
-        return 'Requête annulée';
-      
-      case DioExceptionType.unknown:
-        return 'Erreur de connexion. Vérifiez votre connexion internet.';
-      
-      default:
-        return 'Une erreur inattendue s\'est produite';
-    }
   }
 }
 
 // Instance globale du service API
 final ApiService apiService = ApiService();
-

@@ -7,11 +7,15 @@
 
 import 'package:flutter/material.dart';
 import '../views/report/report_problem_screen.dart';
+import '../core/services/signalement_service.dart';
+import '../models/api_models.dart';
 
 class ReportController {
   static final ReportController _instance = ReportController._internal();
   factory ReportController() => _instance;
   ReportController._internal();
+
+  final SignalementService _signalementService = signalementService;
 
   // ========================================================================================
   // MÉTHODES DE SIGNALEMENT
@@ -64,19 +68,26 @@ class ReportController {
     required String title,
     required String description,
     required String category,
+    required String structure,
     String? userEmail,
     String? userPhone,
   }) async {
     try {
-      // Simulation de la soumission du report
-      await Future.delayed(const Duration(seconds: 2));
+      // Create signalement request
+      final signalementRequest = SignalementRequest(
+        titre: title,
+        description: description,
+        type: category,
+        structure: structure,
+      );
       
-      // Dans une vraie application, vous feriez un appel API ici
-      print('Signalement soumis: $title - $description');
+      // Submit to backend
+      await _signalementService.createSignalement(signalementRequest);
       
       return true;
     } catch (e) {
-      print('Erreur lors de la soumission du report: $e');
+      // Log the error for debugging (in production, you might want to use a proper logger)
+      // print('Erreur lors de la soumission du report: $e');
       return false;
     }
   }
@@ -94,18 +105,5 @@ class ReportController {
     if (description.length < 10) return false;
     
     return true;
-  }
-
-  /// Obtient les catégories de report disponibles
-  List<String> getReportCategories() {
-    return [
-      'Bug de l\'application',
-      'Problème de navigation',
-      'Erreur de données',
-      'Problème de performance',
-      'Suggestion d\'amélioration',
-      'Problème d\'authentification',
-      'Autre',
-    ];
   }
 }

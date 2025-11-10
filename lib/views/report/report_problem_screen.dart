@@ -22,17 +22,44 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
   
   final SignalementService _signalementService = signalementService;
   bool _isSubmitting = false;
-
-  final List<String> _reportTypes = const [
-    'Problème technique',
-    'Erreur de contenu',
-    'Suggestion d\'amélioration',
-    'Signalement d\'abus',
-    'Autre',
+  List<SignalementType> _reportTypes = [
+    SignalementType(id: '1', nom: 'ABSENCE_DU_SERVICE', description: 'Absence du service'),
+    SignalementType(id: '2', nom: 'NON_RESPECT_DU_DELAI', description: 'Non-respect du délai'),
+    SignalementType(id: '3', nom: 'MAUVAISE_QUALITE_DU_SERVICE', description: 'Mauvaise qualité du service'),
+    SignalementType(id: '4', nom: 'AUTRE', description: 'Autre type de signalement'),
   ];
+  bool _isLoadingTypes = false;
 
   // Couleur principale
   static const Color primaryColor = Color(0xFF14B53A);
+
+  @override
+  void initState() {
+    super.initState();
+    _loadReportTypes();
+  }
+  Future<void> _loadReportTypes() async {
+    setState(() {
+      _isLoadingTypes = true;
+    });
+    try {
+      final types = await _signalementService.getSignalementTypes();
+      setState(() {
+        // Si des types sont retournés du backend, on les utilise
+        if (types.isNotEmpty) {
+          _reportTypes = types;
+        }
+        // Sinon, on garde les valeurs par défaut déjà définies
+        _isLoadingTypes = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoadingTypes = false;
+      });
+      // Fallback silencieux: utiliser les valeurs par défaut
+      print('Impossible de charger les types depuis le backend: $e');
+    }
+  }
 
   @override
   void dispose() {
@@ -56,16 +83,33 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
         });
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la sélection de l\'image: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Erreur lors de la sélection de l\'image: $e')),
+        );
+      }
     }
   }
+
+  // Convert image to base64 string
+  /*Future<String?> _convertImageToBase64() async {
+    if (_selectedImage == null) return null;
+    
+    try {
+      final bytes = await _selectedImage!.readAsBytes();
+      return base64Encode(bytes);
+    } catch (e) {
+      // Log the error for debugging (in production, you might want to use a proper logger)
+      // print('Erreur lors de la conversion de l\'image: $e');
+      return null;
+    }
+  }*/
 
   // Envoyer le signalement au backend
   Future<void> _submitSignalement() async {
     // Validation des champs
     if (_selectedReportType == null) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez sélectionner un type de signalement'),
@@ -75,7 +119,19 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
       return;
     }
 
+    if (_structureController.text.trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Veuillez indiquer la structure concernée'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (_descriptionController.text.trim().isEmpty) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez décrire le problème'),
@@ -90,16 +146,15 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     });
 
     try {
-      // Créer le message du signalement
-      String message = _descriptionController.text.trim();
-      if (_structureController.text.isNotEmpty) {
-        message = 'Structure: ${_structureController.text.trim()}\n\n$message';
-      }
+      // Créer un titre basé sur la structure
+      String titre = _structureController.text.trim();
 
       // Créer la requête de signalement
       final signalementRequest = SignalementRequest(
+        titre: titre,
+        description: _descriptionController.text.trim(),
         type: _selectedReportType!,
-        message: message,
+        structure: _structureController.text.trim(),
       );
 
       // Envoyer au backend
@@ -117,7 +172,8 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
         Navigator.of(context).pop();
       }
     } catch (e) {
-      print('❌ Erreur envoi signalement: $e');
+      // Log the error for debugging (in production, you might want to use a proper logger)
+      // print('❌ Erreur envoi signalement: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -135,10 +191,26 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     }
   }
 
+  /// Obtenir le label localisé pour un type de signalement
+  /*String _getLocalizedLabel(String type) {
+    switch (type) {
+      case 'ABSENCE_DU_SERVICE':
+        return 'Absence du service';
+      case 'NON_RESPECT_DU_DELAI':
+        return 'Non-respect du délai';
+      case 'MAUVAISE_QUALITE_DU_SERVICE':
+        return 'Mauvaise qualité du service';
+      case 'AUTRE':
+        return 'Autre';
+      default:
+        return type;
+    }
+  }*/
+
   @override
   Widget build(BuildContext context) {
     // 1. Récupération des couleurs du thème
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final bool isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final Color backgroundColor = Theme.of(context).scaffoldBackgroundColor;
     final Color textColor = Theme.of(context).textTheme.bodyLarge!.color!;
     final Color iconColor = Theme.of(context).iconTheme.color!;
@@ -146,7 +218,7 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
     final Color hintColor = isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54);
 
     // Couleur de fond pour le cercle du profil
-    final Color profileIconBg = isDarkMode ? Theme.of(context).colorScheme.surface : (Colors.grey[300] ?? const Color(0xFFCCCCCC));
+    // final Color profileIconBg = isDarkMode ? Theme.of(context).colorScheme.surface : (Colors.grey[300] ?? const Color(0xFFCCCCCC)); // Not used, so commented out
     // Couleur de la bordure des champs (moins agressif que le primaryColor en mode sombre)
     final Color inputBorderColor = isDarkMode ? primaryColor.withOpacity(0.7) : primaryColor;
 
@@ -183,10 +255,10 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
-            final screenWidth = constraints.maxWidth;
-            final screenHeight = constraints.maxHeight;
-            final horizontalPadding = screenWidth * 0.05;
-            final verticalPadding = screenHeight * 0.02;
+            final double screenWidth = constraints.maxWidth;
+            final double screenHeight = constraints.maxHeight;
+            final double horizontalPadding = screenWidth * 0.05;
+            // final double verticalPadding = screenHeight * 0.02; // Not used, so commented out
 
             return Column(
               children: [
@@ -224,47 +296,57 @@ class _ReportProblemScreenState extends State<ReportProblemScreen> {
                             borderRadius: BorderRadius.circular(8),
                             color: isDarkMode ? Theme.of(context).colorScheme.surface : Colors.white, // FOND: Couleur de carte
                           ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedReportType,
-                              hint: Text(
-                                'Sélectionnez un type',
-                                style: TextStyle(
-                                  fontSize: screenWidth * 0.04,
-                                  color: hintColor, // TEXTE HINT: Couleur du thème
-                                ),
-                              ),
-                              isExpanded: true,
-                              icon: Icon(
-                                Icons.keyboard_arrow_down,
-                                color: iconColor, // ICÔNE: Couleur du thème
-                                size: screenWidth * 0.05,
-                              ),
-                              // <--- CORRECTION APPLIQUÉE ICI : Utilisation de colorScheme.surface
-                              dropdownColor: Theme.of(context).colorScheme.surface,
-                              style: TextStyle(
-                                fontSize: screenWidth * 0.04,
-                                color: textColor, // TEXTE ITEM: Couleur du thème
-                              ),
-                              items: _reportTypes.map((String value) {
-                                return DropdownMenuItem<String>(
-                                  value: value,
-                                  child: Text(
-                                    value,
+                          child: _isLoadingTypes
+                              ? const Center(
+                                  child: SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                    ),
+                                  ),
+                                )
+                              : DropdownButtonHideUnderline(
+                                  child: DropdownButton<String>(
+                                    value: _selectedReportType,
+                                    hint: Text(
+                                      'Sélectionnez un type',
+                                      style: TextStyle(
+                                        fontSize: screenWidth * 0.04,
+                                        color: hintColor, // TEXTE HINT: Couleur du thème
+                                      ),
+                                    ),
+                                    isExpanded: true,
+                                    icon: Icon(
+                                      Icons.keyboard_arrow_down,
+                                      color: iconColor, // ICÔNE: Couleur du thème
+                                      size: screenWidth * 0.05,
+                                    ),
+                                    // <--- CORRECTION APPLIQUÉE ICI : Utilisation de colorScheme.surface
+                                    dropdownColor: Theme.of(context).colorScheme.surface,
                                     style: TextStyle(
                                       fontSize: screenWidth * 0.04,
                                       color: textColor, // TEXTE ITEM: Couleur du thème
                                     ),
+                                    items: _reportTypes.map((SignalementType t) {
+                                      return DropdownMenuItem<String>(
+                                        value: t.nom,
+                                        child: Text(
+                                          t.nom,
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.04,
+                                            color: textColor, // TEXTE ITEM: Couleur du thème
+                                          ),
+                                        ),
+                                      );
+                                    }).toList(),
+                                    onChanged: (String? newValue) {
+                                      setState(() {
+                                        _selectedReportType = newValue;
+                                      });
+                                    },
                                   ),
-                                );
-                              }).toList(),
-                              onChanged: (String? newValue) {
-                                setState(() {
-                                  _selectedReportType = newValue;
-                                });
-                              },
-                            ),
-                          ),
+                                ),
                         ),
 
                         SizedBox(height: screenHeight * 0.03),

@@ -135,12 +135,15 @@ class _CentresScreenState extends State<CentresScreen> {
         '&destination=$endLat,$endLng'
         '&travelmode=driving';
 
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible d\'ouvrir Google Maps')),
-      );
+    try {
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Impossible d\'ouvrir Google Maps. Vérifiez que Google Maps est installé.')),
+        );
+      }
     }
   }
 
@@ -1223,12 +1226,13 @@ class _FullScreenMapRouteState extends State<FullScreenMapRoute>
         '&destination=$endLat,$endLng'
         '&travelmode=driving';
 
-    if (await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    } else {
+    try {
+      final uri = Uri.parse(url);
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Impossible d\'ouvrir Google Maps')),
+          const SnackBar(content: Text('Impossible d\'ouvrir Google Maps. Vérifiez que Google Maps est installé.')),
         );
       }
     }

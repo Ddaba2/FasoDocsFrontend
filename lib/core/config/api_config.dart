@@ -3,14 +3,31 @@
 // ========================================================================================
 
 class ApiConfig {
-  // URL de base de votre backend Spring Boot
-  // Remplacez cette URL par l'adresse de votre backend
-  // Exemple pour développement local: 'http://localhost:8080'
-  // Exemple pour serveur distant: 'http://votre-serveur.com:8080'
-  
-  // Pour Android emulator, utilisez 10.0.2.2 au lieu de localhost
-  // Avec le préfixe /api comme configuré dans Spring Boot
-  static const String baseUrl = 'http://10.0.2.2:8080/api';
+  // Détermine dynamiquement l'URL de base selon la plateforme et un override optionnel
+  static String get baseUrl {
+    // 1) Permettre un override via --dart-define=API_BASE_URL=https://mon-api.exemple/api
+    const String override = String.fromEnvironment('API_BASE_URL');
+    if (override.isNotEmpty) {
+      return override;
+    }
+
+    // 2) Web: utiliser l'hôte courant (localhost ou IP LAN) sur le port 8080
+    // Cela permet à l'app Web servie depuis http://192.168.x.x de cibler le même hôte
+    // Exemple: http://localhost:8080/api ou http://192.168.1.23:8080/api
+    // Uri.base fonctionne sur toutes plateformes, mais host est pertinent sur Web
+    final String webHost = Uri.base.host;
+    if (webHost.isNotEmpty) {
+      final String scheme = 'http';
+      const int port = 8080;
+      return '$scheme://$webHost:$port/api';
+    }
+
+    // 3) Par défaut (émulateur Android): 10.0.2.2
+    return 'http://10.0.2.2:8080/api';
+
+  // 4) Téléphone Android réel 
+ //return 'http://192.168.11.109:8080/api';
+  }
   
   // Pour iOS simulator, vous pouvez utiliser localhost directement
   // static const String baseUrl = 'http://localhost:8080';
@@ -50,20 +67,6 @@ class ApiConfig {
   static const String procedureRechercher = '/procedures/rechercher';
   
   // ============================================================================
-  // CHATBOT DJELIA
-  // ============================================================================
-  static const String chatbotChat = '/chatbot/chat';
-  static const String chatbotChatAudio = '/chatbot/chat-audio';
-  static const String chatbotTranslate = '/chatbot/translate';
-  static const String chatbotSpeak = '/chatbot/speak';
-  static const String chatbotTranslateFrToBm = '/chatbot/translate/fr-to-bm';
-  static const String chatbotTranslateBmToFr = '/chatbot/translate/bm-to-fr';
-  static const String chatbotHealth = '/chatbot/health';
-  static const String chatbotReadAudio = '/chatbot/read-audio';
-  static const String chatbotReadQuick = '/chatbot/read-quick';
-  static const String chatbotTestTranslate = '/chatbot/test-translate';
-  
-  // ============================================================================
   // NOTIFICATIONS
   // ============================================================================
   static const String notifications = '/notifications';
@@ -77,10 +80,10 @@ class ApiConfig {
   // ============================================================================
   static const String signalements = '/signalements';
   static String signalementById(String id) => '/signalements/$id';
+  static const String signalementTypes = '/signalements/types'; // Correct endpoint for signalement types
   
   // Méthode helper pour construire une URL complète
   static String buildUrl(String endpoint) {
     return baseUrl + endpoint;
   }
 }
-

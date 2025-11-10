@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'sms_verification_screen.dart';
 import 'signup_screen.dart';
+import '../../core/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -17,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   String _completeNumber = '';
   bool _showError = false;
   String _errorMessage = '';
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -42,7 +44,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
+  void _handleLogin() async {
     final phoneText = _phoneController.text.trim();
 
     if (phoneText.isEmpty) {
@@ -52,33 +54,64 @@ class _LoginScreenState extends State<LoginScreen> {
       });
 
       _showErrorSnackbar(_errorMessage);
-    } else {
-      // Compter uniquement les chiffres (sans espaces, sans indicatif)
-      final phoneDigits = phoneText.replaceAll(RegExp(r'[^0-9]'), '');
+      return;
+    }
 
-      if (phoneDigits.length < 8) {
-        setState(() {
-          _showError = true;
-          _errorMessage = 'Le numéro doit contenir au moins 8 chiffres';
-        });
+    // Compter uniquement les chiffres (sans espaces, sans indicatif)
+    final phoneDigits = phoneText.replaceAll(RegExp(r'[^0-9]'), '');
 
-        _showErrorSnackbar(_errorMessage);
-      } else if (phoneDigits.length > 15) {
-        setState(() {
-          _showError = true;
-          _errorMessage = 'Le numéro est trop long (max 15 chiffres)';
-        });
+    if (phoneDigits.length < 8) {
+      setState(() {
+        _showError = true;
+        _errorMessage = 'Le numéro doit contenir au moins 8 chiffres';
+      });
 
-        _showErrorSnackbar(_errorMessage);
-      } else {
+      _showErrorSnackbar(_errorMessage);
+      return;
+    } else if (phoneDigits.length > 15) {
+      setState(() {
+        _showError = true;
+        _errorMessage = 'Le numéro est trop long (max 15 chiffres)';
+      });
+
+      _showErrorSnackbar(_errorMessage);
+      return;
+    }
+
+    setState(() {
+      _showError = false;
+      _errorMessage = '';
+      _isLoading = true;
+    });
+
+    try {
+      // Appeler l'API pour envoyer le code SMS
+      final response = await authService.connexionTelephone(_completeNumber);
+      
+      if (mounted) {
         setState(() {
-          _showError = false;
-          _errorMessage = '';
+          _isLoading = false;
         });
-        // Le formulaire est valide, on peut procéder
-        Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const SMSVerificationScreen()),
+        
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(response.message)),
         );
+        
+        // Naviguer vers l'écran de vérification SMS
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => SMSVerificationScreen(telephone: _completeNumber),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        _showErrorSnackbar('Erreur: $e');
       }
     }
   }
@@ -273,7 +306,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: _handleLogin,
+                            onPressed: _isLoading ? null : _handleLogin,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: const Color(0xFF14B53A),
                               foregroundColor: Colors.white,
@@ -282,13 +315,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: Text(
-                              'Se connecter',
-                              style: TextStyle(
-                                fontSize: buttonFontSize,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  )
+                                : Text(
+                                    'Se connecter',
+                                    style: TextStyle(
+                                      fontSize: buttonFontSize,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
 

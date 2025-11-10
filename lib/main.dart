@@ -220,7 +220,7 @@ class FasoDocsApp extends StatelessWidget {
         '/onboarding': (context) => const OnboardingScreen(),
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignupScreen(),
-        '/sms-verification': (context) => const SMSVerificationScreen(),
+        // '/sms-verification': (context) => const SMSVerificationScreen(), // Remplacé par navigation directe avec paramètre
         '/home': (context) => const HomeScreen(),
         '/profile': (context) => const ProfileScreen(),
         '/edit-profile': (context) => const EditProfileScreen(),

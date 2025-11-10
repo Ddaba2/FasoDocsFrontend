@@ -9,13 +9,17 @@ import '../../locale/locale_helper.dart';
 import 'procedure_detail_screen.dart';
 
 class ProcedureListScreen extends StatefulWidget {
-  final String categorieId;
-  final String categorieNom;
+  final String? categorieId;
+  final String? categorieNom;
+  final List<ProcedureResponse>? procedures; // Liste optionnelle de procédures déjà chargées
+  final String? title; // Titre personnalisé pour les résultats de recherche
   
   const ProcedureListScreen({
     super.key,
-    required this.categorieId,
-    required this.categorieNom,
+    this.categorieId,
+    this.categorieNom,
+    this.procedures, // Si fourni, on ne recharge pas depuis l'API
+    this.title, // Titre optionnel
   });
 
   @override
@@ -30,18 +34,37 @@ class _ProcedureListScreenState extends State<ProcedureListScreen> {
   @override
   void initState() {
     super.initState();
-    _loadProcedures();
+    
+    // Si des procédures sont déjà fournies, les utiliser directement
+    if (widget.procedures != null && widget.procedures!.isNotEmpty) {
+      setState(() {
+        _procedures = widget.procedures!;
+        _isLoading = false;
+      });
+    } else {
+      // Sinon, charger depuis l'API
+      _loadProcedures();
+    }
   }
   
   // Charger les procédures de la catégorie depuis l'API
   Future<void> _loadProcedures() async {
+    // Ne charger que si categorieId est fourni
+    if (widget.categorieId == null) {
+      setState(() {
+        _errorMessage = 'Aucune catégorie spécifiée';
+        _isLoading = false;
+      });
+      return;
+    }
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
     
     try {
-      final procedures = await procedureService.getProceduresByCategorie(widget.categorieId);
+      final procedures = await procedureService.getProceduresByCategorie(widget.categorieId!);
       setState(() {
         _procedures = procedures;
         _isLoading = false;
@@ -72,7 +95,7 @@ class _ProcedureListScreenState extends State<ProcedureListScreen> {
           icon: Icon(Icons.chevron_left, color: Colors.green),
         ),
         title: Text(
-          widget.categorieNom,
+          widget.title ?? widget.categorieNom ?? 'Procédures',
           style: TextStyle(
             fontSize: 20,
             fontWeight: FontWeight.bold,
@@ -100,8 +123,8 @@ class _ProcedureListScreenState extends State<ProcedureListScreen> {
           ],
         ),
         child: Icon(
-          Icons.support_agent,
-          color: iconColor,
+          Icons.mic,
+          color: Colors.green,
           size: 24,
         ),
       ),

@@ -2,9 +2,6 @@
 // API MODELS - Modèles de données pour l'API FasoDocs
 // ========================================================================================
 
-import 'dart:convert';
-import 'dart:math';
-
 /// Modèle pour les requêtes d'inscription
 class InscriptionRequest {
   final String nomComplet;
@@ -125,6 +122,8 @@ class CategorieResponse {
   final String? description;
   final String? iconeUrl;
   final String? nomCategorie;
+  final int nombreProcedures; // Ajout du champ pour le nombre de procédures
+  final List<SousCategorieResponse> sousCategories; // Ajout des sous-catégories
 
   CategorieResponse({
     required this.id,
@@ -132,6 +131,8 @@ class CategorieResponse {
     this.description,
     this.iconeUrl,
     this.nomCategorie,
+    this.nombreProcedures = 0, // Valeur par défaut
+    this.sousCategories = const [], // Valeur par défaut
   });
 
   // Getter pour compatibilité (utilisé dans le code existant)
@@ -143,6 +144,12 @@ class CategorieResponse {
     description: json['description'],
     iconeUrl: json['iconeUrl'] ?? json['icone'],
     nomCategorie: json['nomCategorie'],
+    nombreProcedures: json['nombreProcedures'] ?? json['nombreProcedure'] ?? 0, // Support both formats
+    // Parser les sous-catégories si elles sont présentes
+    sousCategories: (json['sousCategories'] as List?)
+        ?.map((e) => SousCategorieResponse.fromJson(e as Map<String, dynamic>))
+        .toList() ??
+        [],
   );
 }
 
@@ -154,6 +161,7 @@ class SousCategorieResponse {
   final String? iconeUrl;
   final String? nomSousCategorie;
   final String categorieId;
+  final int nombreProcedures; // Ajout du champ pour le nombre de procédures
 
   SousCategorieResponse({
     required this.id,
@@ -162,6 +170,7 @@ class SousCategorieResponse {
     this.iconeUrl,
     this.nomSousCategorie,
     required this.categorieId,
+    this.nombreProcedures = 0, // Valeur par défaut
   });
   
   // Getter pour compatibilité avec le code existant
@@ -175,6 +184,7 @@ class SousCategorieResponse {
     iconeUrl: json['iconeUrl'] ?? json['icone'],
     nomSousCategorie: json['nomSousCategorie'],
     categorieId: json['categorieId']?.toString() ?? '',
+    nombreProcedures: json['nombreProcedures'] ?? json['nombreProcedure'] ?? 0, // Support both formats
   );
 }
 
@@ -288,6 +298,30 @@ class Cout {
   );
 }
 
+// Helper pour parser les références légales avec différents noms de champs possibles
+List<ReferenceLegale>? _parseReferencesLegales(Map<String, dynamic> json) {
+  // Essayer différents noms de champs possibles
+  dynamic loisData = json['loisArticles'] ?? 
+                     json['referencesLegales'] ?? 
+                     json['lois'] ?? 
+                     json['references'] ?? 
+                     json['legalReferences'];
+  
+  if (loisData == null) return null;
+  
+  // Si c'est une liste, la mapper directement
+  if (loisData is List) {
+    return loisData.map((e) => ReferenceLegale.fromJson(e as Map<String, dynamic>)).toList();
+  }
+  
+  // Si c'est un objet unique, le convertir en liste
+  if (loisData is Map<String, dynamic>) {
+    return [ReferenceLegale.fromJson(loisData)];
+  }
+  
+  return null;
+}
+
 /// Modèle pour une procédure
 class ProcedureResponse {
   final String id;
@@ -345,136 +379,11 @@ class ProcedureResponse {
     etapes: json['etapes'] != null
       ? (json['etapes'] as List).map((e) => EtapeProcedure.fromJson(e)).toList()
       : null,
-    referencesLegales: json['loisArticles'] != null
-      ? (json['loisArticles'] as List).map((e) => ReferenceLegale.fromJson(e)).toList()
-      : null,
+    referencesLegales: _parseReferencesLegales(json),
   );
 }
 
-/// Modèle pour les requêtes de chatbot
-class ChatRequest {
-  final String question;
-  final String langue;
-
-  ChatRequest({required this.question, required this.langue});
-
-  Map<String, dynamic> toJson() => {
-    'question': question,
-    'langue': langue,
-  };
-}
-
-/// Modèle pour la réponse du chatbot
-class ChatResponse {
-  final String reponse;
-  final String? audioUrl;
-  final String langue;
-
-  ChatResponse({
-    required this.reponse,
-    this.audioUrl,
-    required this.langue,
-  });
-
-  factory ChatResponse.fromJson(Map<String, dynamic> json) => ChatResponse(
-    reponse: json['reponse'] ?? '',
-    audioUrl: json['audioUrl'],
-    langue: json['langue'] ?? 'fr',
-  );
-}
-
-/// Modèle pour la traduction
-class TranslationRequest {
-  final String texte;
-  final String fromLang;
-  final String toLang;
-
-  TranslationRequest({
-    required this.texte,
-    required this.fromLang,
-    required this.toLang,
-  });
-
-  Map<String, dynamic> toJson() => {
-    'texte': texte,
-    'fromLang': fromLang,
-    'toLang': toLang,
-  };
-}
-
-class TranslationResponse {
-  final String texteOriginal;
-  final String texteTraduit;
-
-  TranslationResponse({
-    required this.texteOriginal,
-    required this.texteTraduit,
-  });
-
-  factory TranslationResponse.fromJson(Map<String, dynamic> json) {
-    print('🔍 Parsing TranslationResponse: $json');
-    
-    // Le backend retourne 'originalText' et 'texte'
-    // Mais originalText semble être une string JSON encodée
-    final originalText = json['originalText'];
-    final texteTraduit = json['texte'];
-    
-    final origLen = originalText != null ? originalText.toString().length : 0;
-    final tradLen = texteTraduit != null ? texteTraduit.toString().length : 0;
-    print('🔍 originalText: ${originalText != null ? originalText.toString().substring(0, min(origLen, 100)) : 'NULL'}');
-    print('🔍 texteTraduit: ${texteTraduit != null ? texteTraduit.toString().substring(0, min(tradLen, 100)) : 'NULL'}');
-    
-    // Le backend retourne la traduction dans 'originalText' comme string JSON
-    // Format: "{\"texte\":\"texte traduit\"}"
-    String finalTexteTraduit = '';
-    
-    if (texteTraduit != null && texteTraduit.toString().isNotEmpty) {
-      finalTexteTraduit = texteTraduit.toString();
-    } else if (originalText != null && originalText.toString().startsWith('{')) {
-      // Essayer de parser originalText comme JSON pour extraire la traduction
-      try {
-        final decoded = jsonDecode(originalText.toString()) as Map<String, dynamic>;
-        finalTexteTraduit = decoded['texte']?.toString() ?? '';
-        print('✅ Texte traduit extrait du JSON: ${finalTexteTraduit.substring(0, min(finalTexteTraduit.length, 100))}');
-      } catch (e) {
-        print('❌ Erreur parsing originalText: $e');
-      }
-    }
-    
-    return TranslationResponse(
-      texteOriginal: json['texteOriginal']?.toString() ?? '',
-      texteTraduit: finalTexteTraduit.isNotEmpty ? finalTexteTraduit : (json['texteTraduit']?.toString() ?? ''),
-    );
-  }
-}
-
-/// Modèle pour la synthèse vocale
-class SpeakRequest {
-  final String texte;
-  final String langue;
-
-  SpeakRequest({required this.texte, required this.langue});
-
-  Map<String, dynamic> toJson() => {
-    'texte': texte,
-    'langue': langue,
-  };
-}
-
-class SpeakResponse {
-  final String audioUrl;
-  final String texte;
-
-  SpeakResponse({
-    required this.audioUrl,
-    required this.texte,
-  });
-
-  factory SpeakResponse.fromJson(Map<String, dynamic> json) => SpeakResponse(
-    audioUrl: json['audioUrl'] ?? '',
-    texte: json['texte'] ?? '',
-  );
-}
+/// Modèle pour les notifications
 
 /// Modèle pour les notifications
 class NotificationResponse {
@@ -503,44 +412,77 @@ class NotificationResponse {
 
 /// Modèle pour les signalements
 class SignalementRequest {
+  final String titre;
+  final String description;
   final String type;
-  final String message;
-  final String? procedureId;
+  final String structure;
 
   SignalementRequest({
+    required this.titre,
+    required this.description,
     required this.type,
-    required this.message,
-    this.procedureId,
+    required this.structure,
   });
 
   Map<String, dynamic> toJson() => {
+    'titre': titre,
+    'description': description,
     'type': type,
-    'message': message,
-    if (procedureId != null) 'procedureId': procedureId,
+    'structure': structure,
   };
 }
 
 class SignalementResponse {
   final String id;
+  final String titre;
+  final String description;
   final String type;
-  final String message;
+  final String structure;
   final DateTime dateCreation;
   final String? statut;
 
   SignalementResponse({
     required this.id,
+    required this.titre,
+    required this.description,
     required this.type,
-    required this.message,
+    required this.structure,
     required this.dateCreation,
     this.statut,
   });
 
   factory SignalementResponse.fromJson(Map<String, dynamic> json) => SignalementResponse(
     id: json['id']?.toString() ?? '',
+    titre: json['titre'] ?? '',
+    description: json['description'] ?? '',
     type: json['type'] ?? '',
-    message: json['message'] ?? '',
+    structure: json['structure'] ?? '',
     dateCreation: DateTime.tryParse(json['dateCreation'] ?? '') ?? DateTime.now(),
     statut: json['statut'],
   );
 }
 
+/// Modèle pour les types de signalements
+class SignalementType {
+  final String id;
+  final String nom;
+  final String? description;
+
+  SignalementType({
+    required this.id,
+    required this.nom,
+    this.description,
+  });
+
+  factory SignalementType.fromJson(Map<String, dynamic> json) => SignalementType(
+    id: json['id']?.toString() ?? '',
+    nom: json['nom'] ?? json['name'] ?? '',
+    description: json['description'],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'nom': nom,
+    'description': description,
+  };
+}

@@ -2,11 +2,16 @@
 // PROCEDURE DETAIL SCREEN - Écran détaillé d'une procédure avec onglets
 // ========================================================================================
 
+import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:dio/dio.dart';
 import '../../models/api_models.dart';
-import '../../core/services/chatbot_service.dart';
+import '../../core/widgets/icone_haut_parleur.dart';
+import '../../core/config/api_config.dart';
+import '../../core/widgets/nearby_center_map.dart';
 
 class ProcedureDetailScreen extends StatefulWidget {
   final ProcedureResponse procedure;
@@ -24,9 +29,6 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTab = 0;
-  late AudioPlayer _audioPlayer;
-  bool _isPlaying = false;
-  bool _isLoadingAudio = false;
 
   @override
   void initState() {
@@ -37,13 +39,76 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
         _selectedTab = _tabController.index;
       });
     });
-    _audioPlayer = AudioPlayer();
+  }
+  
+  /// Construit le texte COMPLET de la procédure pour Djelia AI
+  String _buildFullProcedureText() {
+    debugPrint('🔨 Construction du texte complet de la procédure...');
+    final buffer = StringBuffer();
+    
+    // 1. Titre
+    buffer.writeln('Procédure : ${widget.procedure.titre}.');
+    buffer.writeln();
+    
+    // 2. Description
+    if (widget.procedure.description != null && widget.procedure.description!.isNotEmpty) {
+      buffer.writeln('Description : ${widget.procedure.description}');
+      buffer.writeln();
+    }
+    
+    // 3. Délai
+    if (widget.procedure.delai != null && widget.procedure.delai!.isNotEmpty) {
+      buffer.writeln('Délai : ${widget.procedure.delai}.');
+      buffer.writeln();
+    }
+    
+    // 4. Étapes
+    if (widget.procedure.etapes != null && widget.procedure.etapes!.isNotEmpty) {
+      buffer.writeln('Étapes à suivre :');
+      for (var i = 0; i < widget.procedure.etapes!.length; i++) {
+        final etape = widget.procedure.etapes![i];
+        buffer.writeln('Étape ${i + 1} : ${etape.nom}. ${etape.description}');
+      }
+      buffer.writeln();
+    }
+    
+    // 5. Documents requis
+    if (widget.procedure.documentsRequis.isNotEmpty) {
+      buffer.writeln('Documents requis :');
+      for (var i = 0; i < widget.procedure.documentsRequis.length; i++) {
+        final doc = widget.procedure.documentsRequis[i];
+        buffer.writeln('${i + 1}. ${doc.nom}');
+      }
+      buffer.writeln();
+    }
+    
+    // 6. Coûts
+    if (widget.procedure.couts != null && widget.procedure.couts!.isNotEmpty) {
+      buffer.writeln('Coûts :');
+      for (var cout in widget.procedure.couts!) {
+        buffer.writeln('${cout.nom} : ${cout.prix} francs CFA');
+      }
+      buffer.writeln();
+    }
+    
+    // 7. Centres
+    if (widget.procedure.centres.isNotEmpty) {
+      buffer.writeln('Centres où effectuer la démarche :');
+      for (var centre in widget.procedure.centres) {
+        buffer.writeln('${centre.nom}, ${centre.adresse}');
+      }
+    }
+    
+    final fullText = buffer.toString();
+    debugPrint('✅ Texte complet construit : ${fullText.length} caractères');
+    debugPrint('📄 Aperçu : ${fullText.substring(0, fullText.length > 200 ? 200 : fullText.length)}...');
+    
+    return fullText;
   }
 
   @override
   void dispose() {
     _tabController.dispose();
-    _audioPlayer.dispose();
     super.dispose();
   }
 
@@ -73,36 +138,26 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
           overflow: TextOverflow.ellipsis,
         ),
         actions: [
-          if (_isLoadingAudio)
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-            )
-          else
-            IconButton(
-              icon: Icon(
-                _isPlaying ? Icons.pause_circle_outline : Icons.volume_up,
-                color: Colors.green,
-              ),
-              onPressed: _isPlaying ? _stopAudio : _playAudioBambara,
-            ),
+          // 🎤 Haut-parleur pour lire TOUTE la procédure
+          IconeHautParleur(
+            texteFrancais: _buildFullProcedureText(),
+            couleur: Colors.orange,
+            taille: 24,
+          ),
         ],
       ),
-      body: Column(
+      body: SingleChildScrollView(
+        child: Column(
         children: [
           // Sous-titre
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              widget.procedure.description ?? 'Détails de la procédure',
-              style: TextStyle(
-                fontSize: 14,
-                color: textColor.withOpacity(0.7),
-              ),
+                  child: Text(
+                    widget.procedure.description ?? 'Détails de la procédure',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: textColor.withOpacity(0.7),
+                    ),
             ),
           ),
 
@@ -157,8 +212,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
           ),
 
           // Contenu des onglets
-          Expanded(
-            child: IndexedStack(
+            IndexedStack(
               index: _selectedTab,
               children: [
                 // Onglet Étapes
@@ -173,8 +227,8 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                 _buildCentersTab(context),
               ],
             ),
+          ],
           ),
-        ],
       ),
       floatingActionButton: widget.procedure.urlFormulaire != null &&
               widget.procedure.urlFormulaire!.isNotEmpty
@@ -281,19 +335,21 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     final cardColor = Theme.of(context).cardColor;
 
     if (widget.procedure.etapes == null || widget.procedure.etapes!.isEmpty) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
         child: Text(
           'Aucune étape disponible',
           style: TextStyle(color: textColor.withOpacity(0.5)),
+          ),
         ),
       );
     }
 
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: widget.procedure.etapes!.length,
-      itemBuilder: (context, index) {
-        final etape = widget.procedure.etapes![index];
+      child: Column(
+        children: widget.procedure.etapes!.map((etape) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -333,11 +389,11 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                     if (etape.description.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
-                        etape.description,
-                        style: TextStyle(
-                          color: textColor.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
+                              etape.description,
+                              style: TextStyle(
+                                color: textColor.withOpacity(0.7),
+                                fontSize: 14,
+                              ),
                       ),
                     ],
                   ],
@@ -346,7 +402,8 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
             ],
           ),
         );
-      },
+        }).toList(),
+      ),
     );
   }
 
@@ -355,7 +412,8 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     final cardColor = Theme.of(context).cardColor;
 
     if (widget.procedure.couts == null || widget.procedure.couts!.isEmpty) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
@@ -377,8 +435,9 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     double total = widget.procedure.couts!.fold<double>(
         0, (sum, cout) => sum + cout.prix);
 
-    return ListView(
+    return Padding(
       padding: const EdgeInsets.all(16),
+      child: Column(
       children: [
         if (widget.procedure.delai != null && widget.procedure.delai!.isNotEmpty)
           Container(
@@ -494,6 +553,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
           ),
         ),
       ],
+      ),
     );
   }
 
@@ -501,45 +561,67 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
     final cardColor = Theme.of(context).cardColor;
+    final borderColor = isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300;
 
     if (widget.procedure.documentsRequis.isEmpty) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
         child: Text(
           'Aucun document requis',
           style: TextStyle(color: textColor.withOpacity(0.5)),
+          ),
         ),
       );
     }
 
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: widget.procedure.documentsRequis.length,
-      itemBuilder: (context, index) {
-        final doc = widget.procedure.documentsRequis[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 12),
+      child: Container(
+        width: double.infinity,
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: doc.obligatoire ? Colors.red.shade50 : Colors.blue.shade50,
+          color: cardColor,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: doc.obligatoire ? Colors.red.shade200 : Colors.blue.shade200,
-              width: 1,
+          border: Border.all(color: borderColor),
+        ),
+        child: Column(
+          children: [
+            for (int i = 0; i < widget.procedure.documentsRequis.length; i++) ...[
+              _buildDocumentItem(
+                doc: widget.procedure.documentsRequis[i],
+                textColor: textColor,
+              ),
+              if (i < widget.procedure.documentsRequis.length - 1)
+                const SizedBox(height: 16),
+            ],
+          ],
             ),
           ),
-          child: Row(
+    );
+  }
+
+  Widget _buildDocumentItem({
+    required doc,
+    required Color textColor,
+  }) {
+    return Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+        // Case à cocher
               Container(
                 width: 24,
                 height: 24,
                 decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: doc.obligatoire ? Colors.red : Colors.blue,
+            border: Border.all(
+              color: const Color(0xFF14B53A),
+              width: 2,
+            ),
+            borderRadius: BorderRadius.circular(4),
                 ),
-                child: Icon(
+          child: const Icon(
                   Icons.check,
-                  color: Colors.white,
+            color: Color(0xFF14B53A),
                   size: 16,
                 ),
               ),
@@ -548,45 +630,32 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
+              Text(
                             doc.nom,
                             style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
                               color: textColor,
-                              fontWeight: FontWeight.bold,
-                            ),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: doc.obligatoire
-                                ? Colors.red.shade100
-                                : Colors.blue.shade100,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            doc.obligatoire ? 'Obligatoire' : 'Optionnel',
+              if (doc.description != null && doc.description!.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(
+                  doc.description!,
                             style: TextStyle(
-                              color: doc.obligatoire
-                                  ? Colors.red.shade700
-                                  : Colors.blue.shade700,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    fontSize: 14,
+                    color: textColor.withOpacity(0.7),
                           ),
                         ),
                       ],
-                    ),
-                    if (doc.description != null && doc.description!.isNotEmpty) ...[
-                      const SizedBox(height: 6),
+              if (doc.obligatoire) ...[
+                const SizedBox(height: 4),
                       Text(
-                        doc.description!,
+                  'Obligatoire',
                         style: TextStyle(
-                          color: textColor.withOpacity(0.7),
-                          fontSize: 13,
+                    fontSize: 12,
+                    color: const Color(0xFFF44336),
+                    fontWeight: FontWeight.w500,
                         ),
                       ),
                     ],
@@ -606,9 +675,6 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                 ),
               ),
             ],
-          ),
-        );
-      },
     );
   }
 
@@ -619,19 +685,21 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
 
     if (widget.procedure.referencesLegales == null ||
         widget.procedure.referencesLegales!.isEmpty) {
-      return Center(
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Center(
         child: Text(
           'Aucune référence légale disponible',
           style: TextStyle(color: textColor.withOpacity(0.5)),
+          ),
         ),
       );
     }
 
-    return ListView.builder(
+    return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: widget.procedure.referencesLegales!.length,
-      itemBuilder: (context, index) {
-        final ref = widget.procedure.referencesLegales![index];
+      child: Column(
+        children: widget.procedure.referencesLegales!.map((ref) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -687,7 +755,8 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
             ],
           ),
         );
-      },
+        }).toList(),
+      ),
     );
   }
 
@@ -696,20 +765,14 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
     final cardColor = Theme.of(context).cardColor;
 
-    if (widget.procedure.centres.isEmpty) {
-      return Center(
-        child: Text(
-          'Aucun centre disponible',
-          style: TextStyle(color: textColor.withOpacity(0.5)),
-        ),
-      );
-    }
-
-    return ListView.builder(
+    // Si la procédure a des centres avec coordonnées GPS
+    if (widget.procedure.centres.isNotEmpty && 
+        widget.procedure.centres.any((c) => c.latitude != null && c.longitude != null)) {
+      // Afficher la liste classique des centres
+      return Padding(
       padding: const EdgeInsets.all(16),
-      itemCount: widget.procedure.centres.length,
-      itemBuilder: (context, index) {
-        final centre = widget.procedure.centres[index];
+        child: Column(
+          children: widget.procedure.centres.map((centre) {
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -765,7 +828,34 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
             ],
           ),
         );
-      },
+          }).toList(),
+        ),
+      );
+    }
+
+    // Sinon, utiliser MapBox pour trouver le centre le plus proche
+    // Extraire le type de centre du premier centre ou utiliser un type par défaut
+    String centerType = 'Mairie'; // Type par défaut
+    
+    if (widget.procedure.centres.isNotEmpty) {
+      // Utiliser le nom du premier centre comme type
+      centerType = widget.procedure.centres.first.nom;
+    } else if (widget.procedure.titre.toLowerCase().contains('mairie')) {
+      centerType = 'Mairie';
+    } else if (widget.procedure.titre.toLowerCase().contains('commissariat') ||
+               widget.procedure.titre.toLowerCase().contains('police')) {
+      centerType = 'Commissariat';
+    } else if (widget.procedure.titre.toLowerCase().contains('hôpital') ||
+               widget.procedure.titre.toLowerCase().contains('hopital') ||
+               widget.procedure.titre.toLowerCase().contains('santé')) {
+      centerType = 'Hôpital';
+    }
+
+    // Afficher la carte MapBox interactive
+    return SingleChildScrollView(
+      child: NearbyCenterMap(
+        centerType: centerType,
+      ),
     );
   }
 
@@ -804,161 +894,8 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     }
   }
 
-  Future<void> _playAudioBambara() async {
-    try {
-      setState(() {
-        _isLoadingAudio = true;
-      });
+  // Removed _playAudioBambara method that used chatbot service
+  // Removed _playStepAudio method that used chatbot service  // Removed _playStepAudioBambara method that used chatbot service
+  // Removed _playDescriptionAudio method that used chatbot service
 
-      // Construire le texte complet de la procédure
-      final StringBuffer texte = StringBuffer();
-      
-      texte.writeln(widget.procedure.titre);
-      
-      if (widget.procedure.description != null && 
-          widget.procedure.description!.isNotEmpty) {
-        texte.writeln(widget.procedure.description);
-      }
-      
-      if (widget.procedure.delai != null && widget.procedure.delai!.isNotEmpty) {
-        texte.writeln('Délai: ${widget.procedure.delai}');
-      }
-      
-      // Ajouter les étapes si disponibles
-      if (widget.procedure.etapes != null && widget.procedure.etapes!.isNotEmpty) {
-        texte.writeln('Les étapes à suivre:');
-        for (var etape in widget.procedure.etapes!) {
-          texte.writeln('${etape.niveauOrdre}. ${etape.nom}: ${etape.description}');
-        }
-      }
-      
-      // Ajouter les documents requis
-      if (widget.procedure.documentsRequis.isNotEmpty) {
-        texte.writeln('Documents requis:');
-        for (var doc in widget.procedure.documentsRequis) {
-          texte.writeln('- ${doc.nom}');
-        }
-      }
-      
-      // Ajouter les centres de traitement
-      if (widget.procedure.centres.isNotEmpty) {
-        texte.writeln('Centres de traitement:');
-        for (var centre in widget.procedure.centres) {
-          texte.writeln('- ${centre.nom}, ${centre.adresse}');
-        }
-      }
-
-      final texteFinal = texte.toString();
-      
-      print('🔊 Texte à lire en Bambara (${texteFinal.length} caractères)');
-      
-      // ÉTAPE 1: Traduire le contenu en Bambara avec Djelia AI
-      print('🌐 Traduction en Bambara...');
-      final translated = await chatbotService.translateFrToBm(texteFinal);
-      
-      if (mounted) {
-        setState(() {
-          _isLoadingAudio = false;
-        });
-        
-        if (translated.texteTraduit != null && translated.texteTraduit!.isNotEmpty) {
-          final preview = translated.texteTraduit!.length > 100 
-              ? translated.texteTraduit!.substring(0, 100) 
-              : translated.texteTraduit!;
-          print('✅ Texte traduit en Bambara: $preview...');
-          
-          // ÉTAPE 2: Utiliser la synthèse vocale de Djelia AI
-          print('🎵 Génération audio avec Djelia AI...');
-          final speakResponse = await chatbotService.speak(
-            translated.texteTraduit!,
-            'bm',
-          );
-          
-          print('🎵 URL audio de Djelia AI: ${speakResponse.audioUrl}');
-          
-          if (speakResponse.audioUrl != null && speakResponse.audioUrl!.isNotEmpty) {
-            // L'URL audio générée par Djelia AI
-            var audioUrl = speakResponse.audioUrl!;
-            
-            // Remplacer localhost par 10.0.2.2 pour l'émulateur Android
-            if (audioUrl.contains('localhost')) {
-              audioUrl = audioUrl.replaceAll('localhost', '10.0.2.2');
-              print('🔄 URL corrigée pour émulateur: $audioUrl');
-            }
-            
-            try {
-              // Jouer l'audio généré par Djelia AI
-              await _audioPlayer.setUrl(audioUrl);
-              setState(() {
-                _isPlaying = true;
-              });
-              
-              // Écouter la fin de la lecture
-              _audioPlayer.playerStateStream.listen((state) {
-                if (state.processingState == ProcessingState.completed) {
-                  setState(() {
-                    _isPlaying = false;
-                  });
-                }
-              });
-              
-              await _audioPlayer.play();
-            } catch (e) {
-              print('❌ Erreur lecture audio URL: $e');
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Erreur lecture audio: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }
-          } else {
-            print('❌ Pas d\'URL audio dans la réponse de Djelia AI');
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Erreur: Djelia AI n\'a pas retourné d\'URL audio'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          }
-        } else {
-          print('❌ Traduction échouée ou vide');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Erreur: impossible de traduire en Bambara'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
-      }
-    } catch (e) {
-      print('❌ Erreur lecture audio: $e');
-      if (mounted) {
-        setState(() {
-          _isLoadingAudio = false;
-          _isPlaying = false;
-        });
-        
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Erreur lors de la lecture: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  Future<void> _stopAudio() async {
-    await _audioPlayer.stop();
-    setState(() {
-      _isPlaying = false;
-    });
-  }
 }

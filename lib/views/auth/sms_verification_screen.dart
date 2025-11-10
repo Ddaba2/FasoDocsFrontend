@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // Note: Assurez-vous que le chemin vers HomeScreen est correct.
 import '../home/home_screen.dart'; // Placeholder pour la navigation
+import '../../core/services/auth_service.dart';
 
 class SMSVerificationScreen extends StatefulWidget {
-  const SMSVerificationScreen({super.key});
+  final String telephone;
+  
+  const SMSVerificationScreen({super.key, required this.telephone});
 
   @override
   State<SMSVerificationScreen> createState() => _SMSVerificationScreenState();
@@ -17,12 +20,11 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
   // Liste des TextEditingController et FocusNode pour chaque boîte de saisie
   late final List<TextEditingController> _controllers;
   late final List<FocusNode> _focusNodes;
-
-  final String _phoneNumber = '+223 74 32 38 74'; // Numéro visible dans l'image
+  bool _isLoading = false;
 
   // Chemin d'asset du logo pour la vérification SMS
-  // REMPLACEZ CECI PAR LE CHEMIN RÉEL DE VOTRE LOGO D'ARCHE V-J-R
-  final String _logoAssetPath = 'assets/images/mali_logo_sms.png';
+  // Utilise le logo FasoDocs disponible
+  final String _logoAssetPath = 'assets/images/FasoDocs.png';
 
   @override
   void initState() {
@@ -68,22 +70,55 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
   }
 
   // Gère la validation et la navigation (associée au bouton "Confirmer")
-  void _handleContinue() {
+  void _handleContinue() async {
     final code = _getOTP();
-    // Vérifier si le code a la bonne longueur (4 chiffres)
-    if (code.length == _otpLength) {
-      // Simulation de la vérification réussie
-      // Dans une application réelle, vous feriez ici un appel API
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const HomeScreen()),
-      );
-    } else {
+    
+    if (code.length != _otpLength) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Veuillez saisir le code complet'),
           backgroundColor: Colors.red,
         ),
       );
+      return;
+    }
+    
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Appeler l'API pour vérifier le code SMS
+      final jwtResponse = await authService.verifierSms(widget.telephone, code);
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Afficher un message de succès
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(jwtResponse.message)),
+        );
+        
+        // Naviguer vers l'écran d'accueil
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const HomeScreen()),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Code invalide: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -230,7 +265,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
 
                   // Message d'instruction
                   Text(
-                    'Nous avons envoyé votre code au $_phoneNumber',
+                    'Nous avons envoyé votre code au ${widget.telephone}',
                     style: TextStyle(
                       fontSize: screenWidth * 0.04,
                       color: textColor,
@@ -254,7 +289,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _handleContinue,
+                      onPressed: _isLoading ? null : _handleContinue,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: const Color(0xFF14B53A),
                         foregroundColor: Colors.white,
@@ -265,13 +300,17 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                         elevation: 5,
                         shadowColor: Colors.black.withOpacity(0.4),
                       ),
-                      child: Text(
-                        'Confirmer',
-                        style: TextStyle(
-                          fontSize: screenWidth * 0.05,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
+                      child: _isLoading
+                          ? const CircularProgressIndicator(
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            )
+                          : Text(
+                              'Confirmer',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.05,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
                     ),
                   ),
 

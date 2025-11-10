@@ -13,12 +13,14 @@ class SubcategoryListScreen extends StatefulWidget {
   final String categorieId;
   final String categorieNom;
   final String? categorieEmoji;
+  final CategorieResponse? category;
   
   const SubcategoryListScreen({
     super.key,
     required this.categorieId,
     required this.categorieNom,
     this.categorieEmoji,
+    this.category,
   });
 
   @override
@@ -30,74 +32,102 @@ class _SubcategoryListScreenState extends State<SubcategoryListScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   
+  // Override d'ID pour certaines sous-catégories lorsque l'API renvoie des IDs inconsistants
+  // Clés et valeurs sont comparées sur des noms canonicalisés
+  final Map<String, String> _sousCategorieNameToIdOverride = const {
+    'carte nationale d\'identite biometrigue': '7',
+    'carte nationale d\'identite biometriguee': '7',
+    'carte nationale d\'identite biometrieque': '7',
+    'carte nationale d\'identite biometrque': '7',
+    'carte nationale d\'identite biometr ique': '7',
+    'carte nationale d\'identite biometr iquee': '7',
+    'demande de liberation conditionnelle': '54',
+    'entreprise individuelle': '15',
+    'entreprise sarl': '16',
+    'fiche individuelle': '8',
+    'logements sociaux': '35',
+    'passeport malien': '9',
+    'permis de construire a usage industriel': '33',
+    'permis de construire a usage personnel': '32',
+    'reglement d\'un litige': '51',
+    'societes anonymes (sa)': '18',
+    'societes en nom collectif (snc)': '19',
+    'societes par actions simplifiees (sas)': '21',
+    'taxe sur l\'acces au reseau des telecommunications ouvert au public (tartop)': '83',
+    'verification des titres de proprietes': '37',
+  };
+  
   @override
   void initState() {
     super.initState();
     _loadSousCategories();
   }
   
-  // Charger les sous-catégories depuis l'API
+  /// Charger les sous-catégories depuis l'API
   Future<void> _loadSousCategories() async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
-    
+
     try {
       print('🔍 Chargement des sous-catégories pour catégorie: ${widget.categorieId}');
       
-      // Essayer d'abord de charger les sous-catégories
-      try {
-        final sousCategories = await categoryService.getSousCategoriesByCategorie(widget.categorieId);
-        print('✅ ${sousCategories.length} sous-catégorie(s) reçue(s) du backend');
-        
+      // Vérifier si la catégorie contient déjà les sous-catégories
+      // (cas où elles sont incluses dans la réponse de l'API des catégories)
+      if (widget.category != null && widget.category!.sousCategories.isNotEmpty) {
+        print('✅ Utilisation des sous-catégories déjà chargées (${widget.category!.sousCategories.length})');
         setState(() {
-          _sousCategories = sousCategories;
+          _sousCategories = widget.category!.sousCategories;
           _isLoading = false;
         });
-      } catch (e) {
-        // Si l'endpoint des sous-catégories ne fonctionne pas (StackOverflowError côté backend),
-        // charger directement les procédures de cette catégorie
-        print('⚠️ Erreur sous-catégories (StackOverflow backend), chargement direct des procédures');
+        return;
+      }
+      
+      // Sinon, charger depuis l'API
+      final sousCategories = await categoryService.getSousCategoriesByCategorie(widget.categorieId);
+      print('✅ ${sousCategories.length} sous-catégorie(s) reçue(s) du backend');
+      
+      setState(() {
+        _sousCategories = sousCategories;
+        _isLoading = false;
+      });
+    } catch (e) {
+      // Si l'endpoint des sous-catégories ne fonctionne pas (StackOverflowError côté backend),
+      // charger directement les procédures de cette catégorie
+      print('⚠️ Erreur sous-catégories (StackOverflow backend), chargement direct des procédures');
+      
+      // Afficher un message temporaire
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('⚠️ Affichage direct des procédures (bug backend sur sous-catégories)'),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      
+      try {
+        final procedures = await procedureService.getProceduresByCategorie(widget.categorieId);
+        print('✅ ${procedures.length} procédure(s) trouvée(s) directement');
         
-        // Afficher un message temporaire
+        // Naviguer directement vers les procédures
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('⚠️ Affichage direct des procédures (bug backend sur sous-catégories)'),
-              duration: Duration(seconds: 3),
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => ProcedureListScreen(
+                categorieId: widget.categorieId,
+                categorieNom: widget.categorieNom,
+              ),
             ),
           );
         }
-        
-        try {
-          final procedures = await procedureService.getProceduresByCategorie(widget.categorieId);
-          print('✅ ${procedures.length} procédure(s) trouvée(s) directement');
-          
-          // Naviguer directement vers les procédures
-          if (mounted) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(
-                builder: (_) => ProcedureListScreen(
-                  categorieId: widget.categorieId,
-                  categorieNom: widget.categorieNom,
-                ),
-              ),
-            );
-          }
-        } catch (e2) {
-          setState(() {
-            _errorMessage = 'Impossible de charger les données. Erreur backend: StackOverflowError';
-            _isLoading = false;
-          });
-        }
+      } catch (e2) {
+        setState(() {
+          _errorMessage = 'Impossible de charger les données. Erreur backend: StackOverflowError';
+          _isLoading = false;
+        });
       }
-    } catch (e) {
-      print('❌ Erreur finale: $e');
-      setState(() {
-        _errorMessage = 'Erreur de chargement: $e';
-        _isLoading = false;
-      });
     }
   }
   
@@ -189,7 +219,7 @@ class _SubcategoryListScreenState extends State<SubcategoryListScreen> {
           crossAxisCount: 2,
           mainAxisSpacing: 16,
           crossAxisSpacing: 16,
-          childAspectRatio: 0.85,
+          childAspectRatio: 0.9,
         ),
         itemCount: _sousCategories.length,
         itemBuilder: (context, index) {
@@ -239,41 +269,172 @@ class _SubcategoryListScreenState extends State<SubcategoryListScreen> {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: () async {
-          print('📋 Clic sur sous-catégorie: ${sousCategorie.nom}');
+          print('📋 Clic sur sous-catégorie: ${sousCategorie.nom} (ID: ${sousCategorie.id})');
           
           try {
             // Charger les procédures de cette sous-catégorie
+            print('🔍 Appel API: GET /procedures/sous-categorie/${sousCategorie.id}');
             final procedures = await procedureService.getProceduresBySousCategorie(sousCategorie.id);
             print('✅ ${procedures.length} procédure(s) trouvée(s) pour cette sous-catégorie');
             
+            // Debug: afficher les détails des procédures
+            if (procedures.isNotEmpty) {
+              for (var proc in procedures) {
+                print('  - ${proc.nom} (ID: ${proc.id}, Sous-cat: ${proc.sousCategorie?.nom ?? "null"})');
+                print('    Références légales: ${proc.referencesLegales?.length ?? 0}');
+              }
+            }
+            
+            // Si aucune procédure, essayer un override d'ID basé sur le nom
             if (procedures.isEmpty) {
-              // Aucune procédure, afficher un message
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Aucune procédure disponible pour cette sous-catégorie'),
-                  duration: Duration(seconds: 2),
-                ),
-              );
-            } else if (procedures.length == 1) {
-              // Une seule procédure, afficher directement le détail
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ProcedureDetailScreen(procedure: procedures[0]),
-                ),
-              );
-            } else {
-              // Plusieurs procédures, afficher la liste
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => ProcedureListScreen(
-                    categorieId: sousCategorie.categorieId,
-                    categorieNom: sousCategorie.nom,
+              final canonicalName = _canonicalizeName(sousCategorie.nom);
+              final overrideId = _sousCategorieNameToIdOverride[canonicalName];
+              if (overrideId != null && overrideId.toString() != sousCategorie.id.toString()) {
+                print('🔁 Aucun résultat avec ID ${sousCategorie.id}. Tentative avec override ID=$overrideId pour "$canonicalName"');
+                try {
+                  final altProcedures = await procedureService.getProceduresBySousCategorie(overrideId);
+                  print('✅ ${altProcedures.length} procédure(s) trouvée(s) via override ID');
+                  if (altProcedures.isNotEmpty) {
+                    _navigateToProcedures(altProcedures, sousCategorie.nom);
+                    return;
+                  }
+                } catch (e) {
+                  print('❌ Échec override ID: $e');
+                }
+              }
+
+              // Si toujours vide, essayer de charger toutes les procédures de la catégorie et filtrer
+              print('⚠️ Aucune procédure via endpoint sous-catégorie, tentative avec toutes les procédures de la catégorie');
+              print('🔍 Sous-catégorie recherchée - ID: "${sousCategorie.id}" (${sousCategorie.id.runtimeType}), Nom: "${sousCategorie.nom}"');
+              
+              try {
+                final allProcedures = await procedureService.getProceduresByCategorie(widget.categorieId);
+                print('📋 ${allProcedures.length} procédure(s) trouvée(s) au total dans la catégorie "${widget.categorieNom}"');
+                
+                // Log détaillé de toutes les procédures avec leur sous-catégorie
+                print('\n📊 Analyse des procédures:');
+                for (var i = 0; i < allProcedures.length; i++) {
+                  final proc = allProcedures[i];
+                  if (proc.sousCategorie != null) {
+                    print('  [$i] ${proc.nom}');
+                    print('      Sous-cat ID: "${proc.sousCategorie!.id}" (${proc.sousCategorie!.id.runtimeType})');
+                    print('      Sous-cat Nom: "${proc.sousCategorie!.nom}"');
+                    print('      Correspond ID? ${proc.sousCategorie!.id.toString() == sousCategorie.id.toString()}');
+                    print('      Correspond Nom? ${_normalizeString(proc.sousCategorie!.nom) == _normalizeString(sousCategorie.nom)}');
+                  } else {
+                    print('  [$i] ${proc.nom} - ❌ PAS DE SOUS-CATÉGORIE');
+                  }
+                }
+                print('');
+                
+                // Fonction helper pour normaliser les strings (supprimer accents, espaces multiples, etc.)
+                String normalizeString(String str) {
+                  return str
+                      .toLowerCase()
+                      .replaceAll(RegExp(r'\s+'), ' ') // Espaces multiples -> un seul
+                      .trim()
+                      .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+                      .replaceAll(RegExp(r'[èéêë]'), 'e')
+                      .replaceAll(RegExp(r'[ìíîï]'), 'i')
+                      .replaceAll(RegExp(r'[òóôõö]'), 'o')
+                      .replaceAll(RegExp(r'[ùúûü]'), 'u')
+                      .replaceAll(RegExp(r'[ç]'), 'c');
+                }
+                
+                // Filtrer par sous-catégorie (par nom ou ID) avec normalisation améliorée
+                final filteredProcedures = allProcedures.where((proc) {
+                  if (proc.sousCategorie == null) {
+                    return false;
+                  }
+                  
+                  // Correspondance par ID (string ou int)
+                  final procSousCatId = proc.sousCategorie!.id.toString().trim();
+                  final clickedSousCatId = sousCategorie.id.toString().trim();
+                  final idMatch = procSousCatId == clickedSousCatId;
+                  
+                  // Correspondance par nom avec normalisation + canonisation
+                  final procSousCatNom = _canonicalizeName(proc.sousCategorie!.nom);
+                  final clickedSousCatNom = _canonicalizeName(sousCategorie.nom);
+                  final nomMatch = procSousCatNom == clickedSousCatNom;
+                  
+                  // Correspondance partielle si le nom contient la sous-catégorie
+                  final nomContains = procSousCatNom.contains(clickedSousCatNom) || 
+                                       clickedSousCatNom.contains(procSousCatNom);
+                  
+                  final matches = idMatch || nomMatch || nomContains;
+                  
+                  if (matches) {
+                    print('✅ Match trouvé: "${proc.nom}" (Sous-cat: "${proc.sousCategorie!.nom}")');
+                  }
+                  
+                  return matches;
+                }).toList();
+                
+                print('✅ ${filteredProcedures.length} procédure(s) filtrée(s) pour "${sousCategorie.nom}"');
+                
+                // Si toujours vide, essayer de charger TOUTES les procédures (pas seulement celles de la catégorie)
+                if (filteredProcedures.isEmpty) {
+                  print('⚠️ Aucune correspondance dans la catégorie, tentative avec TOUTES les procédures');
+                  try {
+                    final allProceduresAllCategories = await procedureService.getAllProcedures();
+                    print('📋 ${allProceduresAllCategories.length} procédure(s) trouvée(s) au total (toutes catégories)');
+                    
+                    final filteredAll = allProceduresAllCategories.where((proc) {
+                      if (proc.sousCategorie == null) return false;
+                      
+                      final procSousCatId = proc.sousCategorie!.id.toString().trim();
+                      final clickedSousCatId = sousCategorie.id.toString().trim();
+                      final idMatch = procSousCatId == clickedSousCatId;
+                      
+                      final procSousCatNom = _canonicalizeName(proc.sousCategorie!.nom);
+                      final clickedSousCatNom = _canonicalizeName(sousCategorie.nom);
+                      final nomMatch = procSousCatNom == clickedSousCatNom;
+                      final nomContains = procSousCatNom.contains(clickedSousCatNom) || 
+                                           clickedSousCatNom.contains(procSousCatNom);
+                      
+                      return idMatch || nomMatch || nomContains;
+                    }).toList();
+                    
+                    print('✅ ${filteredAll.length} procédure(s) trouvée(s) dans toutes les catégories');
+                    
+                    if (filteredAll.isNotEmpty) {
+                      _navigateToProcedures(filteredAll, sousCategorie.nom);
+                      return;
+                    }
+                  } catch (e) {
+                    print('❌ Erreur lors du chargement de toutes les procédures: $e');
+                  }
+                  
+                  // Aucune procédure trouvée même après tous les essais
+                  print('❌ AUCUNE CORRESPONDANCE TROUVÉE pour sous-catégorie "${sousCategorie.nom}" (ID: ${sousCategorie.id})');
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Aucune procédure disponible pour "${sousCategorie.nom}"'),
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                  return;
+                }
+                
+                // Utiliser les procédures filtrées
+                _navigateToProcedures(filteredProcedures, sousCategorie.nom);
+                
+              } catch (e) {
+                print('❌ Erreur lors du fallback: $e');
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Aucune procédure disponible pour cette sous-catégorie'),
+                    duration: Duration(seconds: 2),
                   ),
-                ),
-              );
+                );
+              }
+            } else {
+              // Utiliser les procédures trouvées
+              _navigateToProcedures(procedures, sousCategorie.nom);
             }
           } catch (e) {
-            print('❌ Erreur: $e');
+            print('❌ Erreur lors du chargement des procédures: $e');
+            print('❌ Stack trace: ${StackTrace.current}');
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text('Erreur: $e'),
@@ -312,7 +473,7 @@ class _SubcategoryListScreenState extends State<SubcategoryListScreen> {
                   fontWeight: FontWeight.w500,
                   color: textColor,
                 ),
-                maxLines: 3,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -321,5 +482,80 @@ class _SubcategoryListScreenState extends State<SubcategoryListScreen> {
       ),
     );
   }
-}
 
+  // Helper pour normaliser les strings (supprimer accents, espaces multiples, etc.)
+  String _normalizeString(String str) {
+    return str
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), ' ') // Espaces multiples -> un seul
+        .trim()
+        .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+        .replaceAll(RegExp(r'[èéêë]'), 'e')
+        .replaceAll(RegExp(r'[ìíîï]'), 'i')
+        .replaceAll(RegExp(r'[òóôõö]'), 'o')
+        .replaceAll(RegExp(r'[ùúûü]'), 'u')
+        .replaceAll(RegExp(r'[ç]'), 'c');
+  }
+
+  // Canonicalise des variantes fréquentes de libellés provenant de la BDD
+  String _canonicalizeName(String input) {
+    String s = _normalizeString(input);
+    // Variantes connues
+    final replacements = <String, String>{
+      'entreprise individuel': 'entreprise individuelle',
+      'entreprise sarl': 'entreprise sarl',
+      'societes anonymes (sa)': 'societes anonymes (sa)',
+      'societes par actions simplifiees (sas)': 'societes par actions simplifiees (sas)',
+      'societes en nom collectif (snc)': 'societes en nom collectif (snc)',
+      'permis de construire a usage personnelle': 'permis de construire a usage personnel',
+      'logement sociaux': 'logements sociaux',
+      'verifications des titres de proprietes': 'verification des titres de proprietes',
+      'verification des titres de propriete': 'verification des titres de proprietes',
+      'fiche individuelle': 'fiche individuelle',
+      'passeport malien': 'passeport malien',
+    };
+
+    // Remplacements exacts
+    if (replacements.containsKey(s)) return replacements[s]!;
+
+    // Corrections simples de pluriels/espaces
+    s = s.replaceAll("  ", " ");
+    if (s.endsWith('  ')) s = s.trim();
+    return s;
+  }
+
+  // Méthode helper pour naviguer vers les procédures
+  void _navigateToProcedures(List<ProcedureResponse> procedures, String title) {
+    if (procedures.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Aucune procédure disponible'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    if (procedures.length == 1) {
+      // Une seule procédure, afficher directement le détail
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProcedureDetailScreen(procedure: procedures[0]),
+        ),
+      );
+    } else {
+      // Plusieurs procédures, afficher la liste
+      // Note: ProcedureListScreen attend un categorieId, mais on peut créer un écran spécialisé
+      // Pour l'instant, on utilise ProcedureListScreen avec le widget.categorieId
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ProcedureListScreen(
+            categorieId: widget.categorieId,
+            categorieNom: title,
+            procedures: procedures, // Passer les procédures directement
+          ),
+        ),
+      );
+    }
+  }
+}
