@@ -23,28 +23,72 @@ class DefaultCenter {
 
 /// Liste des centres principaux de Bamako
 class DefaultCentersBamako {
-  // ⚠️ TOUTES LES LISTES SONT VIDES POUR FORCER L'UTILISATION DE MAPBOX
-  // Les coordonnées générées automatiquement étaient incorrectes
-  // MapBox retournera les VRAIES coordonnées depuis OpenStreetMap
+  // ⚠️ COORDONNÉES GPS VÉRIFIÉES SUR GOOGLE MAPS
   
   static const List<DefaultCenter> mairies = [];
-  static const List<DefaultCenter> commissariats = [];
+  
+  static const List<DefaultCenter> commissariats = [
+    DefaultCenter(
+      name: 'Commissariat de Police',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.57838103514128,
+      longitude: -7.987034250045301, 
+      phone: null, // À compléter si disponible
+      plusCode: 'H2H7+36M',
+    ),
+  ];
+  
   static const List<DefaultCenter> tribunaux = [];
-  static const List<DefaultCenter> hopitaux = [];
   static const List<DefaultCenter> somagep = [];
   static const List<DefaultCenter> edm = [];
-  static const List<DefaultCenter> administrations = [];
+  static const List<DefaultCenter> transports = [];
   static const List<DefaultCenter> ministeres = [];
   static const List<DefaultCenter> impots = [];
   
   /// Obtenir les centres selon le type
   static List<DefaultCenter> getCentersByType(String centerType) {
-    // Retourner liste vide pour forcer MapBox
+    final lowerType = centerType.toLowerCase();
+    
+    if (lowerType.contains('commissariat') || lowerType.contains('police')) {
+      return commissariats;
+    }
+    if (lowerType.contains('mairie')) {
+      return mairies;
+    }
+    if (lowerType.contains('tribunal')) {
+      return tribunaux;
+    }
+    if (lowerType.contains('somagep') || lowerType.contains('eau')) {
+      return somagep;
+    }
+    if (lowerType.contains('edm') || lowerType.contains('électricité')) {
+      return edm;
+    }
+    if (lowerType.contains('transports') || lowerType.contains('transports')) {
+      return transports;
+    }
+    if (lowerType.contains('ministère') || lowerType.contains('ministeres')) {
+      return ministeres;
+    }
+    if (lowerType.contains('impôt') || lowerType.contains('impot')) {
+      return impots;
+    }
+    
     return [];
   }
   
   /// Obtenir tous les centres (toutes catégories)
   static List<DefaultCenter> getAllCenters() {
-    return [];
+    return [
+      ...mairies,
+      ...commissariats,
+      ...tribunaux,
+      ...somagep,
+      ...edm,
+      ...transports,
+      ...ministeres,
+      ...impots,
+    ];
   }
 }

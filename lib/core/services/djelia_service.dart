@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io' if (dart.library.html) 'dart:html';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,28 +23,19 @@ class DjeliaService {
       // et communique avec le backend sur localhost:8080
       return "http://localhost:8080/api/djelia";
       
-    } else if (Platform.isAndroid) {
-      // 📱 ANDROID
-      // Détecte automatiquement si émulateur ou appareil réel
-      return _getAndroidUrl();
-      
-    } else if (Platform.isIOS) {
-      // 🍎 iOS
-      return "http://localhost:8080/api/djelia";
-      
     } else {
-      // 💻 Desktop (Windows/Mac/Linux)
-      return "http://localhost:8080/api/djelia";
+      // 📱 MOBILE (Android/iOS) ou 💻 Desktop
+      // Utilise l'URL par défaut ou détectée
+      return _getNativeUrl();
     }
   }
   
-  /// Détermine l'URL pour Android (émulateur vs appareil réel)
-  static String _getAndroidUrl() {
-    // Par défaut, on utilise l'URL pour émulateur
-    // Pour appareil réel, changez cette valeur dans les paramètres de l'app
-    // ou utilisez l'écran de configuration
-    return "http://10.0.2.2:8080/api/djelia";  // Émulateur
-    // return "http://192.168.1.100:8080/api/djelia";  // Appareil réel (remplacer par votre IP)
+  /// Détermine l'URL pour les plateformes natives (Android, iOS, Desktop)
+  static String _getNativeUrl() {
+    // Par défaut, utilise localhost
+    // Pour Android émulateur: "http://10.0.2.2:8080/api/djelia"
+    // Pour Android réel: modifiez dans les paramètres ou utilisez une IP
+    return "http://localhost:8080/api/djelia";
   }
   
   /// Traduit du français en bambara ET génère l'audio
@@ -160,13 +150,11 @@ class DjeliaService {
   
   /// Retourne le nom de la plateforme actuelle
   static String _getPlatformName() {
-    if (kIsWeb) return 'Web (Chrome)';
-    if (Platform.isAndroid) return 'Android';
-    if (Platform.isIOS) return 'iOS';
-    if (Platform.isWindows) return 'Windows';
-    if (Platform.isMacOS) return 'macOS';
-    if (Platform.isLinux) return 'Linux';
-    return 'Inconnue';
+    if (kIsWeb) {
+      return 'Web (Chrome)';
+    }
+    // Pour les plateformes natives, retourner un nom générique
+    return 'Mobile/Desktop';
   }
   
   /// Test de connexion au backend

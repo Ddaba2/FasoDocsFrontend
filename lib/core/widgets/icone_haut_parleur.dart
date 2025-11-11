@@ -1,10 +1,12 @@
 import 'dart:convert';
-import 'dart:io' if (dart.library.html) 'dart:html';
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
 import '../services/djelia_service.dart';
+import 'package:path_provider/path_provider.dart';
+
+// Import conditionnel pour les opérations fichier
+import 'file_helper_io.dart' if (dart.library.html) 'file_helper_web.dart';
 
 class IconeHautParleur extends StatefulWidget {
   final String texteFrancais;
@@ -161,22 +163,28 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
   
   /// Joue l'audio sur Mobile (Android/iOS)
   Future<void> _jouerAudioMobile(String audioBase64) async {
+    if (kIsWeb) {
+      throw Exception('_jouerAudioMobile ne doit pas être appelé sur le web');
+    }
+    
     try {
       debugPrint('📱 Lecture audio sur Mobile...');
       
       // Décoder l'audio Base64 en bytes
       final audioBytes = base64Decode(audioBase64);
       
-      // Sauvegarder temporairement dans un fichier
+      // Sauvegarder temporairement dans un fichier (dart:io uniquement)
       final tempDir = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final audioFile = File('${tempDir.path}/djelia_audio_$timestamp.wav');
-      await audioFile.writeAsBytes(audioBytes);
+      final filePath = '${tempDir.path}/djelia_audio_$timestamp.wav';
       
-      debugPrint('📁 Fichier audio créé : ${audioFile.path}');
+      // Créer et écrire le fichier
+      await FileHelper.writeAudioFile(filePath, audioBytes);
+      
+      debugPrint('📁 Fichier audio créé : $filePath');
       
       // Jouer l'audio depuis le fichier
-      await _audioPlayer.setFilePath(audioFile.path);
+      await _audioPlayer.setFilePath(filePath);
       await _audioPlayer.play();
       
       debugPrint('✅ Audio joué sur Mobile');
@@ -185,6 +193,7 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
       throw Exception('Erreur lecture audio Mobile : $e');
     }
   }
+  
   
   @override
   void dispose() {
