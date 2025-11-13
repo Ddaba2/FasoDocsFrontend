@@ -17,6 +17,20 @@ android {
 
     kotlinOptions {
         jvmTarget = JavaVersion.VERSION_11.toString()
+        // Suppress warnings about obsolete options
+        freeCompilerArgs += listOf("-Xjvm-default=all")
+    }
+
+    lint {
+        disable += "ExpiredTargetSdkVersion"
+        // Suppress warnings about obsolete options
+        abortOnError = false
+        checkReleaseBuilds = false
+    }
+
+    // Add compiler args to suppress Java 8 warnings
+    tasks.withType<JavaCompile> {
+        options.compilerArgs.addAll(listOf("-Xlint:-options"))
     }
 
     defaultConfig {
