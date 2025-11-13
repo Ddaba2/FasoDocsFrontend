@@ -323,10 +323,18 @@ class _SignupScreenState extends State<SignupScreen> {
                       TextFormField(
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        textInputAction: TextInputAction.next,
+                        enableSuggestions: true,
+                        autocorrect: false,
                         style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Email',
+                          hintText: 'exemple@email.com',
+                          helperText: 'Utilisez le clavier pour taper @ et .com',
+                          helperStyle: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                           labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
+                          hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                           prefixIcon: Icon(
                             Icons.email_outlined,
                             color: textColor,

@@ -149,18 +149,6 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
       body: SingleChildScrollView(
         child: Column(
         children: [
-          // Sous-titre
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Text(
-                    widget.procedure.description ?? 'Détails de la procédure',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: textColor.withOpacity(0.7),
-                    ),
-            ),
-          ),
-
           // Résumé avec compteurs
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
