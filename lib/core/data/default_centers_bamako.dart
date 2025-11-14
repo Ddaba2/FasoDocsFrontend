@@ -259,10 +259,199 @@ class DefaultCentersBamako {
       name: 'Commissariat Police de Sébénikoro',
       type: 'commissariat',
       address: 'Bamako, Mali',
-      latitude: 12.587722262939018,
-      longitude: -8.001223065462735,
-      phone: "20224247", // À compléter si disponible
-      plusCode: 'JX4X+HFP, Bamako',
+      latitude: 12.588392402993437,
+      longitude: -8.072634238185357,
+      phone: "76433380", // À compléter si disponible
+      plusCode: 'HWJH+GFV, Bamako',
+    ),
+    DefaultCenter(
+      name: '1er Arrondissement de Bamako',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.652047714164844,
+      longitude: -8.002253077034057,
+      phone: null, // À compléter si disponible
+      plusCode: 'JXWX+FM3, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Poste de Police de Sabalibougou',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.589732677851227,
+      longitude: -7.998476526923502,
+      phone: null, // À compléter si disponible
+      plusCode: 'H2M2+6JR, Bamako',
+    ),
+    DefaultCenter(
+      name: 'GROUPEMENT MOBILE DE SECURITE GMS',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.66176213055341,
+      longitude: -8.02662899138402,
+      phone: "80001115", // À compléter si disponible
+      plusCode: 'MX4F+P6G, Bamako',
+    ),
+    DefaultCenter(
+      name: 'commissariat 9eme arrondissement',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.593753460409358,
+      longitude: -8.068171042600154,
+      phone: null, // À compléter si disponible
+      plusCode: 'HWPJ+VW4 sebenikoro, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat De Police De Kalaban coro koulouba',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.558904586010623,
+      longitude: -8.018732568425582,
+      phone: "50130353", // À compléter si disponible
+      plusCode: 'HX2H+HQ8, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Poste de Police',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.624242341904496,
+      longitude: -7.989893458490417,
+      phone: null, // À compléter si disponible
+      plusCode: 'J295+GX5, Bamako',
+    ),
+    DefaultCenter(
+      name: '7ème Arrondissement de police la liste',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.60414019020511,
+      longitude: -7.965174221403131,
+      phone: "20200981", // À compléter si disponible
+      plusCode: 'J22P+6HP, Bamako',
+    ),
+    DefaultCenter(
+      name: 'CommissairiatcPolice 6eme',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.677840351387449,
+      longitude: -7.9754739035228335,
+      phone: null, // À compléter si disponible
+      plusCode: 'M29G+7VX, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat de Police de Sotuba, 16eme arrondissement',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.656010145130976,
+      longitude: -7.931631120651401,
+      phone: null, // À compléter si disponible
+      plusCode: 'M34C+224, Unnamed Road, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat de 17 ème arrondissement',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.679457740591259,
+      longitude: -7.980726272088648,
+      phone: null, // À compléter si disponible
+      plusCode: 'M2CC+W9F, Unnamed Road, Bamako',
+    ),
+    DefaultCenter(
+      name: 'POLICE 10ème DE FALADIÉ',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.59537138186958,
+      longitude: -7.963903457959803,
+      phone: "80001115", // À compléter si disponible
+      plusCode: 'H2PM+GW6, Bamako',
+    ),
+    DefaultCenter(
+      name: '12 éme Commissariat',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.678452887890883,
+      longitude: -7.92648127959155,
+      phone: null, // À compléter si disponible
+      plusCode: 'M3CG+CWV, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat de police des 1008 logements',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.584314147939269,
+      longitude: -7.931631120651401,
+      phone: null, // À compléter si disponible
+      plusCode: 'H3G9+X9F, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commisariat de Police 13ème Arrondissement',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.615474221791548,
+      longitude: -7.913435015573261,
+      phone: "20205307", // À compléter si disponible
+      plusCode: 'J35M+MFG, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat de Sotuba',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.661704759434905,
+      longitude: -7.928884538752814,
+      phone: null, // À compléter si disponible
+      plusCode: 'M339+MVX, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat du 19 arrondissement',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.535958482834516,
+      longitude: -7.9338059433887,
+      phone: "20213020", // À compléter si disponible
+      plusCode: 'G3G9+Q86, RN7',
+    ),
+    DefaultCenter(
+      name: 'Commiseriat Kalaban',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.558411744969705,
+      longitude: -7.9993805862174705,
+      phone: "20213020", // À compléter si disponible
+      plusCode: 'HX2X+WV, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat 1ère arrondissement kati',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.749969376422271,
+      longitude: -8.066781470540842,
+      phone: "80001114", // À compléter si disponible
+      plusCode: 'PWRJ+6FM, Kati',
+    ),
+    DefaultCenter(
+      name: 'Le 13ème Arrondissement de Police de BAMAKO',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.599939926019557,
+      longitude: -7.926322648024668,
+      phone: "20205307", // À compléter si disponible
+      plusCode: 'Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat de Yirmadio',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.603290449142742,
+      longitude: -7.921859452439464,
+      phone: null, // À compléter si disponible
+      plusCode: 'H3WH+JG3, Bamako',
+    ),
+    DefaultCenter(
+      name: 'Commissariat de police de Sirakoro',
+      type: 'commissariat',
+      address: 'Bamako, Mali',
+      latitude: 12.578830623695143,
+      longitude: -7.9012600882000585,
+      phone: null, // À compléter si disponible
+      plusCode: 'H4C2+R2P, Bamako',
     ),
   ];
   
