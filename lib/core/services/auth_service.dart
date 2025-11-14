@@ -63,10 +63,21 @@ class AuthService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         return MessageResponse.fromJson(response.data);
       } else {
-        throw Exception('Échec de l\'envoi du code SMS');
+        // Extraire le message d'erreur du backend
+        final errorMsg = response.data?['message'] ?? 'Échec de l\'envoi du code SMS';
+        throw AuthException(
+          message: errorMsg,
+          statusCode: response.statusCode ?? 0,
+        );
       }
     } catch (e) {
-      throw Exception('Erreur: $e');
+      if (e is AuthException) {
+        rethrow;
+      }
+      throw AuthException(
+        message: 'Erreur de connexion: $e',
+        statusCode: 0,
+      );
     }
   }
   
@@ -233,6 +244,25 @@ class AuthService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove('current_user');
   }
+}
+
+// Exception personnalisée pour les erreurs d'authentification
+class AuthException implements Exception {
+  final String message;
+  final int statusCode;
+  
+  AuthException({
+    required this.message,
+    required this.statusCode,
+  });
+  
+  bool get isAccountDisabled => 
+    message.toLowerCase().contains('désactivé') || 
+    message.toLowerCase().contains('desactive') ||
+    message.toLowerCase().contains('disabled');
+  
+  @override
+  String toString() => message;
 }
 
 // Instance globale du service d'authentification

@@ -12,6 +12,7 @@ import '../../models/api_models.dart';
 import '../../core/widgets/icone_haut_parleur.dart';
 import '../../core/config/api_config.dart';
 import '../../core/widgets/nearby_center_map.dart';
+import '../../core/services/history_service.dart';
 
 class ProcedureDetailScreen extends StatefulWidget {
   final ProcedureResponse procedure;
@@ -39,6 +40,29 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
         _selectedTab = _tabController.index;
       });
     });
+    
+    // Enregistrer cette procédure dans l'historique
+    _addToHistory();
+  }
+  
+  /// Ajoute cette procédure à l'historique de navigation
+  Future<void> _addToHistory() async {
+    try {
+      final historyItem = HistoryItem(
+        id: widget.procedure.id,
+        type: HistoryType.procedure,
+        title: widget.procedure.titre,
+        subtitle: widget.procedure.description,
+        metadata: {
+          'categorie': widget.procedure.categorie?.nom,
+          'sousCategorie': widget.procedure.sousCategorie?.nom,
+        },
+      );
+      
+      await historyService.addToHistory(historyItem);
+    } catch (e) {
+      debugPrint('❌ Erreur lors de l\'ajout à l\'historique: $e');
+    }
   }
   
   /// Construit le texte COMPLET de la procédure pour Djelia AI
@@ -165,7 +189,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                 ),
                 _buildSummaryCard(
                   context,
-                  icon: Icons.monetization_on,
+                  imagePath: 'assets/images/fcfa.png',
                   iconColor: Colors.green,
                   label: 'Montant',
                   value: _getAmountSummary(),
@@ -232,7 +256,8 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
 
   Widget _buildSummaryCard(
     BuildContext context, {
-    required IconData icon,
+    IconData? icon,
+    String? imagePath,
     required Color iconColor,
     required String label,
     required String value,
@@ -260,11 +285,28 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              color: iconColor,
-              size: 24,
-            ),
+            // Utiliser l'image si fournie, sinon utiliser l'icône
+            if (imagePath != null)
+              Image.asset(
+                imagePath,
+                width: 24,
+                height: 24,
+                // Retirer le color pour afficher l'image dans ses couleurs d'origine
+                errorBuilder: (context, error, stackTrace) {
+                  // Si l'image n'existe pas, fallback vers l'icône
+                  return Icon(
+                    icon ?? Icons.monetization_on,
+                    color: iconColor,
+                    size: 24,
+                  );
+                },
+              )
+            else
+              Icon(
+                icon ?? Icons.help_outline,
+                color: iconColor,
+                size: 24,
+              ),
             const SizedBox(height: 4),
             Text(
               value,
@@ -366,22 +408,45 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      etape.nom,
-                      style: TextStyle(
-                        color: textColor,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            etape.nom,
+                            style: TextStyle(
+                              color: textColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        IconeHautParleur(
+                          texteFrancais: etape.nom,
+                          couleur: Colors.orange,
+                          taille: 20,
+                        ),
+                      ],
                     ),
                     if (etape.description.isNotEmpty) ...[
                       const SizedBox(height: 6),
-                      Text(
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: Text(
                               etape.description,
                               style: TextStyle(
                                 color: textColor.withOpacity(0.7),
                                 fontSize: 14,
                               ),
+                            ),
+                          ),
+                          IconeHautParleur(
+                            texteFrancais: etape.description,
+                            couleur: Colors.orange,
+                            taille: 20,
+                          ),
+                        ],
                       ),
                     ],
                   ],
@@ -405,7 +470,16 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.monetization_on, size: 64, color: Colors.green),
+            Image.asset(
+              'assets/images/fcfa.png',
+              width: 64,
+              height: 64,
+              // Retirer le color pour afficher l'image dans ses couleurs d'origine
+              errorBuilder: (context, error, stackTrace) {
+                // Si l'image n'existe pas, fallback vers l'icône
+                return const Icon(Icons.monetization_on, size: 64, color: Colors.green);
+              },
+            ),
             const SizedBox(height: 16),
             Text(
               'Gratuit',
@@ -450,12 +524,23 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        widget.procedure.delai!,
-                        style: TextStyle(
-                          color: textColor,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              widget.procedure.delai!,
+                              style: TextStyle(
+                                color: textColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconeHautParleur(
+                            texteFrancais: widget.procedure.delai!,
+                            couleur: Colors.orange,
+                            taille: 20,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -482,20 +567,46 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              cout.nom,
-                              style: TextStyle(
-                                color: textColor,
-                                fontWeight: FontWeight.w500,
-                              ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    cout.nom,
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                IconeHautParleur(
+                                  texteFrancais: cout.nom,
+                                  couleur: Colors.orange,
+                                  taille: 20,
+                                ),
+                              ],
                             ),
                             if (cout.description != null &&
                                 cout.description!.isNotEmpty)
-                              Text(
-                                cout.description!,
-                                style: TextStyle(
-                                  color: textColor.withOpacity(0.7),
-                                  fontSize: 12,
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        cout.description!,
+                                        style: TextStyle(
+                                          color: textColor.withOpacity(0.7),
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
+                                    IconeHautParleur(
+                                      texteFrancais: cout.description!,
+                                      couleur: Colors.orange,
+                                      taille: 20,
+                                    ),
+                                  ],
                                 ),
                               ),
                           ],
@@ -618,23 +729,46 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-              Text(
-                            doc.nom,
-                            style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                              color: textColor,
-                          ),
-                        ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      doc.nom,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: textColor,
+                      ),
+                    ),
+                  ),
+                  IconeHautParleur(
+                    texteFrancais: doc.nom,
+                    couleur: Colors.orange,
+                    taille: 20,
+                  ),
+                ],
+              ),
               if (doc.description != null && doc.description!.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(
-                  doc.description!,
-                            style: TextStyle(
-                    fontSize: 14,
-                    color: textColor.withOpacity(0.7),
-                          ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        doc.description!,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: textColor.withOpacity(0.7),
                         ),
+                      ),
+                    ),
+                    IconeHautParleur(
+                      texteFrancais: doc.description!,
+                      couleur: Colors.orange,
+                      taille: 20,
+                    ),
+                  ],
+                ),
                       ],
               if (doc.obligatoire) ...[
                 const SizedBox(height: 4),
@@ -715,17 +849,34 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                       ),
                     ),
                   ),
+                  IconeHautParleur(
+                    texteFrancais: ref.description,
+                    couleur: Colors.orange,
+                    taille: 20,
+                  ),
                 ],
               ),
               if (ref.article.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text(
-                  ref.article,
-                  style: TextStyle(
-                    color: textColor.withOpacity(0.7),
-                    fontSize: 13,
-                    fontStyle: FontStyle.italic,
-                  ),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        ref.article,
+                        style: TextStyle(
+                          color: textColor.withOpacity(0.7),
+                          fontSize: 13,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                    IconeHautParleur(
+                      texteFrancais: ref.article,
+                      couleur: Colors.orange,
+                      taille: 20,
+                    ),
+                  ],
                 ),
               ],
               if (ref.audioUrl != null && ref.audioUrl!.isNotEmpty) ...[
@@ -789,17 +940,22 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                       ),
                     ),
                   ),
+                  IconeHautParleur(
+                    texteFrancais: centre.nom,
+                    couleur: Colors.orange,
+                    taille: 20,
+                  ),
                 ],
               ),
               const SizedBox(height: 12),
               if (centre.adresse.isNotEmpty)
-                _buildInfoRow(context, Icons.place, centre.adresse),
+                _buildInfoRowWithAudio(context, Icons.place, centre.adresse),
               if (centre.horaires != null && centre.horaires!.isNotEmpty)
-                _buildInfoRow(context, Icons.access_time, centre.horaires!),
+                _buildInfoRowWithAudio(context, Icons.access_time, centre.horaires!),
               if (centre.telephone != null && centre.telephone!.isNotEmpty)
-                _buildInfoRow(context, Icons.phone, centre.telephone!),
+                _buildInfoRowWithAudio(context, Icons.phone, centre.telephone!),
               if (centre.email != null && centre.email!.isNotEmpty)
-                _buildInfoRow(context, Icons.email, centre.email!),
+                _buildInfoRowWithAudio(context, Icons.email, centre.email!),
               if (centre.latitude != null && centre.longitude != null) ...[
                 const SizedBox(height: 8),
                 OutlinedButton.icon(
@@ -861,6 +1017,31 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
               text,
               style: TextStyle(color: textColor, fontSize: 14),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRowWithAudio(BuildContext context, IconData icon, String text) {
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: Colors.green),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(color: textColor, fontSize: 14),
+            ),
+          ),
+          IconeHautParleur(
+            texteFrancais: text,
+            couleur: Colors.orange,
+            taille: 20,
           ),
         ],
       ),

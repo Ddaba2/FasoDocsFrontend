@@ -1,6 +1,7 @@
 // Fichier : communiquee_global/com_global.dart
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../locale/locale_helper.dart';
 
 // Définition de l'écran principal
@@ -89,7 +90,7 @@ class ComGlobalScreen extends StatelessWidget {
             const SizedBox(height: 10),
 
             // 3. Bouton "Tout voir"
-            _buildToutVoirSection(),
+            _buildToutVoirSection('https://sgg-mali.ml/fr/journal-officiel/le-journal-officiel.html'),
 
             const SizedBox(height: 15),
 
@@ -280,12 +281,19 @@ class ComGlobalScreen extends StatelessWidget {
   }
 
   // 3. Fonction pour construire la section "Tout voir"
-  Widget _buildToutVoirSection() {
+  Widget _buildToutVoirSection(String url) {
     return Align(
       alignment: Alignment.centerRight,
       child: TextButton(
-        onPressed: () {
-          // Action "Tout voir"
+        onPressed: () async {
+          // Ouvrir le lien externe
+          final Uri uri = Uri.parse(url);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(
+              uri,
+              mode: LaunchMode.externalApplication,
+            );
+          }
         },
         style: TextButton.styleFrom(
           padding: EdgeInsets.zero,

@@ -4,6 +4,7 @@
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 
 class ApiService {
@@ -23,6 +24,21 @@ class ApiService {
         validateStatus: (status) => status! < 500, // Accepter les codes < 500
       ),
     );
+    
+    // 🔥 AJOUT: Intercepteur pour ajouter Accept-Language automatiquement
+    _dio.interceptors.add(InterceptorsWrapper(
+      onRequest: (options, handler) async {
+        // Récupérer la langue depuis SharedPreferences
+        final prefs = await SharedPreferences.getInstance();
+        final language = prefs.getString('language') ?? 'fr';
+        
+        // Ajouter le header Accept-Language
+        options.headers['Accept-Language'] = language;
+        
+        print('🌐 Accept-Language: $language');
+        return handler.next(options);
+      },
+    ));
     
     // Ajouter les interceptors pour logging (en développement)
     if (kDebugMode) {

@@ -5,6 +5,7 @@ import '../history/history_screen.dart';
 import '../../controllers/report_controller.dart'; // Supposé existant
 import '../../core/services/auth_service.dart';
 import '../../models/api_models.dart';
+import '../../core/widgets/profile_avatar.dart';
 
 // ====================================================================
 // CONVERSION EN STATEFULWIDGET pour gérer la mise à jour
@@ -265,19 +266,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         SizedBox(height: screenHeight * 0.04),
 
-                        // Photo de profil
-                        Container(
-                          width: screenWidth * 0.3,
-                          height: screenWidth * 0.3,
-                          decoration: BoxDecoration(
-                            color: isDarkMode ? Colors.grey.shade700 : Colors.grey[300],
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.person,
-                            color: isDarkMode ? Colors.grey.shade500 : Colors.grey[600],
-                            size: screenWidth * 0.15,
-                          ),
+                        // Photo de profil avec ProfileAvatar
+                        ProfileAvatar(
+                          photoBase64: _user?.photo,
+                          radius: screenWidth * 0.15,
+                          backgroundColor: isDarkMode ? Colors.grey.shade700 : Colors.grey[300],
+                          defaultIcon: Icons.person,
+                          defaultIconSize: screenWidth * 0.15,
                         ),
 
                         SizedBox(height: screenHeight * 0.02),

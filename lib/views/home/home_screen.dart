@@ -1,6 +1,7 @@
 // Fichier: home/home_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../locale/locale_helper.dart';
 import '../../core/services/procedure_service.dart';
 
@@ -14,6 +15,7 @@ import '../history/history_screen.dart';
 import '../identity/identity_screen.dart';
 import '../category/category_screen.dart';
 import '../procedure/procedure_list_screen.dart';
+import '../procedure/procedure_detail_screen.dart';
 import '../report/report_screen.dart';
 import '../settings/settings_screen.dart';
 import '../communiquee_global/com_global.dart';
@@ -184,11 +186,49 @@ class _HomeContent extends StatefulWidget {
 
 class _HomeContentState extends State<_HomeContent> {
   final TextEditingController _searchController = TextEditingController();
+  List<ProcedureResponse> _allProcedures = [];
+  bool _isLoadingProcedures = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadAllProcedures();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Charge toutes les procédures pour les suggestions
+  Future<void> _loadAllProcedures() async {
+    setState(() => _isLoadingProcedures = true);
+    try {
+      final procedureService = ProcedureService();
+      final procedures = await procedureService.getAllProcedures();
+      setState(() {
+        _allProcedures = procedures;
+        _isLoadingProcedures = false;
+      });
+    } catch (e) {
+      setState(() => _isLoadingProcedures = false);
+      debugPrint('❌ Erreur chargement procédures pour suggestions: $e');
+    }
+  }
+
+  /// Filtre les procédures pour les suggestions basées sur la saisie
+  Iterable<ProcedureResponse> _getSuggestions(String query) {
+    if (query.isEmpty || _isLoadingProcedures) {
+      return [];
+    }
+    
+    final queryLower = query.toLowerCase();
+    return _allProcedures.where((procedure) {
+      final titre = procedure.titre.toLowerCase();
+      final description = procedure.description?.toLowerCase() ?? '';
+      return titre.contains(queryLower) || description.contains(queryLower);
+    }).take(5); // Limiter à 5 suggestions
   }
 
   // Fonction pour gérer la recherche
@@ -423,7 +463,7 @@ class _HomeContentState extends State<_HomeContent> {
           ),
 
           // ========================================================================
-          // 2. BARRE DE RECHERCHE
+          // 2. BARRE DE RECHERCHE AVEC AUTOCOMPLETE
           // ========================================================================
           SliverToBoxAdapter(
             child: Padding(
@@ -435,32 +475,159 @@ class _HomeContentState extends State<_HomeContent> {
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300, width: 1),
                 ),
-                child: TextField(
-                  controller: _searchController,
-                  style: TextStyle(color: textColor),
-                  decoration: InputDecoration(
-                    hintText: LocaleHelper.getText(context, 'searchProcedure'),
-                    hintStyle: TextStyle(color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54), fontSize: 16),
-                    border: InputBorder.none,
-                    prefixIcon: Icon(Icons.search, color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54), size: 24),
-                    suffixIcon: _searchController.text.isNotEmpty
-                        ? IconButton(
-                            icon: Icon(Icons.clear, color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54)),
-                            onPressed: () {
-                              setState(() {
-                                _searchController.clear();
-                              });
-                            },
-                          )
-                        : null,
-                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  textInputAction: TextInputAction.search,
-                  onChanged: (value) {
-                    setState(() {}); // Pour afficher/cacher le bouton clear
+                child: Autocomplete<ProcedureResponse>(
+                  optionsBuilder: (TextEditingValue textEditingValue) {
+                    if (textEditingValue.text.isEmpty) {
+                      return const Iterable<ProcedureResponse>.empty();
+                    }
+                    return _getSuggestions(textEditingValue.text);
                   },
-                  onSubmitted: (query) {
-                    _performSearch(context, query);
+                  displayStringForOption: (ProcedureResponse procedure) => procedure.titre,
+                  onSelected: (ProcedureResponse procedure) {
+                    // Naviguer directement vers la procédure sélectionnée
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProcedureDetailScreen(procedure: procedure),
+                      ),
+                    );
+                  },
+                  fieldViewBuilder: (
+                    BuildContext context,
+                    TextEditingController textEditingController,
+                    FocusNode focusNode,
+                    VoidCallback onFieldSubmitted,
+                  ) {
+                    // Synchroniser avec le controller existant
+                    if (_searchController.text != textEditingController.text) {
+                      _searchController.text = textEditingController.text;
+                    }
+                    
+                    return TextField(
+                      controller: textEditingController,
+                      focusNode: focusNode,
+                      style: TextStyle(color: textColor),
+                      decoration: InputDecoration(
+                        hintText: LocaleHelper.getText(context, 'searchProcedure'),
+                        hintStyle: TextStyle(
+                          color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54),
+                          fontSize: 16,
+                        ),
+                        border: InputBorder.none,
+                        prefixIcon: Icon(
+                          Icons.search,
+                          color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54),
+                          size: 24,
+                        ),
+                        suffixIcon: textEditingController.text.isNotEmpty
+                            ? IconButton(
+                                icon: Icon(
+                                  Icons.clear,
+                                  color: isDarkMode ? (Colors.grey[500] ?? Colors.white54) : (Colors.grey[600] ?? Colors.black54),
+                                ),
+                                onPressed: () {
+                                  textEditingController.clear();
+                                  _searchController.clear();
+                                  setState(() {});
+                                },
+                              )
+                            : null,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      textInputAction: TextInputAction.search,
+                      onChanged: (value) {
+                        _searchController.text = value;
+                        setState(() {}); // Pour afficher/cacher le bouton clear
+                      },
+                      onSubmitted: (query) {
+                        _performSearch(context, query);
+                      },
+                    );
+                  },
+                  optionsViewBuilder: (
+                    BuildContext context,
+                    AutocompleteOnSelected<ProcedureResponse> onSelected,
+                    Iterable<ProcedureResponse> options,
+                  ) {
+                    return Align(
+                      alignment: Alignment.topLeft,
+                      child: Material(
+                        elevation: 4.0,
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          constraints: const BoxConstraints(maxHeight: 200),
+                          width: MediaQuery.of(context).size.width - 40, // Largeur de la barre de recherche
+                          decoration: BoxDecoration(
+                            color: cardColor,
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                              width: 1,
+                            ),
+                          ),
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: options.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              final ProcedureResponse procedure = options.elementAt(index);
+                              return InkWell(
+                                onTap: () => onSelected(procedure),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    border: Border(
+                                      bottom: BorderSide(
+                                        color: isDarkMode ? Colors.grey.shade700 : Colors.grey.shade300,
+                                        width: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.search,
+                                        size: 18,
+                                        color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              procedure.titre,
+                                              style: TextStyle(
+                                                color: textColor,
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w500,
+                                              ),
+                                            ),
+                                            if (procedure.description != null && procedure.description!.isNotEmpty)
+                                              Padding(
+                                                padding: const EdgeInsets.only(top: 4),
+                                                child: Text(
+                                                  procedure.description!,
+                                                  style: TextStyle(
+                                                    color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade600,
+                                                    fontSize: 12,
+                                                  ),
+                                                  maxLines: 1,
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    );
                   },
                 ),
               ),

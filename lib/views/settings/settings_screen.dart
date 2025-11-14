@@ -12,6 +12,8 @@ import 'package:fasodocs/views/auth/login_screen.dart';
 import '../../main.dart';
 import '../../locale/locale_provider.dart';
 import '../../locale/locale_helper.dart';
+import '../../providers/language_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -129,28 +131,43 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    // Langue
-                    _buildSettingsItem(
-                      icon: Icons.language,
-                      title: LocaleHelper.getText(context, 'language'),
-                      itemBackgroundColor: itemBackgroundColor, // Utilisation de la couleur du thème
-                      titleColor: textColor, // Utilisation de la couleur du thème
-                      iconColor: iconColor, // Utilisation de la couleur du thème
-                      trailing: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          _selectedLanguage,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                    // Langue avec drapeau 🔥
+                    Consumer<LanguageProvider>(
+                      builder: (context, langProvider, child) {
+                        return _buildSettingsItem(
+                          icon: Icons.language,
+                          title: LocaleHelper.getText(context, 'language'),
+                          itemBackgroundColor: itemBackgroundColor,
+                          titleColor: textColor,
+                          iconColor: iconColor,
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isDarkMode ? Colors.grey[700] : Colors.grey[200],
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  langProvider.languageFlag,
+                                  style: const TextStyle(fontSize: 20),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  langProvider.languageName,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDarkMode ? Colors.grey[300] : Colors.grey[700],
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
-                      ),
-                      onTap: _showLanguageDialog,
+                          onTap: _showLanguageDialog,
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 12),
@@ -314,57 +331,109 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  // Dialogue pour le choix de la langue
+  // 🔥 NOUVEAU Dialogue moderne pour le choix de la langue avec drapeaux
   void _showLanguageDialog() {
-    // Les AlertDialogs utilisent maintenant les couleurs du thème global !
+    final languageProvider = Provider.of<LanguageProvider>(context, listen: false);
+    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+      builder: (BuildContext dialogContext) {
         return AlertDialog(
-          // Utilise les couleurs de texte et de fond définies dans main.dart
-          title: Text(
-            LocaleHelper.getText(context, 'chooseLanguage'),
-            style: TextStyle(color: textColor),
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
+          title: Row(
             children: [
-              ListTile(
-                title: Text('Français', style: TextStyle(color: textColor)),
-                leading: Radio<String>(
-                  value: 'Français',
-                  groupValue: _selectedLanguage,
-                  onChanged: (String? value) {
-                    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
-                    localeProvider.setLocale(const Locale('fr'));
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
-                    Navigator.of(context).pop();
-                  },
-                ),
-              ),
-              ListTile(
-                title: Text('English', style: TextStyle(color: textColor)),
-                leading: Radio<String>(
-                  value: 'English',
-                  groupValue: _selectedLanguage,
-                  onChanged: (String? value) {
-                    final localeProvider = Provider.of<LocaleProvider>(context, listen: false);
-                    localeProvider.setLocale(const Locale('en'));
-                    setState(() {
-                      _selectedLanguage = value!;
-                    });
-                    Navigator.of(context).pop();
-                  },
+              Icon(Icons.language, color: textColor),
+              const SizedBox(width: 12),
+              Text(
+                LocaleHelper.getText(context, 'chooseLanguage'),
+                style: TextStyle(
+                  color: textColor,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
             ],
           ),
+          contentPadding: const EdgeInsets.symmetric(vertical: 20),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: languageProvider.languages.map((lang) {
+              bool isSelected = languageProvider.currentLanguage == lang['code'];
+              
+              return RadioListTile<String>(
+                value: lang['code']!,
+                groupValue: languageProvider.currentLanguage,
+                title: Row(
+                  children: [
+                    Text(
+                      lang['flag']!,
+                      style: const TextStyle(fontSize: 32),
+                    ),
+                    const SizedBox(width: 16),
+                    Text(
+                      lang['name']!,
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        color: textColor,
+                      ),
+                    ),
+                  ],
+                ),
+                activeColor: primaryGreen,
+                onChanged: (String? value) async {
+                  if (value != null) {
+                    // Récupérer le token JWT
+                    String? token = await _getToken();
+                    
+                    // Changer la langue
+                    await languageProvider.changeLanguage(value, token);
+                    
+                    // Mettre à jour l'affichage local
+                    setState(() {
+                      _selectedLanguage = lang['name']!;
+                    });
+                    
+                    // Fermer le dialogue
+                    Navigator.of(dialogContext).pop();
+                    
+                    // Afficher confirmation
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            Text(lang['flag']!, style: const TextStyle(fontSize: 20)),
+                            const SizedBox(width: 12),
+                            Text('✅ Langue changée: ${lang['name']}'),
+                          ],
+                        ),
+                        backgroundColor: primaryGreen,
+                        duration: const Duration(seconds: 2),
+                        behavior: SnackBarBehavior.floating,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
+                  }
+                },
+              );
+            }).toList(),
+          ),
         );
       },
     );
+  }
+  
+  // Méthode pour récupérer le token JWT
+  Future<String?> _getToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      return prefs.getString('token');
+    } catch (e) {
+      print('❌ Erreur récupération token: $e');
+      return null;
+    }
   }
 
   // Dialogue de déconnexion

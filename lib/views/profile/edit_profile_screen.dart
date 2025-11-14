@@ -3,8 +3,12 @@
 // ========================================================================================
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../core/services/profil_service.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/widgets/profile_avatar.dart';
 
 class EditProfileScreen extends StatefulWidget {
   final String? currentName;
@@ -34,19 +38,51 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late final TextEditingController _passwordController;
   late final TextEditingController _phoneController;
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.currentName ?? 'Tenen M Sylla');
-    _emailController = TextEditingController(text: widget.currentEmail ?? 'madyehsylla427@gmail.com');
-    _passwordController = TextEditingController(text: '••••••••••••');
-    _phoneController = TextEditingController(text: widget.currentPhone ?? '+223 74323874');
-  }
-
   // ========================================================================================
   // VARIABLES D'ÉTAT POUR LA GESTION DE L'IMAGE DE PROFIL
   // ========================================================================================
   File? _profileImage;
+  String? _currentPhotoBase64; // Photo actuelle depuis le backend
+  bool _isLoading = false;
+  bool _isUploading = false;
+
+  // Services
+  final ProfilService _profilService = profilService;
+  final AuthService _authService = authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController(text: widget.currentName ?? '');
+    _emailController = TextEditingController(text: widget.currentEmail ?? '');
+    _passwordController = TextEditingController(text: '••••••••••••');
+    _phoneController = TextEditingController(text: widget.currentPhone ?? '');
+    _loadCurrentProfile();
+  }
+
+  /// Charge le profil actuel depuis le backend
+  Future<void> _loadCurrentProfile() async {
+    setState(() => _isLoading = true);
+    try {
+      final user = await _authService.getProfil();
+      setState(() {
+        _currentPhotoBase64 = user.photo;
+        if (widget.currentName == null) {
+          _nameController.text = user.nomComplet;
+        }
+        if (widget.currentEmail == null) {
+          _emailController.text = user.email;
+        }
+        if (widget.currentPhone == null) {
+          _phoneController.text = user.telephone;
+        }
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      debugPrint('❌ Erreur chargement profil: $e');
+    }
+  }
 
   // ========================================================================================
   // MÉTHODES DE LIFECYCLE
@@ -65,26 +101,92 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // MÉTHODES UTILITAIRES
   // ========================================================================================
 
-  /// Permet à l'utilisateur de sélectionner une image depuis la galerie
+  /// Permet à l'utilisateur de sélectionner une image (galerie ou caméra)
   Future<void> _pickProfileImage() async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
-      );
-
-      if (image != null) {
+      final File? selectedFile = await _profilService.showImageSourceDialog(context);
+      
+      if (selectedFile != null) {
         setState(() {
-          _profileImage = File(image.path);
+          _profileImage = selectedFile;
+          _currentPhotoBase64 = null; // Réinitialiser la photo actuelle
         });
       }
     } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la sélection de l\'image: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Sauvegarde le profil (nom, prénom, photo)
+  Future<void> _saveProfile() async {
+    if (_nameController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Erreur lors de la sélection de l\'image: $e')),
+        const SnackBar(
+          content: Text('Le nom est requis'),
+          backgroundColor: Colors.red,
+        ),
       );
+      return;
+    }
+
+    setState(() => _isUploading = true);
+
+    try {
+      // Séparer nom et prénom (si format "Nom Prénom")
+      final nameParts = _nameController.text.trim().split(' ');
+      final nom = nameParts.isNotEmpty ? nameParts.first : _nameController.text.trim();
+      final prenom = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
+
+      // Si une nouvelle photo a été sélectionnée, l'uploader d'abord
+      if (_profileImage != null) {
+        await _profilService.uploadPhoto(photoFile: _profileImage!);
+      }
+
+      // Mettre à jour le profil complet (nom, prénom, et photo si nécessaire)
+      await _profilService.updateProfilComplet(
+        nom: nom,
+        prenom: prenom,
+        photoFile: _profileImage, // Inclure la photo si elle a été sélectionnée
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil mis à jour avec succès !'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Retourner les données mises à jour
+        final Map<String, String> updatedData = {
+          'name': _nameController.text,
+          'email': _emailController.text,
+          'phone': _phoneController.text,
+        };
+
+        Navigator.of(context).pop(updatedData);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur lors de la mise à jour: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+      debugPrint('❌ Erreur sauvegarde profil: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
+      }
     }
   }
 
@@ -213,55 +315,86 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                         // PHOTO DE PROFIL AVEC BOUTON DE MODIFICATION
                         Stack(
                           children: [
-                            Container(
-                              width: screenWidth * 0.4,
-                              height: screenWidth * 0.4,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: primaryColor,
-                                  width: 3,
+                            // Avatar avec photo actuelle ou nouvelle photo sélectionnée
+                            if (_isLoading)
+                              Container(
+                                width: screenWidth * 0.4,
+                                height: screenWidth * 0.4,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: primaryColor,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: Center(
+                                  child: CircularProgressIndicator(
+                                    valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                                  ),
+                                ),
+                              )
+                            else if (_profileImage != null)
+                              Container(
+                                width: screenWidth * 0.4,
+                                height: screenWidth * 0.4,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: primaryColor,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: ClipOval(
+                                  child: Image.file(
+                                    _profileImage!,
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                  ),
+                                ),
+                              )
+                            else
+                              Container(
+                                width: screenWidth * 0.4,
+                                height: screenWidth * 0.4,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: primaryColor,
+                                    width: 3,
+                                  ),
+                                ),
+                                child: ProfileAvatar(
+                                  photoBase64: _currentPhotoBase64,
+                                  radius: screenWidth * 0.2,
+                                  backgroundColor: isDarkMode ? Colors.grey.shade700 : Colors.grey[300],
+                                  defaultIcon: Icons.person,
+                                  defaultIconSize: screenWidth * 0.2,
                                 ),
                               ),
-                              child: ClipOval(
-                                child: _profileImage != null
-                                    ? Image.file(
-                                  _profileImage!,
-                                  fit: BoxFit.cover,
-                                  width: double.infinity,
-                                  height: double.infinity,
-                                )
-                                    : Container(
-                                  color: Colors.grey[300],
-                                  child: Icon(
-                                    Icons.person,
-                                    color: Colors.grey[600],
-                                    size: screenWidth * 0.2,
+                            // Bouton pour changer la photo
+                            if (!_isLoading)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: _pickProfileImage,
+                                  child: Container(
+                                    width: screenWidth * 0.1,
+                                    height: screenWidth * 0.1,
+                                    decoration: BoxDecoration(
+                                      color: primaryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Colors.white, width: 2),
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      color: Colors.white,
+                                      size: screenWidth * 0.05,
+                                    ),
                                   ),
                                 ),
                               ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: GestureDetector(
-                                onTap: _pickProfileImage,
-                                child: Container(
-                                  width: screenWidth * 0.1,
-                                  height: screenWidth * 0.1,
-                                  decoration: BoxDecoration(
-                                    color: Colors.white,
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.grey, width: 1),
-                                  ),
-                                  child: Icon(
-                                    Icons.camera_alt,
-                                    color: Colors.black,
-                                    size: screenWidth * 0.05,
-                                  ),
-                                ),
-                              ),
-                            ),
                           ],
                         ),
 
@@ -306,27 +439,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
                               SizedBox(height: screenHeight * 0.04),
 
-                              // Bouton Enregistrer (Renvoie les nouvelles données)
+                              // Bouton Enregistrer
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton(
-                                  onPressed: () {
-                                    // 1. Logique de sauvegarde (simulée)
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Profil mis à jour avec succès!')),
-                                    );
-
-                                    // 2. Créer un Map avec les nouvelles valeurs
-                                    final Map<String, String> updatedData = {
-                                      'name': _nameController.text,
-                                      'email': _emailController.text,
-                                      'phone': _phoneController.text,
-                                      // Note: Ajouter d'autres champs si besoin
-                                    };
-
-                                    // 3. Fermer l'écran et envoyer les données mises à jour
-                                    Navigator.of(context).pop(updatedData);
-                                  },
+                                  onPressed: _isUploading ? null : _saveProfile,
                                   style: ElevatedButton.styleFrom(
                                     backgroundColor: primaryColor,
                                     foregroundColor: Colors.white,
@@ -334,14 +451,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                                     shape: RoundedRectangleBorder(
                                       borderRadius: BorderRadius.circular(8),
                                     ),
+                                    disabledBackgroundColor: Colors.grey,
                                   ),
-                                  child: Text(
-                                    'Enregistrer',
-                                    style: TextStyle(
-                                      fontSize: screenWidth * 0.04,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                                  child: _isUploading
+                                      ? SizedBox(
+                                          height: 20,
+                                          width: 20,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                          ),
+                                        )
+                                      : Text(
+                                          'Enregistrer',
+                                          style: TextStyle(
+                                            fontSize: screenWidth * 0.04,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
                                 ),
                               ),
                             ],

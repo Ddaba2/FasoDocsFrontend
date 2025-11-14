@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 // Note: Assurez-vous que le chemin vers HomeScreen est correct.
 import '../home/home_screen.dart'; // Placeholder pour la navigation
 import '../../core/services/auth_service.dart';
+import '../../core/utils/form_validators.dart';
 
 class SMSVerificationScreen extends StatefulWidget {
   final String telephone;
@@ -73,11 +74,19 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
   void _handleContinue() async {
     final code = _getOTP();
     
-    if (code.length != _otpLength) {
+    // Validation avec message clair
+    final codeError = FormValidators.validateSmsCode(code, length: _otpLength);
+    if (codeError != null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez saisir le code complet'),
+        SnackBar(
+          content: Text(
+            codeError,
+            style: const TextStyle(fontSize: 15, color: Colors.white),
+          ),
           backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
         ),
       );
       return;
@@ -112,10 +121,24 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
           _isLoading = false;
         });
         
+        // Message d'erreur clair pour code invalide
+        String errorMessage = e.toString().replaceFirst('Exception: ', '');
+        if (errorMessage.toLowerCase().contains('invalide')) {
+          errorMessage = '❌ Code incorrect. Vérifiez le SMS reçu et réessayez';
+        } else if (errorMessage.toLowerCase().contains('expiré')) {
+          errorMessage = '⏰ Code expiré. Veuillez demander un nouveau code';
+        }
+        
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Code invalide: $e'),
+            content: Text(
+              errorMessage,
+              style: const TextStyle(fontSize: 15, color: Colors.white),
+            ),
             backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
           ),
         );
       }

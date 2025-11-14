@@ -34,6 +34,7 @@ class User {
   final String? dateNaissance;
   final String? genre;
   final String? photoUrl;
+  final String? photoProfil; // Photo de profil en Base64 depuis le backend
 
   User({
     required this.id,
@@ -44,6 +45,7 @@ class User {
     this.dateNaissance,
     this.genre,
     this.photoUrl,
+    this.photoProfil,
   });
 
   factory User.fromJson(Map<String, dynamic> json) => User(
@@ -55,6 +57,8 @@ class User {
     dateNaissance: json['dateNaissance'],
     genre: json['genre'],
     photoUrl: json['photoUrl'],
+    // Le backend envoie photoProfil en Base64
+    photoProfil: json['photoProfil'] ?? json['photoUrl'],
   );
 
   Map<String, dynamic> toJson() => {
@@ -66,7 +70,11 @@ class User {
     'dateNaissance': dateNaissance,
     'genre': genre,
     'photoUrl': photoUrl,
+    'photoProfil': photoProfil,
   };
+  
+  // Getter pour obtenir la photo (priorité à photoProfil Base64)
+  String? get photo => photoProfil ?? photoUrl;
 }
 
 /// Modèle pour la connexion par téléphone

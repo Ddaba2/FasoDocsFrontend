@@ -181,7 +181,7 @@ class LocaleHelper {
       'category': 'Catégorie',
       'alert': 'Alerte',
       'announcements': 'Communiqués',
-      'options': 'Options',
+      'options': 'Paramètre',
       'searchProcedure': 'Rechercher une procedure',
       'welcomeMessage': 'Bienvenue sur FasoDocs',
       'subtitleMessage': 'Vos démarches administratives simplifiées',

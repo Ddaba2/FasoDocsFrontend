@@ -35,6 +35,7 @@ import 'views/tax/tax_screen.dart';
 
 // Import des providers
 import 'locale/locale_provider.dart';
+import 'providers/language_provider.dart';
 
 
 // ----------------------------------------------------------------------
@@ -192,14 +193,14 @@ class FasoDocsApp extends StatelessWidget {
     // On écoute les providers pour obtenir les états actuels
     // Le Provider doit être accessible depuis le main()
     final themeProvider = Provider.of<ThemeModeProvider>(context);
-    final localeProvider = Provider.of<LocaleProvider>(context);
+    final languageProvider = Provider.of<LanguageProvider>(context);
 
     return MaterialApp(
       title: 'FasoDocs',
       debugShowCheckedModeBanner: false,
 
-      // Configuration de la Locale
-      locale: localeProvider.locale,
+      // Configuration de la Locale avec LanguageProvider 🔥
+      locale: languageProvider.locale,
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
@@ -250,6 +251,7 @@ void main() {
       providers: [
         ChangeNotifierProvider(create: (context) => ThemeModeProvider()),
         ChangeNotifierProvider(create: (context) => LocaleProvider()),
+        ChangeNotifierProvider(create: (context) => LanguageProvider()), // 🔥 NOUVEAU
       ],
       child: const FasoDocsApp(),
     ),

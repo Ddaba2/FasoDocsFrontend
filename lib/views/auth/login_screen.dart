@@ -5,6 +5,7 @@ import 'package:intl_phone_field/intl_phone_field.dart';
 import 'sms_verification_screen.dart';
 import 'signup_screen.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/utils/form_validators.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,31 +48,16 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() async {
     final phoneText = _phoneController.text.trim();
 
-    if (phoneText.isEmpty) {
+    // Validation avec messages clairs et précis
+    final phoneError = FormValidators.validatePhone(
+      phoneText,
+      completeNumber: _completeNumber,
+    );
+
+    if (phoneError != null) {
       setState(() {
         _showError = true;
-        _errorMessage = 'Le numéro de téléphone est obligatoire';
-      });
-
-      _showErrorSnackbar(_errorMessage);
-      return;
-    }
-
-    // Compter uniquement les chiffres (sans espaces, sans indicatif)
-    final phoneDigits = phoneText.replaceAll(RegExp(r'[^0-9]'), '');
-
-    if (phoneDigits.length < 8) {
-      setState(() {
-        _showError = true;
-        _errorMessage = 'Le numéro doit contenir au moins 8 chiffres';
-      });
-
-      _showErrorSnackbar(_errorMessage);
-      return;
-    } else if (phoneDigits.length > 15) {
-      setState(() {
-        _showError = true;
-        _errorMessage = 'Le numéro est trop long (max 15 chiffres)';
+        _errorMessage = phoneError;
       });
 
       _showErrorSnackbar(_errorMessage);
@@ -95,7 +81,10 @@ class _LoginScreenState extends State<LoginScreen> {
         
         // Afficher un message de succès
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(response.message)),
+          SnackBar(
+            content: Text(response.message),
+            backgroundColor: Colors.green,
+          ),
         );
         
         // Naviguer vers l'écran de vérification SMS
@@ -111,7 +100,14 @@ class _LoginScreenState extends State<LoginScreen> {
           _isLoading = false;
         });
         
-        _showErrorSnackbar('Erreur: $e');
+        // Vérifier si c'est une erreur de compte désactivé
+        if (e.toString().toLowerCase().contains('désactivé') || 
+            e.toString().toLowerCase().contains('desactive') ||
+            e.toString().toLowerCase().contains('disabled')) {
+          _showAccountDisabledDialog(e.toString());
+        } else {
+          _showErrorSnackbar(e.toString().replaceFirst('Exception: ', ''));
+        }
       }
     }
   }
@@ -131,6 +127,50 @@ class _LoginScreenState extends State<LoginScreen> {
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  void _showAccountDisabledDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.block, color: Colors.red, size: 28),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Compte désactivé',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              message.replaceFirst('Exception: ', ''),
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              '💡 Veuillez contacter le support pour plus d\'informations.',
+              style: TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK'),
+          ),
+        ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
       ),
     );

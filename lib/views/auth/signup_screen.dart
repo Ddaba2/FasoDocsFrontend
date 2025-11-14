@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/services/auth_service.dart';
+import '../../core/utils/form_validators.dart';
 import 'conditions_utilisation_screen.dart';
 
 // ASSUREZ-VOUS QUE CE CHEMIN EST CORRECT
@@ -58,34 +59,54 @@ class _SignupScreenState extends State<SignupScreen> {
 
   // Inscription dans la table "citoyen" du backend
   Future<void> _handleSignup() async {
-    // Validation des champs
-    if (_nomController.text.isEmpty || _prenomController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez remplir tous les champs'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    // Validation du nom avec messages précis
+    final nomError = FormValidators.validateName(_nomController.text, fieldName: 'Le nom');
+    if (nomError != null) {
+      _showErrorSnackbar(nomError);
       return;
     }
 
-    if (_passwordController.text != _confirmPasswordController.text) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Les mots de passe ne correspondent pas'),
-          backgroundColor: Colors.red,
-        ),
-      );
+    // Validation du prénom avec messages précis
+    final prenomError = FormValidators.validateName(_prenomController.text, fieldName: 'Le prénom');
+    if (prenomError != null) {
+      _showErrorSnackbar(prenomError);
       return;
     }
 
+    // Validation du téléphone avec messages précis
+    final phoneError = FormValidators.validatePhone(_phoneController.text);
+    if (phoneError != null) {
+      _showErrorSnackbar(phoneError);
+      return;
+    }
+
+    // Validation de l'email avec messages précis
+    final emailError = FormValidators.validateEmail(_emailController.text);
+    if (emailError != null) {
+      _showErrorSnackbar(emailError);
+      return;
+    }
+
+    // Validation du mot de passe avec messages précis
+    final passwordError = FormValidators.validatePassword(_passwordController.text, minLength: 6);
+    if (passwordError != null) {
+      _showErrorSnackbar(passwordError);
+      return;
+    }
+
+    // Validation de la confirmation du mot de passe avec messages précis
+    final confirmError = FormValidators.validateConfirmPassword(
+      _confirmPasswordController.text,
+      _passwordController.text,
+    );
+    if (confirmError != null) {
+      _showErrorSnackbar(confirmError);
+      return;
+    }
+
+    // Vérifier l'acceptation des conditions
     if (!_acceptTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Veuillez accepter les conditions d\'utilisation'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      _showErrorSnackbar('✅ Veuillez accepter les conditions d\'utilisation');
       return;
     }
 
@@ -107,20 +128,92 @@ class _SignupScreenState extends State<SignupScreen> {
       );
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(messageResponse.message),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-
-      // 2. Après l'inscription, rediriger vers l'écran de connexion
-      // pour que l'utilisateur puisse s'authentifier avec son numéro de téléphone
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(
-            builder: (_) => const LoginScreen(),
+        // Afficher une boîte de dialogue informative
+        await showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => AlertDialog(
+            title: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.green, size: 32),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Inscription réussie !',
+                    style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  messageResponse.message,
+                  style: const TextStyle(fontSize: 16),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  '📧 Email de bienvenue',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Un email de bienvenue vous a été envoyé à :',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[700]),
+                ),
+                const SizedBox(height: 4),
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    _emailController.text.trim(),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 15,
+                      color: Color(0xFF14B53A),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  '💡 Vérifiez votre boîte mail pour découvrir toutes les fonctionnalités de FasoDocs.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+            actions: [
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  // Rediriger vers l'écran de connexion
+                  Navigator.of(context).pushReplacement(
+                    MaterialPageRoute(
+                      builder: (_) => const LoginScreen(),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF14B53A),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Se connecter', style: TextStyle(fontSize: 16)),
+              ),
+            ],
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
           ),
         );
       }
@@ -148,6 +241,28 @@ class _SignupScreenState extends State<SignupScreen> {
     // Remplace la route actuelle par LoginScreen
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
+    );
+  }
+
+  // Afficher un message d'erreur clair
+  void _showErrorSnackbar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(
+            fontSize: 15,
+            color: Colors.white,
+          ),
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        margin: const EdgeInsets.all(16),
+      ),
     );
   }
 
