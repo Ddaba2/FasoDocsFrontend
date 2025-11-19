@@ -4,6 +4,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -11,7 +12,31 @@ import '../../core/services/profil_service.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/services/photo_service.dart';
 import '../../core/config/api_config.dart';
+import '../../core/utils/form_validators.dart';
 import '../../core/widgets/profile_avatar.dart';
+
+// Formatter pour valider que le numéro commence par 5, 6, 7, 8 ou 9
+class _PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Si le texte est vide, permettre la saisie
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+    
+    // Vérifier que le premier caractère est 5, 6, 7, 8 ou 9
+    final firstChar = newValue.text[0];
+    if (!['5', '6', '7', '8', '9'].contains(firstChar)) {
+      // Rejeter la saisie si elle ne commence pas par un chiffre valide
+      return oldValue;
+    }
+    
+    return newValue;
+  }
+}
 
 class EditProfileScreen extends StatefulWidget {
   final String? currentName;
@@ -520,6 +545,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               _buildEditField(
                                 context, screenWidth, screenHeight,
                                 Icons.phone, _phoneController, 'Téléphone',
+                                isPhone: true,
                               ),
 
                               SizedBox(height: screenHeight * 0.04),

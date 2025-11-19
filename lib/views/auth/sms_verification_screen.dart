@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 // Note: Assurez-vous que le chemin vers HomeScreen est correct.
@@ -26,6 +27,13 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
   // Chemin d'asset du logo pour la vérification SMS
   // Utilise le logo FasoDocs disponible
   final String _logoAssetPath = 'assets/images/FasoDocs.png';
+  
+  // ⏰ Gestion de l'expiration du code SMS (2 minutes)
+  static const Duration _codeExpirationDuration = Duration(minutes: 2);
+  DateTime? _codeSentTime;
+  Timer? _expirationTimer;
+  int _remainingSeconds = 120; // 2 minutes en secondes
+  bool _isCodeExpired = false;
 
   @override
   void initState() {
@@ -34,6 +42,11 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
     // Initialisation des listes
     _controllers = List.generate(_otpLength, (_) => TextEditingController());
     _focusNodes = List.generate(_otpLength, (_) => FocusNode());
+    
+    // ⏰ Enregistrer le moment où le code a été envoyé (quand l'écran s'ouvre)
+    _codeSentTime = DateTime.now();
+    _remainingSeconds = _codeExpirationDuration.inSeconds;
+    _startExpirationTimer();
 
     // Pour se concentrer automatiquement sur le premier champ au démarrage
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -52,9 +65,54 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
       );
     });
   }
+  
+  /// Démarre le timer d'expiration du code
+  void _startExpirationTimer() {
+    _expirationTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (mounted) {
+        final now = DateTime.now();
+        final elapsed = now.difference(_codeSentTime!);
+        final remaining = _codeExpirationDuration - elapsed;
+        
+        if (remaining.isNegative || remaining.inSeconds <= 0) {
+          // Le code a expiré
+          setState(() {
+            _remainingSeconds = 0;
+            _isCodeExpired = true;
+          });
+          timer.cancel();
+        } else {
+          setState(() {
+            _remainingSeconds = remaining.inSeconds;
+            _isCodeExpired = false;
+          });
+        }
+      } else {
+        timer.cancel();
+      }
+    });
+  }
+  
+  /// Formate le temps restant en MM:SS
+  String _formatRemainingTime(int seconds) {
+    final minutes = seconds ~/ 60;
+    final secs = seconds % 60;
+    return '${minutes.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+  }
+  
+  /// Vérifie si le code est expiré
+  bool _isCodeExpiredCheck() {
+    if (_codeSentTime == null) return true;
+    final now = DateTime.now();
+    final elapsed = now.difference(_codeSentTime!);
+    return elapsed >= _codeExpirationDuration;
+  }
 
   @override
   void dispose() {
+    // Arrêter le timer d'expiration
+    _expirationTimer?.cancel();
+    
     // Libération des ressources
     for (var controller in _controllers) {
       controller.dispose();
@@ -73,6 +131,23 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
   // Gère la validation et la navigation (associée au bouton "Confirmer")
   void _handleContinue() async {
     final code = _getOTP();
+    
+    // ⏰ Vérifier si le code est expiré AVANT de valider
+    if (_isCodeExpiredCheck() || _isCodeExpired) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text(
+            '⏰ Code expiré. Veuillez demander un nouveau code',
+            style: TextStyle(fontSize: 15, color: Colors.white),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+      return;
+    }
     
     // Validation avec message clair
     final codeError = FormValidators.validateSmsCode(code, length: _otpLength);
@@ -105,6 +180,9 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
           _isLoading = false;
         });
         
+        // Arrêter le timer
+        _expirationTimer?.cancel();
+        
         // Afficher un message de succès
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(jwtResponse.message)),
@@ -121,24 +199,70 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
           _isLoading = false;
         });
         
-        // Message d'erreur clair pour code invalide
-        String errorMessage = e.toString().replaceFirst('Exception: ', '');
-        if (errorMessage.toLowerCase().contains('invalide')) {
-          errorMessage = '❌ Code incorrect. Vérifiez le SMS reçu et réessayez';
-        } else if (errorMessage.toLowerCase().contains('expiré')) {
-          errorMessage = '⏰ Code expiré. Veuillez demander un nouveau code';
-        }
-        
+        // Message d'erreur unifié : "Code incorrect ou expiré"
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              errorMessage,
-              style: const TextStyle(fontSize: 15, color: Colors.white),
+            content: const Text(
+              '❌ Code incorrect ou expiré',
+              style: TextStyle(fontSize: 15, color: Colors.white),
             ),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 4),
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
+    }
+  }
+  
+  /// Demander un nouveau code SMS
+  Future<void> _requestNewCode() async {
+    setState(() {
+      _isLoading = true;
+    });
+    
+    try {
+      // Appeler l'API pour renvoyer un nouveau code
+      await authService.connexionTelephone(widget.telephone);
+      
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          // Réinitialiser le timer
+          _codeSentTime = DateTime.now();
+          _remainingSeconds = _codeExpirationDuration.inSeconds;
+          _isCodeExpired = false;
+        });
+        
+        // Redémarrer le timer
+        _startExpirationTimer();
+        
+        // Vider les champs
+        for (var controller in _controllers) {
+          controller.clear();
+        }
+        _focusNodes.first.requestFocus();
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Nouveau code envoyé par SMS'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Erreur: ${e.toString().replaceFirst('Exception: ', '')}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
@@ -296,7 +420,54 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                     textAlign: TextAlign.center,
                   ),
 
-                  SizedBox(height: screenHeight * 0.06),
+                  SizedBox(height: screenHeight * 0.02),
+                  
+                  // ⏰ Affichage du temps restant ou message d'expiration
+                  _isCodeExpired
+                      ? Column(
+                          children: [
+                            Text(
+                              '⏰ Code expiré',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.04,
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            SizedBox(height: screenHeight * 0.01),
+                            TextButton.icon(
+                              onPressed: _isLoading ? null : _requestNewCode,
+                              icon: const Icon(Icons.refresh),
+                              label: const Text('Demander un nouveau code'),
+                              style: TextButton.styleFrom(
+                                foregroundColor: const Color(0xFF14B53A),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.timer_outlined,
+                              size: screenWidth * 0.05,
+                              color: _remainingSeconds <= 30 ? Colors.red : textColor,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Code valide pendant: ${_formatRemainingTime(_remainingSeconds)}',
+                              style: TextStyle(
+                                fontSize: screenWidth * 0.035,
+                                color: _remainingSeconds <= 30 ? Colors.red : textColor,
+                                fontWeight: _remainingSeconds <= 30 ? FontWeight.bold : FontWeight.normal,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+
+                  SizedBox(height: screenHeight * 0.04),
 
                   // Champs de saisie du code SMS (Boîtes séparées)
                   Row(
@@ -308,13 +479,15 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
 
                   const Spacer(),
 
-                  // Bouton Confirmer
+                  // Bouton Confirmer (désactivé si le code est expiré)
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: _isLoading ? null : _handleContinue,
+                      onPressed: (_isLoading || _isCodeExpired) ? null : _handleContinue,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF14B53A),
+                        backgroundColor: _isCodeExpired 
+                            ? Colors.grey 
+                            : const Color(0xFF14B53A),
                         foregroundColor: Colors.white,
                         padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
                         shape: RoundedRectangleBorder(
@@ -328,7 +501,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                             )
                           : Text(
-                              'Confirmer',
+                              _isCodeExpired ? 'Code expiré' : 'Confirmer',
                               style: TextStyle(
                                 fontSize: screenWidth * 0.05,
                                 fontWeight: FontWeight.w600,

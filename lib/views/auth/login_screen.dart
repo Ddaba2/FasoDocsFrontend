@@ -7,6 +7,29 @@ import 'signup_screen.dart';
 import '../../core/services/auth_service.dart';
 import '../../core/utils/form_validators.dart';
 
+// Formatter pour valider que le numéro commence par 5, 6, 7, 8 ou 9
+class _PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Si le texte est vide, permettre la saisie
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+    
+    // Vérifier que le premier caractère est 5, 6, 7, 8 ou 9
+    final firstChar = newValue.text[0];
+    if (!['5', '6', '7', '8', '9'].contains(firstChar)) {
+      // Rejeter la saisie si elle ne commence pas par un chiffre valide
+      return oldValue;
+    }
+    
+    return newValue;
+  }
+}
+
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -324,6 +347,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           inputFormatters: [
                             FilteringTextInputFormatter.digitsOnly,
                             LengthLimitingTextInputFormatter(15), // Maximum 15 chiffres
+                            // Validateur pour accepter uniquement les numéros commençant par 5, 6, 7, 8 ou 9
+                            _PhoneNumberFormatter(),
                           ],
                         ),
 

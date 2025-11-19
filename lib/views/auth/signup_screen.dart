@@ -412,6 +412,8 @@ class _SignupScreenState extends State<SignupScreen> {
                         style: TextStyle(color: textColor),
                         decoration: InputDecoration(
                           labelText: 'Téléphone',
+                          hintText: 'Ex: 76 12 34 56',
+                          helperText: 'Le numéro doit commencer par 5, 6, 7, 8 ou 9',
                           labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
                           prefixIcon: Icon(
                             Icons.phone_outlined,
@@ -430,6 +432,13 @@ class _SignupScreenState extends State<SignupScreen> {
                             borderSide: const BorderSide(color: Color(0xFF14B53A), width: 2),
                           ),
                         ),
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(15),
+                          // Validateur pour accepter uniquement les numéros commençant par 5, 6, 7, 8 ou 9
+                          _PhoneNumberFormatter(),
+                        ],
+                        validator: (value) => FormValidators.validatePhone(value),
                       ),
 
                       const SizedBox(height: 20),

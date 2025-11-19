@@ -8,6 +8,7 @@ class FormValidators {
   // ============================================================================
   
   /// Valide un numéro de téléphone
+  /// Le numéro doit commencer par 5, 6, 7, 8 ou 9
   static String? validatePhone(String? value, {String? completeNumber}) {
     if (value == null || value.isEmpty) {
       return '📱 Le numéro de téléphone est obligatoire';
@@ -18,6 +19,14 @@ class FormValidators {
     
     if (phoneDigits.isEmpty) {
       return '❌ Veuillez saisir un numéro valide';
+    }
+    
+    // ✅ VÉRIFICATION IMPORTANTE : Le numéro doit commencer par 5, 6, 7, 8 ou 9
+    if (phoneDigits.isNotEmpty) {
+      final firstDigit = phoneDigits[0];
+      if (!['5', '6', '7', '8', '9'].contains(firstDigit)) {
+        return '❌ Le numéro doit commencer par 5, 6, 7, 8 ou 9';
+      }
     }
     
     if (phoneDigits.length < 8) {
@@ -34,12 +43,10 @@ class FormValidators {
         return '🇲🇱 Un numéro malien doit avoir exactement 8 chiffres';
       }
       
-      // Vérifier les préfixes valides au Mali
-      final validPrefixes = ['50', '60', '65', '66', '67', '70', '71', '72', '73', '74', '75', '76', '77', '78', '79', '80', '81', '82', '83', '84', '85', '86', '87', '88', '89', '90', '91', '92', '93', '94', '95', '96', '97', '98', '99'];
-      final prefix = phoneDigits.substring(0, 2);
-      
-      if (!validPrefixes.contains(prefix)) {
-        return '❌ Préfixe invalide "$prefix". Vérifiez votre numéro';
+      // Vérifier que le premier chiffre est valide (5, 6, 7, 8 ou 9)
+      final firstDigit = phoneDigits[0];
+      if (!['5', '6', '7', '8', '9'].contains(firstDigit)) {
+        return '❌ Le numéro malien doit commencer par 5, 6, 7, 8 ou 9';
       }
     }
     
