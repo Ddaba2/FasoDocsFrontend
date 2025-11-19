@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:geolocator/geolocator.dart' as geo;
 import '../data/default_centers_bamako.dart';
+import '../../models/api_models.dart';
 
 /// Service pour rechercher des lieux à proximité avec MapBox
 class MapBoxNearbyService {
@@ -78,8 +79,9 @@ class MapBoxNearbyService {
         print('✅ MapBox a trouvé ${features.length} résultats');
         
         if (features.isEmpty) {
-          print('❌ Aucun résultat MapBox');
-          return [];
+          print('⚠️ Aucun résultat MapBox, utilisation des centres par défaut');
+          // ✅ FALLBACK : Retourner des centres par défaut
+          return await _useDefaultCenters(centerType, latitude, longitude, limit);
         }
         
         // ✅ FILTRAGE LÉGER : Exclure seulement les routes évidentes
@@ -107,7 +109,7 @@ class MapBoxNearbyService {
           final properties = feature['properties'] ?? {};
           
           // Calculer la distance
-          final distance = _calculateDistance(
+          final distance = calculateDistance(
             latitude,
             longitude,
             coordinates[1], // latitude
@@ -135,12 +137,14 @@ class MapBoxNearbyService {
         
         return places;
       } else {
-        print('❌ Erreur MapBox: ${response.statusCode}');
-        return [];
+        print('⚠️ Erreur MapBox: ${response.statusCode}, utilisation des centres par défaut');
+        // ✅ FALLBACK : Retourner des centres par défaut
+        return await _useDefaultCenters(centerType, latitude, longitude, limit);
       }
     } catch (e) {
-      print('❌ Erreur lors de la recherche MapBox: $e');
-      return [];
+      print('⚠️ Erreur lors de la recherche MapBox: $e, utilisation des centres par défaut');
+      // ✅ FALLBACK : Retourner des centres par défaut
+      return await _useDefaultCenters(centerType, latitude, longitude, limit);
     }
   }
   
@@ -164,7 +168,7 @@ class MapBoxNearbyService {
       
       // Convertir en NearbyPlace et calculer les distances
       final places = defaultCenters.map((center) {
-        final distance = _calculateDistance(
+        final distance = calculateDistance(
           userLatitude,
           userLongitude,
           center.latitude,
@@ -195,7 +199,7 @@ class MapBoxNearbyService {
   }
 
   /// Calculer la distance entre deux points GPS (formule de Haversine)
-  static double _calculateDistance(
+  static double calculateDistance(
     double lat1,
     double lon1,
     double lat2,
@@ -218,6 +222,335 @@ class MapBoxNearbyService {
 
   static double _toRadians(double degree) {
     return degree * (math.pi / 180);
+  }
+
+  /// Trouver le centre le plus proche parmi les centres du backend
+  /// Utilise les noms du backend et les coordonnées GPS de default_centers_bamako.dart
+  static Future<NearbyPlace?> findNearestCenterFromBackend({
+    required List<CentreDeTraitement> backendCenters,
+    required double userLatitude,
+    required double userLongitude,
+  }) async {
+    try {
+      if (backendCenters.isEmpty) {
+        print('⚠️ Aucun centre du backend fourni');
+        return null;
+      }
+
+      print('🔍 Recherche du centre le plus proche parmi ${backendCenters.length} centres du backend');
+      print('📍 Position utilisateur : ($userLatitude, $userLongitude)');
+
+      // Obtenir tous les centres par défaut
+      final allDefaultCenters = DefaultCentersBamako.getAllCenters();
+      print('📋 ${allDefaultCenters.length} centres dans default_centers_bamako.dart');
+
+      // Pour chaque centre du backend, trouver le centre correspondant dans default_centers_bamako
+      final List<NearbyPlace> matchedPlaces = [];
+
+      for (final backendCenter in backendCenters) {
+        final backendCenterName = backendCenter.nom.toLowerCase().trim();
+        print('🔍 Recherche correspondance pour: "${backendCenter.nom}"');
+
+        // ✅ AMÉLIORATION : D'abord filtrer par type, puis faire le matching par nom
+        // Si le nom du backend contient un type de centre (tribunal, commissariat, etc.)
+        // on filtre d'abord par type pour avoir TOUS les centres de ce type
+        String? detectedType;
+        if (backendCenterName.contains('tribunal') || backendCenterName.contains('justice') || backendCenterName.contains('cour')) {
+          detectedType = 'tribunal';
+        } else if (backendCenterName.contains('commissariat') || backendCenterName.contains('police')) {
+          detectedType = 'commissariat';
+        } else if (backendCenterName.contains('mairie')) {
+          detectedType = 'mairie';
+        } else if (backendCenterName.contains('somagep') || backendCenterName.contains('eau')) {
+          detectedType = 'somagep';
+        } else if (backendCenterName.contains('edm') || backendCenterName.contains('électricité') || backendCenterName.contains('electricite')) {
+          detectedType = 'edm';
+        } else if (backendCenterName.contains('douane')) {
+          detectedType = 'douanes';
+        } else if (backendCenterName.contains('impôt') || backendCenterName.contains('impot')) {
+          detectedType = 'impots';
+        }
+
+        // Si un type a été détecté, filtrer par type d'abord
+        List<DefaultCenter> centersToSearch = allDefaultCenters;
+        if (detectedType != null) {
+          final filteredByType = DefaultCentersBamako.getCentersByType(detectedType);
+          if (filteredByType.isNotEmpty) {
+            centersToSearch = filteredByType;
+            print('  ✅ Type détecté: "$detectedType" -> ${filteredByType.length} centres trouvés');
+          }
+        }
+
+        // ✅ NOUVEAU : Trouver TOUTES les correspondances potentielles avec un score de similarité
+        final Map<DefaultCenter, double> candidateMatches = {};
+
+        for (final defaultCenter in centersToSearch) {
+          final defaultName = defaultCenter.name.toLowerCase().trim();
+          double similarity = 0.0;
+
+          // 1. Recherche exacte (score = 1.0)
+          if (defaultName == backendCenterName) {
+            similarity = 1.0;
+            candidateMatches[defaultCenter] = similarity;
+            print('  ✅ Correspondance exacte trouvée: "${defaultCenter.name}"');
+            break; // Si correspondance exacte trouvée, on s'arrête là
+          }
+
+          // 2. Recherche par contenu (score selon la longueur du match)
+          if (defaultName.contains(backendCenterName) || backendCenterName.contains(defaultName)) {
+            // Score basé sur la proportion de mots correspondants
+            final backendWords = backendCenterName.split(' ').where((w) => w.length > 2).toList();
+            final defaultWords = defaultName.split(' ').where((w) => w.length > 2).toList();
+            final matchingWords = backendWords.where((word) => defaultWords.any((dw) => dw.contains(word) || word.contains(dw))).length;
+            similarity = matchingWords / math.max(backendWords.length, defaultWords.length);
+            
+            // Bonus si "kalaban" ou "coura" est présent dans les deux
+            if (backendCenterName.contains('kalaban') && defaultName.contains('kalaban')) {
+              similarity += 0.3;
+            }
+            if (backendCenterName.contains('coura') && defaultName.contains('coura')) {
+              similarity += 0.3;
+            }
+            
+            // Bonus si les mots-clés spécifiques sont présents
+            if (backendCenterName.contains('kalaban coura') && defaultName.contains('kalaban') && defaultName.contains('coura')) {
+              similarity += 0.5; // Grand bonus pour match exact de zone
+            }
+            
+            // Garder seulement le meilleur score pour ce centre
+            if (similarity > 0.3) {
+              final existingScore = candidateMatches[defaultCenter] ?? 0.0;
+              if (similarity > existingScore) {
+                candidateMatches[defaultCenter] = similarity;
+                print('  ✅ Correspondance partielle (similarité: ${similarity.toStringAsFixed(2)}): "${defaultCenter.name}"');
+              }
+            }
+          }
+
+          // 3. Recherche par similarité de mots-clés (seulement si pas déjà trouvé avec un bon score)
+          final currentScore = candidateMatches[defaultCenter] ?? 0.0;
+          if (currentScore < 0.6 && _areNamesSimilar(backendCenterName, defaultName)) {
+            final backendKeywords = backendCenterName.split(' ').where((w) => w.length > 3).toSet();
+            final defaultKeywords = defaultName.split(' ').where((w) => w.length > 3).toSet();
+            final commonKeywords = backendKeywords.intersection(defaultKeywords);
+            similarity = commonKeywords.length / math.max(backendKeywords.length, defaultKeywords.length);
+            
+            if (similarity > 0.4 && similarity > currentScore) {
+              candidateMatches[defaultCenter] = similarity;
+              print('  ✅ Correspondance par mots-clés (similarité: ${similarity.toStringAsFixed(2)}): "${defaultCenter.name}"');
+            }
+          }
+        }
+        
+        // ✅ MODIFIÉ : Si un type a été détecté mais aucune correspondance trouvée,
+        // utiliser TOUS les centres de ce type (pour avoir le plus proche)
+        List<DefaultCenter> finalCandidates = [];
+        if (candidateMatches.isNotEmpty) {
+          // Si on a des correspondances par nom, utiliser celles-ci
+          finalCandidates = candidateMatches.keys.toList();
+          print('  📍 ${finalCandidates.length} candidat(s) trouvé(s) par matching de nom');
+        } else if (detectedType != null && centersToSearch.isNotEmpty) {
+          // Sinon, si un type a été détecté, utiliser TOUS les centres de ce type
+          finalCandidates = centersToSearch;
+          print('  📍 Aucune correspondance par nom, utilisation de TOUS les ${finalCandidates.length} centres de type "$detectedType"');
+        }
+
+        // Calculer la distance pour TOUS les candidats et sélectionner le plus proche
+        if (finalCandidates.isNotEmpty) {
+          print('  📐 Calcul des distances pour ${finalCandidates.length} candidat(s)...');
+          
+          // Calculer la distance pour chaque candidat
+          final List<({DefaultCenter center, double distance})> candidatesWithDistance = [];
+          
+          for (final center in finalCandidates) {
+            // Calculer la distance depuis la position de l'utilisateur
+            final distance = calculateDistance(
+              userLatitude,
+              userLongitude,
+              center.latitude,
+              center.longitude,
+            );
+            
+            candidatesWithDistance.add((
+              center: center,
+              distance: distance,
+            ));
+            
+            print('     - "${center.name}" (distance: ${distance.toStringAsFixed(2)} km)');
+          }
+          
+          // ✅ Trier par DISTANCE (le plus proche en premier)
+          candidatesWithDistance.sort((a, b) => a.distance.compareTo(b.distance));
+          
+          // Prendre le plus proche géographiquement
+          final nearestCandidate = candidatesWithDistance.first;
+          
+          print('  ✅ Plus proche sélectionné: "${nearestCandidate.center.name}"');
+          print('     📏 Distance: ${nearestCandidate.distance.toStringAsFixed(2)} km');
+          
+          // Afficher les autres candidats proches pour debug
+          if (candidatesWithDistance.length > 1) {
+            print('  📋 Autres candidats proches:');
+            for (var i = 1; i < math.min(4, candidatesWithDistance.length); i++) {
+              final candidate = candidatesWithDistance[i];
+              print('     ${i + 1}. "${candidate.center.name}" (${candidate.distance.toStringAsFixed(2)} km)');
+            }
+          }
+
+          // Utiliser le nom du backend mais les coordonnées du default_center le plus proche
+          matchedPlaces.add(NearbyPlace(
+            name: backendCenter.nom, // ✅ Nom du backend
+            address: backendCenter.adresse.isNotEmpty 
+                ? backendCenter.adresse 
+                : nearestCandidate.center.address,
+            latitude: nearestCandidate.center.latitude, // ✅ Coordonnées GPS vérifiées
+            longitude: nearestCandidate.center.longitude,
+            distance: nearestCandidate.distance, // ✅ Distance depuis l'utilisateur
+            category: nearestCandidate.center.type,
+            phone: backendCenter.telephone ?? nearestCandidate.center.phone,
+          ));
+        } else {
+          print('⚠️ Aucune correspondance trouvée pour: "${backendCenter.nom}"');
+          
+          // Si le backend a des coordonnées GPS, les utiliser en fallback
+          if (backendCenter.latitude != null && backendCenter.longitude != null) {
+            try {
+              final lat = double.parse(backendCenter.latitude!);
+              final lon = double.parse(backendCenter.longitude!);
+              final distance = calculateDistance(userLatitude, userLongitude, lat, lon);
+              
+              print('📌 Utilisation des coordonnées GPS du backend pour: "${backendCenter.nom}"');
+              
+              matchedPlaces.add(NearbyPlace(
+                name: backendCenter.nom,
+                address: backendCenter.adresse,
+                latitude: lat,
+                longitude: lon,
+                distance: distance,
+                category: null,
+                phone: backendCenter.telephone,
+              ));
+            } catch (e) {
+              print('❌ Erreur parsing coordonnées GPS du backend: $e');
+            }
+          }
+        }
+      }
+
+      if (matchedPlaces.isEmpty) {
+        print('⚠️ Aucun centre correspondant trouvé, retour du premier centre du backend');
+        
+        // ✅ FALLBACK : Retourner le premier centre du backend
+        final firstBackendCenter = backendCenters.first;
+        
+        // Essayer d'utiliser les coordonnées GPS du backend
+        if (firstBackendCenter.latitude != null && firstBackendCenter.longitude != null) {
+          try {
+            final lat = double.parse(firstBackendCenter.latitude!);
+            final lon = double.parse(firstBackendCenter.longitude!);
+            final distance = calculateDistance(userLatitude, userLongitude, lat, lon);
+            
+            print('📌 Utilisation du premier centre du backend: "${firstBackendCenter.nom}"');
+            
+            return NearbyPlace(
+              name: firstBackendCenter.nom,
+              address: firstBackendCenter.adresse,
+              latitude: lat,
+              longitude: lon,
+              distance: distance,
+              category: null,
+              phone: firstBackendCenter.telephone,
+            );
+          } catch (e) {
+            print('❌ Erreur parsing coordonnées GPS du backend: $e');
+          }
+        }
+        
+        // Si pas de coordonnées GPS, utiliser un centre par défaut de Bamako
+        final allDefaultCenters = DefaultCentersBamako.getAllCenters();
+        if (allDefaultCenters.isNotEmpty) {
+          final defaultCenter = allDefaultCenters.first;
+          final distance = calculateDistance(
+            userLatitude,
+            userLongitude,
+            defaultCenter.latitude,
+            defaultCenter.longitude,
+          );
+          
+          print('📌 Utilisation d\'un centre par défaut: "${defaultCenter.name}"');
+          
+          return NearbyPlace(
+            name: firstBackendCenter.nom,
+            address: firstBackendCenter.adresse.isNotEmpty 
+                ? firstBackendCenter.adresse 
+                : defaultCenter.address,
+            latitude: defaultCenter.latitude,
+            longitude: defaultCenter.longitude,
+            distance: distance,
+            category: defaultCenter.type,
+            phone: firstBackendCenter.telephone ?? defaultCenter.phone,
+          );
+        }
+        
+        // Dernier recours : retourner null
+        return null;
+      }
+
+      // Trier par distance et retourner le plus proche
+      matchedPlaces.sort((a, b) => a.distance.compareTo(b.distance));
+      final nearestPlace = matchedPlaces.first;
+
+      print('✅ Centre le plus proche trouvé: "${nearestPlace.name}"');
+      print('   📏 Distance: ${nearestPlace.distanceText}');
+      print('   📍 Coordonnées: (${nearestPlace.latitude}, ${nearestPlace.longitude})');
+
+      return nearestPlace;
+    } catch (e) {
+      print('❌ Erreur lors de la recherche du centre le plus proche: $e');
+      return null;
+    }
+  }
+
+  /// Vérifier si deux noms sont similaires (matching approximatif)
+  static bool _areNamesSimilar(String name1, String name2) {
+    // Normaliser les noms (enlever accents, espaces multiples, etc.)
+    final normalized1 = name1
+        .toLowerCase()
+        .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+        .replaceAll(RegExp(r'[èéêë]'), 'e')
+        .replaceAll(RegExp(r'[ìíîï]'), 'i')
+        .replaceAll(RegExp(r'[òóôõö]'), 'o')
+        .replaceAll(RegExp(r'[ùúûü]'), 'u')
+        .replaceAll(RegExp(r'[ç]'), 'c')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    final normalized2 = name2
+        .toLowerCase()
+        .replaceAll(RegExp(r'[àáâãäå]'), 'a')
+        .replaceAll(RegExp(r'[èéêë]'), 'e')
+        .replaceAll(RegExp(r'[ìíîï]'), 'i')
+        .replaceAll(RegExp(r'[òóôõö]'), 'o')
+        .replaceAll(RegExp(r'[ùúûü]'), 'u')
+        .replaceAll(RegExp(r'[ç]'), 'c')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim();
+
+    // Vérifier si un nom contient l'autre (au moins 70% de similarité)
+    if (normalized1.contains(normalized2) || normalized2.contains(normalized1)) {
+      return true;
+    }
+
+    // Extraire les mots-clés importants (commune, mairie, etc.)
+    final keywords1 = normalized1.split(' ').where((word) => word.length > 3).toSet();
+    final keywords2 = normalized2.split(' ').where((word) => word.length > 3).toSet();
+
+    // Calculer le ratio de mots-clés en commun
+    final commonKeywords = keywords1.intersection(keywords2);
+    if (keywords1.isEmpty || keywords2.isEmpty) return false;
+
+    final similarity = commonKeywords.length / math.max(keywords1.length, keywords2.length);
+    return similarity >= 0.5; // Au moins 50% de mots-clés en commun
   }
 
   /// Obtenir la position actuelle de l'utilisateur

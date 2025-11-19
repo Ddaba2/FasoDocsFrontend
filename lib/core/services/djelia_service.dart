@@ -1,45 +1,57 @@
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import '../config/api_config.dart';
 
 class DjeliaService {
   /// Retourne l'URL de base selon la plateforme
+  /// Utilise ApiConfig.baseUrl pour être cohérent avec le reste de l'application
   static Future<String> get baseUrl async {
     // Vérifier d'abord si une URL personnalisée est sauvegardée
     try {
       final prefs = await SharedPreferences.getInstance();
       final customUrl = prefs.getString('backend_url');
       if (customUrl != null && customUrl.isNotEmpty) {
-        return customUrl;
+        // Si l'URL personnalisée ne se termine pas par /djelia, l'ajouter
+        if (customUrl.endsWith('/djelia')) {
+          return customUrl;
+        } else {
+          return customUrl.replaceAll('/api', '/api/djelia');
+        }
       }
     } catch (e) {
       debugPrint('Erreur lecture URL personnalisée: $e');
     }
 
+    // Utiliser ApiConfig.baseUrl comme base et remplacer /api par /api/djelia
+    // Cela garantit que DjeliaService utilise la même IP que le reste de l'application
+    final apiBaseUrl = ApiConfig.baseUrl;
+    
     if (kIsWeb) {
-      // 🌐 CHROME / WEB
-      // Le web tourne généralement sur localhost:XXXX
-      // et communique avec le backend sur localhost:8080
+      // Pour le web, utiliser directement localhost
       return "http://localhost:8080/api/djelia";
-      
+    }
+    
+    // Pour les autres plateformes, utiliser ApiConfig.baseUrl qui contient déjà la bonne IP
+    // Exemple: http://192.168.11.109:8080/api -> http://192.168.11.109:8080/api/djelia
+    if (apiBaseUrl.endsWith('/api')) {
+      // Ajouter /djelia à la fin
+      return '$apiBaseUrl/djelia';
     } else {
-      // 📱 MOBILE (Android/iOS) ou 💻 Desktop
-      // Utilise l'URL par défaut ou détectée
-      return _getNativeUrl();
+      // Si l'URL ne se termine pas par /api, normaliser et ajouter /api/djelia
+      final normalizedUrl = apiBaseUrl.endsWith('/') ? apiBaseUrl.substring(0, apiBaseUrl.length - 1) : apiBaseUrl;
+      return '$normalizedUrl/api/djelia';
     }
   }
   
-  /// Détermine l'URL pour les plateformes natives (Android, iOS, Desktop)
-  static String _getNativeUrl() {
-    // Par défaut, utilise localhost
-    // Pour Android émulateur: "http://10.0.2.2:8080/api/djelia"
-    // Pour Android réel: modifiez dans les paramètres ou utilisez une IP
-    return "http://localhost:8080/api/djelia";
-  }
-  
-  /// Traduit du français en bambara ET génère l'audio
-  static Future<Map<String, dynamic>> translateAndSpeak(String texteFrancais) async {
+  /// Traduit du français en bambara ET génère l'audio avec fallback automatique
+  /// [procedureId] : Optionnel, permet d'activer le fallback vers l'audio préenregistré si Djelia AI échoue
+  static Future<Map<String, dynamic>> translateAndSpeak(
+    String texteFrancais, {
+    int? procedureId,
+  }) async {
     try {
       // ✅ ÉTAPE 1 : VALIDATION - Vérifier que le texte n'est pas null ou vide
       debugPrint('═══════════════════════════════════════');
@@ -49,6 +61,11 @@ class DjeliaService {
       debugPrint('📝 Texte reçu: "$texteFrancais"');
       debugPrint('🔍 Est null? ${texteFrancais == null}');
       debugPrint('🔍 Est vide? ${texteFrancais.trim().isEmpty}');
+      if (procedureId != null) {
+        debugPrint('🆔 ProcedureId fourni: $procedureId (fallback activé)');
+      } else {
+        debugPrint('⚠️ ProcedureId non fourni (fallback désactivé)');
+      }
       
       if (texteFrancais.trim().isEmpty) {
         debugPrint('❌ ERREUR : Texte vide ou null');
@@ -63,18 +80,17 @@ class DjeliaService {
       // ✅ ÉTAPE 3 : Préparer l'URL
       final baseUrlString = await baseUrl;
       
-      // ✅ IMPORTANT : Utiliser l'endpoint /chatbot/read-quick (PAS /djelia/translate-and-speak)
-      final endpoint = baseUrlString.replaceAll('/api/djelia', '/api/chatbot');
-      final fullUrl = '$endpoint/read-quick';
+      // ✅ IMPORTANT : Utiliser le nouvel endpoint /djelia/translate-and-speak avec fallback
+      final endpoint = baseUrlString.replaceAll('/api/djelia', '/api/djelia');
+      final fullUrl = '$endpoint/translate-and-speak';
       
       debugPrint('🌐 Plateforme : ${_getPlatformName()}');
       debugPrint('🔗 URL complète : $fullUrl');
       
-      // ✅ ÉTAPE 4 : Construire le body (avec chunkSize comme le backend attend)
+      // ✅ ÉTAPE 4 : Construire le body avec procedureId pour activer le fallback
       final body = {
         'text': cleanText,  // ✅ ON EST SÛR QUE CE N'EST PAS NULL !
-        'voiceDescription': 'Voix claire et naturelle',
-        'chunkSize': 1.0,
+        if (procedureId != null) 'procedureId': procedureId, // ⚠️ IMPORTANT pour activer le fallback
       };
       
       debugPrint('📦 Body à envoyer:');

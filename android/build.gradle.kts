@@ -4,10 +4,7 @@ allprojects {
         mavenCentral()
     }
     
-    // Suppress Java 8 obsolete warnings
-    tasks.withType<JavaCompile> {
-        options.compilerArgs.addAll(listOf("-Xlint:-options"))
-    }
+    // Note: -Xlint:-options removed as it's not compatible with Java 17+
 }
 
 val newBuildDir: Directory =
@@ -27,10 +24,31 @@ subprojects {
         }
     }
     
-    // Suppress Java 8 obsolete warnings for all subprojects
-    tasks.withType<JavaCompile> {
-        options.compilerArgs.addAll(listOf("-Xlint:-options"))
+    // Configure Java compatibility for all subprojects (including Android plugins)
+    afterEvaluate {
+        // Configure Android projects
+        extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_11
+                targetCompatibility = JavaVersion.VERSION_11
+            }
+        }
+        
+        // Configure all Java compilation tasks to use Java 11 and suppress obsolete warnings
+        tasks.withType<JavaCompile>().configureEach {
+            sourceCompatibility = "11"
+            targetCompatibility = "11"
+            // Suppress warnings about obsolete Java 8 options
+            options.compilerArgs.add("-Xlint:-options")
+        }
+        
+        // Also configure for Kotlin projects
+        extensions.findByType<org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions>()?.apply {
+            jvmTarget = "11"
+        }
     }
+    
+    // Note: -Xlint:-options removed as it's not compatible with Java 17+
 }
 
 subprojects {

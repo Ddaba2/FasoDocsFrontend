@@ -345,6 +345,7 @@ class ProcedureResponse {
   final List<DocumentRequis> documentsRequis;
   final List<EtapeProcedure>? etapes;
   final List<ReferenceLegale>? referencesLegales;
+  final bool peutEtreDelegatee; // ⚠️ IMPORTANT: Indique si la procédure peut être déléguée
 
   ProcedureResponse({
     required this.id,
@@ -360,6 +361,7 @@ class ProcedureResponse {
     required this.documentsRequis,
     this.etapes,
     this.referencesLegales,
+    this.peutEtreDelegatee = false, // Par défaut, une procédure n'est pas déléguable
   });
 
   factory ProcedureResponse.fromJson(Map<String, dynamic> json) => ProcedureResponse(
@@ -388,6 +390,7 @@ class ProcedureResponse {
       ? (json['etapes'] as List).map((e) => EtapeProcedure.fromJson(e)).toList()
       : null,
     referencesLegales: _parseReferencesLegales(json),
+    peutEtreDelegatee: json['peutEtreDelegatee'] ?? false, // ⚠️ IMPORTANT
   );
 }
 
@@ -411,10 +414,11 @@ class NotificationResponse {
 
   factory NotificationResponse.fromJson(Map<String, dynamic> json) => NotificationResponse(
     id: json['id']?.toString() ?? '',
-    titre: json['titre'] ?? '',
-    message: json['message'] ?? '',
-    lue: json['lue'] ?? false,
-    dateCreation: DateTime.tryParse(json['dateCreation'] ?? '') ?? DateTime.now(),
+    titre: json['titre'] ?? json['title'] ?? '',
+    // ✅ Gérer plusieurs champs possibles : message, description, contenu
+    message: json['message'] ?? json['description'] ?? json['contenu'] ?? json['content'] ?? '',
+    lue: json['lue'] ?? json['read'] ?? false,
+    dateCreation: DateTime.tryParse(json['dateCreation'] ?? json['createdAt'] ?? json['date_creation'] ?? '') ?? DateTime.now(),
   );
 }
 

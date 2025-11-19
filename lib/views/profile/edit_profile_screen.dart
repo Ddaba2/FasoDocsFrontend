@@ -6,8 +6,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/services/profil_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/photo_service.dart';
+import '../../core/config/api_config.dart';
 import '../../core/widgets/profile_avatar.dart';
 
 class EditProfileScreen extends StatefulWidget {
@@ -66,7 +69,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     try {
       final user = await _authService.getProfil();
       setState(() {
-        _currentPhotoBase64 = user.photo;
+        // Utiliser photoProfil au lieu de photo (correction importante)
+        _currentPhotoBase64 = user.photoProfil;
         if (widget.currentName == null) {
           _nameController.text = user.nomComplet;
         }
@@ -104,15 +108,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   /// Permet à l'utilisateur de sélectionner une image (galerie ou caméra)
   Future<void> _pickProfileImage() async {
     try {
+      debugPrint('📸 ===== DÉBUT SÉLECTION PHOTO =====');
       final File? selectedFile = await _profilService.showImageSourceDialog(context);
       
       if (selectedFile != null) {
+        debugPrint('📸 Photo sélectionnée: ${selectedFile.path}');
         setState(() {
           _profileImage = selectedFile;
           _currentPhotoBase64 = null; // Réinitialiser la photo actuelle
         });
+        debugPrint('📸 Photo stockée dans _profileImage');
+        debugPrint('📸 ===== FIN SÉLECTION PHOTO =====');
+      } else {
+        debugPrint('⚠️ Aucune photo sélectionnée');
       }
     } catch (e) {
+      debugPrint('❌ Erreur sélection photo: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -120,6 +131,58 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             backgroundColor: Colors.red,
           ),
         );
+      }
+    }
+  }
+
+  /// Test d'upload photo simple (pour debug)
+  Future<void> _testUploadPhotoSimple() async {
+    try {
+      setState(() => _isUploading = true);
+      
+      // Récupérer le token
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Token d\'authentification manquant'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      
+      // Utiliser le service simple
+      await uploadPhotoProfil(token, ApiConfig.baseUrl);
+      
+      // Recharger le profil pour voir la nouvelle photo
+      await _loadCurrentProfile();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo uploadée avec succès !'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Erreur test upload photo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
       }
     }
   }
@@ -144,17 +207,32 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       final nom = nameParts.isNotEmpty ? nameParts.first : _nameController.text.trim();
       final prenom = nameParts.length > 1 ? nameParts.sublist(1).join(' ') : '';
 
-      // Si une nouvelle photo a été sélectionnée, l'uploader d'abord
+      // 🔍 LOG : Vérifier si une photo est sélectionnée
+      debugPrint('💾 ===== DÉBUT SAUVEGARDE PROFIL =====');
+      debugPrint('   - Nom: $nom');
+      debugPrint('   - Prénom: $prenom');
+      debugPrint('   - Photo sélectionnée: ${_profileImage != null}');
       if (_profileImage != null) {
-        await _profilService.uploadPhoto(photoFile: _profileImage!);
+        debugPrint('   - Chemin photo: ${_profileImage!.path}');
+        try {
+          final fileSize = await _profileImage!.length();
+          debugPrint('   - Taille photo: $fileSize bytes');
+        } catch (e) {
+          debugPrint('   - Erreur lecture taille: $e');
+        }
+        debugPrint('✅ Photo sera uploadée via endpoint dédié POST /api/auth/profil/photo');
+      } else {
+        debugPrint('⚠️ Aucune photo à uploader');
       }
 
-      // Mettre à jour le profil complet (nom, prénom, et photo si nécessaire)
+      // ✅ Utiliser updateProfilComplet qui appelle l'endpoint dédié pour la photo
+      debugPrint('📤 Appel de updateProfilComplet...');
       await _profilService.updateProfilComplet(
         nom: nom,
         prenom: prenom,
-        photoFile: _profileImage, // Inclure la photo si elle a été sélectionnée
+        photoFile: _profileImage, // Inclure la photo si elle a été sélectionnée (sera convertie en Base64 automatiquement)
       );
+      debugPrint('✅ updateProfilComplet terminé');
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -251,6 +329,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
     
     return Scaffold(
+      resizeToAvoidBottomInset: true,
       backgroundColor: backgroundColor,
       body: SafeArea(
         child: LayoutBuilder(
@@ -307,7 +386,13 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                 // ========================================================================================
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      0,
+                      horizontalPadding,
+                      MediaQuery.of(context).viewInsets.bottom,
+                    ),
+                    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
                     child: Column(
                       children: [
                         SizedBox(height: screenHeight * 0.04),
@@ -438,6 +523,24 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               ),
 
                               SizedBox(height: screenHeight * 0.04),
+
+                              // Bouton de test pour upload photo simple (optionnel - pour debug)
+                              if (kDebugMode)
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: OutlinedButton.icon(
+                                    onPressed: _isUploading ? null : _testUploadPhotoSimple,
+                                    icon: const Icon(Icons.photo_camera),
+                                    label: const Text('Test Upload Photo Simple'),
+                                    style: OutlinedButton.styleFrom(
+                                      foregroundColor: primaryColor,
+                                      side: BorderSide(color: primaryColor),
+                                      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
+                                    ),
+                                  ),
+                                ),
+
+                              if (kDebugMode) SizedBox(height: screenHeight * 0.02),
 
                               // Bouton Enregistrer
                               SizedBox(

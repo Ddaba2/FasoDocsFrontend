@@ -172,43 +172,6 @@ class _CategoryScreenState extends State<CategoryScreen> {
 
       ),
 
-// Bouton flottant de support
-
-      floatingActionButton: Container(
-
-        width: 50,
-
-        height: 50,
-
-        decoration: BoxDecoration(
-
-          color: cardColor,
-
-          shape: BoxShape.circle,
-
-          border: Border.all(color: iconColor, width: 1),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(isDarkMode ? 0.8 : 0.5),
-              spreadRadius: 1,
-              blurRadius: 5,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-
-        child: Icon(
-
-          Icons.mic,
-
-          color: Colors.green,
-
-          size: 24,
-
-        ),
-
-      ),
-
     );
 
   }

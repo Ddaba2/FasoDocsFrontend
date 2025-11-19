@@ -2,6 +2,7 @@
 // NOTIFICATION SERVICE - Service pour la gestion des notifications
 // ========================================================================================
 
+import 'package:flutter/foundation.dart';
 import 'api_service.dart';
 import '../config/api_config.dart';
 import '../../models/api_models.dart';
@@ -16,7 +17,20 @@ class NotificationService {
       
       if (response.statusCode == 200) {
         final List<dynamic> data = response.data;
-        return data.map((json) => NotificationResponse.fromJson(json)).toList();
+        
+        // 🔍 LOGS DE DÉBOGAGE : Voir ce que le backend envoie
+        if (data.isNotEmpty) {
+          debugPrint('📬 Nombre de notifications: ${data.length}');
+          debugPrint('📬 Première notification brute: ${data[0]}');
+          debugPrint('📬 Champs disponibles: ${(data[0] as Map).keys.toList()}');
+        }
+        
+        return data.map((json) {
+          // 🔍 LOG pour chaque notification parsée
+          final notification = NotificationResponse.fromJson(json);
+          debugPrint('📬 Notification parsée - titre: "${notification.titre}", message: "${notification.message}", message vide: ${notification.message.isEmpty}');
+          return notification;
+        }).toList();
       } else {
         throw Exception('Erreur lors de la récupération des notifications');
       }

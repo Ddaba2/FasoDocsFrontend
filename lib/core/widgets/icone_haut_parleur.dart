@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart' show kIsWeb, debugPrint;
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 import '../services/djelia_service.dart';
+import '../services/audio_service.dart';
 import 'package:path_provider/path_provider.dart';
 
 // Import conditionnel pour les opérations fichier
@@ -12,12 +13,14 @@ class IconeHautParleur extends StatefulWidget {
   final String texteFrancais;
   final Color? couleur;
   final double? taille;
+  final int? procedureId; // ⚠️ IMPORTANT : Permet d'activer le fallback audio
   
   const IconeHautParleur({
     super.key,
     required this.texteFrancais,
     this.couleur,
     this.taille = 24,
+    this.procedureId, // Optionnel : active le fallback vers l'audio préenregistré si Djelia AI échoue
   });
   
   @override
@@ -33,6 +36,9 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
   @override
   void initState() {
     super.initState();
+    
+    // 🔊 Augmenter le volume au maximum (1.0 = 100%)
+    _audioPlayer.setVolume(1.0);
     
     // Écouter l'état du lecteur audio
     _audioPlayer.playerStateStream.listen((state) {
@@ -74,20 +80,76 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
     try {
       debugPrint('🎯 Clic sur haut-parleur pour : "${widget.texteFrancais}"');
       
-      // 1️⃣ Appeler l'API backend
-      final result = await DjeliaService.translateAndSpeak(widget.texteFrancais);
+      // ✅ NOUVEAU : Si procedureId est fourni, utiliser l'endpoint direct (voix off)
+      if (widget.procedureId != null) {
+        debugPrint('🆔 ProcedureId: ${widget.procedureId} - Utilisation de l\'endpoint direct (voix off)');
+        
+        // Récupérer l'audio directement depuis l'endpoint
+        final audioData = await AudioService.getProcedureAudioBase64(widget.procedureId!);
+        
+        if (audioData == null) {
+          throw Exception('Aucun fichier audio disponible pour cette procédure');
+        }
+        
+        final audioBase64 = audioData['audioBase64'] as String;
+        final procedureNom = audioData['procedureNom'] as String? ?? 'Procédure';
+        final format = audioData['format'] as String? ?? 'wav';
+        
+        setState(() {
+          _isLoading = false;
+        });
+        
+        // Afficher un message informatif
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('📻 Audio préenregistré : $procedureNom'),
+                  const SizedBox(height: 4),
+                  Text('🇫🇷 ${widget.texteFrancais}', 
+                       style: const TextStyle(fontSize: 12)),
+                  Text('🎵 Format: $format', 
+                       style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic)),
+                ],
+              ),
+              backgroundColor: Colors.blue,
+              duration: const Duration(seconds: 3),
+            ),
+          );
+        }
+        
+        // Jouer l'audio avec le format correct
+        await _jouerAudio(audioBase64, format: format);
+        
+        debugPrint('✅ Audio voix off joué avec succès');
+        return;
+      }
+      
+      // ⚠️ FALLBACK : Si pas de procedureId, utiliser Djelia AI (si activé)
+      debugPrint('⚠️ Pas de procedureId - Tentative avec Djelia AI');
+      
+      // 1️⃣ Appeler l'API backend Djelia AI
+      final result = await DjeliaService.translateAndSpeak(
+        widget.texteFrancais,
+        procedureId: widget.procedureId, // Peut être null
+      );
       
       // 2️⃣ Récupérer les données
       final traductionBambara = result['translatedText'] as String;
       final audioBase64 = result['audioBase64'] as String;
+      final voiceDescription = result['voiceDescription'] as String? ?? 'Djelia AI';
       
       setState(() {
         _traductionBambara = traductionBambara;
         _isLoading = false;
       });
       
-      // 3️⃣ Afficher la traduction dans un SnackBar
+      // 3️⃣ Afficher la traduction dans un SnackBar avec la source de l'audio
       if (mounted) {
+        final isFallback = voiceDescription == 'Audio de fallback';
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Column(
@@ -98,9 +160,14 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
                 const SizedBox(height: 4),
                 Text('🇲🇱 Bambara : $traductionBambara', 
                      style: const TextStyle(fontWeight: FontWeight.bold)),
+                if (isFallback) ...[
+                  const SizedBox(height: 4),
+                  Text('📻 ${voiceDescription}', 
+                       style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
+                ],
               ],
             ),
-            backgroundColor: Colors.orange,
+            backgroundColor: isFallback ? Colors.blue : Colors.orange,
             duration: const Duration(seconds: 5),
           ),
         );
@@ -130,27 +197,35 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
   }
   
   /// Joue l'audio selon la plateforme
-  Future<void> _jouerAudio(String audioBase64) async {
+  /// [format] : Format audio (wav, aac, mp3, ogg) - utilisé pour l'extension du fichier
+  Future<void> _jouerAudio(String audioBase64, {String format = 'wav'}) async {
     if (kIsWeb) {
       // 🌐 WEB (Chrome)
-      await _jouerAudioWeb(audioBase64);
+      await _jouerAudioWeb(audioBase64, format: format);
     } else {
       // 📱 MOBILE (Android/iOS)
-      await _jouerAudioMobile(audioBase64);
+      await _jouerAudioMobile(audioBase64, format: format);
     }
   }
   
   /// Joue l'audio sur Web (Chrome)
-  Future<void> _jouerAudioWeb(String audioBase64) async {
+  /// [format] : Format audio (wav, aac, mp3, ogg) - utilisé pour le MIME type
+  Future<void> _jouerAudioWeb(String audioBase64, {String format = 'wav'}) async {
     try {
-      debugPrint('🌐 Lecture audio sur Web...');
+      debugPrint('🌐 Lecture audio sur Web (format: $format)...');
       
       // Convertir Base64 en bytes
       final bytes = base64Decode(audioBase64);
       
+      // Déterminer le MIME type selon le format
+      final mimeType = _getMimeType(format);
+      
+      // 🔊 S'assurer que le volume est au maximum
+      await _audioPlayer.setVolume(1.0);
+      
       // Jouer via just_audio (supporte Web)
       await _audioPlayer.setAudioSource(
-        MyCustomSource(bytes),
+        MyCustomSource(bytes, mimeType: mimeType),
       );
       await _audioPlayer.play();
       
@@ -162,26 +237,33 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
   }
   
   /// Joue l'audio sur Mobile (Android/iOS)
-  Future<void> _jouerAudioMobile(String audioBase64) async {
+  /// [format] : Format audio (wav, aac, mp3, ogg) - utilisé pour l'extension du fichier
+  Future<void> _jouerAudioMobile(String audioBase64, {String format = 'wav'}) async {
     if (kIsWeb) {
       throw Exception('_jouerAudioMobile ne doit pas être appelé sur le web');
     }
     
     try {
-      debugPrint('📱 Lecture audio sur Mobile...');
+      debugPrint('📱 Lecture audio sur Mobile (format: $format)...');
       
       // Décoder l'audio Base64 en bytes
       final audioBytes = base64Decode(audioBase64);
       
+      // Utiliser le format reçu pour l'extension (wav, aac, mp3, ogg)
+      final extension = format.toLowerCase();
+      
       // Sauvegarder temporairement dans un fichier (dart:io uniquement)
       final tempDir = await getTemporaryDirectory();
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final filePath = '${tempDir.path}/djelia_audio_$timestamp.wav';
+      final filePath = '${tempDir.path}/procedure_audio_$timestamp.$extension';
       
       // Créer et écrire le fichier
       await FileHelper.writeAudioFile(filePath, audioBytes);
       
       debugPrint('📁 Fichier audio créé : $filePath');
+      
+      // 🔊 S'assurer que le volume est au maximum
+      await _audioPlayer.setVolume(1.0);
       
       // Jouer l'audio depuis le fichier
       await _audioPlayer.setFilePath(filePath);
@@ -194,6 +276,20 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
     }
   }
   
+  /// Retourne le MIME type selon le format audio
+  String _getMimeType(String format) {
+    switch (format.toLowerCase()) {
+      case 'aac':
+        return 'audio/aac';
+      case 'mp3':
+        return 'audio/mpeg';
+      case 'ogg':
+        return 'audio/ogg';
+      case 'wav':
+      default:
+        return 'audio/wav';
+    }
+  }
   
   @override
   void dispose() {
@@ -229,8 +325,9 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
 // Source audio personnalisée pour just_audio (Web)
 class MyCustomSource extends StreamAudioSource {
   final List<int> bytes;
+  final String mimeType;
   
-  MyCustomSource(this.bytes);
+  MyCustomSource(this.bytes, {this.mimeType = 'audio/wav'});
   
   @override
   Future<StreamAudioResponse> request([int? start, int? end]) async {
@@ -242,7 +339,7 @@ class MyCustomSource extends StreamAudioSource {
       contentLength: end - start,
       offset: start,
       stream: Stream.value(bytes.sublist(start, end)),
-      contentType: 'audio/wav',
+      contentType: mimeType,
     );
   }
 }

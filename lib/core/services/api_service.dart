@@ -2,6 +2,7 @@
 // API SERVICE - Service principal pour les appels HTTP vers Spring Boot
 // ========================================================================================
 
+import 'dart:math' as math;
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -71,7 +72,17 @@ class ApiService {
   // POST request
   Future<Response> post(String endpoint, {dynamic data, Options? options}) async {
     try {
-      print('🌐 Appel API: POST $endpoint');
+      print('🌐 ===== DÉBUT APPEL API POST =====');
+      print('🌐 Endpoint: POST $endpoint');
+      print('🌐 URL complète: ${ApiConfig.baseUrl}$endpoint');
+      
+      // Log des données si c'est une photo
+      if (data is Map && data.containsKey('photoProfil')) {
+        final photoData = data['photoProfil'] as String;
+        print('📸 Upload photo détecté');
+        print('📸 Photo longueur: ${photoData.length} caractères');
+        print('📸 Photo préfixe: ${photoData.substring(0, math.min(30, photoData.length))}...');
+      }
       
       final response = await _dio.post(
         endpoint,
@@ -80,9 +91,19 @@ class ApiService {
       );
       
       print('✅ Réponse API: ${response.statusCode} - ${response.statusMessage}');
+      print('🌐 ===== FIN APPEL API POST =====');
       return response;
     } catch (e) {
       print('❌ Erreur API POST $endpoint: $e');
+      if (e is DioException) {
+        print('   Type: ${e.type}');
+        print('   Message: ${e.message}');
+        if (e.response != null) {
+          print('   Status: ${e.response?.statusCode}');
+          print('   Data: ${e.response?.data}');
+        }
+      }
+      print('🌐 ===== FIN APPEL API POST (ERREUR) =====');
       rethrow;
     }
   }

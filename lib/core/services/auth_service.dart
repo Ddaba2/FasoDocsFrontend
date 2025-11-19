@@ -3,6 +3,8 @@
 // ========================================================================================
 
 import 'dart:convert';
+import 'dart:math' as math;
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'api_service.dart';
@@ -131,7 +133,24 @@ class AuthService {
       final response = await _apiService.get(ApiConfig.authProfil);
       
       if (response.statusCode == 200) {
+        // Log de débogage pour voir la réponse du backend
+        debugPrint('📥 Réponse getProfil: ${response.data}');
+        final photoProfilStr = response.data['photoProfil']?.toString() ?? 'NULL';
+        final photoProfilPreview = photoProfilStr != 'NULL' && photoProfilStr.length > 50 
+            ? "${photoProfilStr.substring(0, 50)}..." 
+            : photoProfilStr;
+        debugPrint('📸 photoProfil dans la réponse: $photoProfilPreview');
+        debugPrint('📸 photoUrl dans la réponse: ${response.data['photoUrl']}');
+        
         final user = User.fromJson(response.data);
+        
+        // Log de débogage pour voir ce qui est stocké dans User
+        final userPhotoProfilPreview = user.photoProfil != null && user.photoProfil!.length > 50
+            ? "${user.photoProfil!.substring(0, 50)}..."
+            : user.photoProfil?.toString() ?? "NULL";
+        debugPrint('📸 User.photoProfil après parsing: $userPhotoProfilPreview');
+        debugPrint('📸 User.photoUrl après parsing: ${user.photoUrl}');
+        
         await _saveUser(user);
         return user;
       } else if (response.statusCode == 400) {
@@ -165,6 +184,102 @@ class AuthService {
       }
     } catch (e) {
       throw Exception('Erreur: $e');
+    }
+  }
+  
+  // Uploader la photo de profil
+  // base64Image doit commencer par "data:image/..." (ex: "data:image/jpeg;base64,...")
+  Future<void> uploadPhotoProfil(String base64Image) async {
+    try {
+      debugPrint('📸 Upload photo de profil...');
+      debugPrint('📸 Photo complète: ${base64Image.length} caractères');
+      debugPrint('📸 Préfixe: ${base64Image.substring(0, math.min(30, base64Image.length))}...');
+      
+      // 1. Vérifier que l'image est au format data URI
+      if (!base64Image.startsWith('data:image/')) {
+        throw Exception('Le format de l\'image doit commencer par "data:image/..."');
+      }
+      
+      // 2. Vérifier le token d'authentification
+      final token = await _getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Token d\'authentification manquant. Veuillez vous reconnecter.');
+      }
+      debugPrint('🔑 Token présent: ${token.substring(0, math.min(20, token.length))}...');
+      
+      // 3. Préparer les données
+      final requestData = {
+        'photoProfil': base64Image,
+      };
+      debugPrint('📤 Envoi vers: ${ApiConfig.baseUrl}${ApiConfig.authProfilPhoto}');
+      debugPrint('📤 Body contient "photoProfil": ${requestData.containsKey('photoProfil')}');
+      debugPrint('📤 Body contient "data:image": ${base64Image.contains('data:image')}');
+      debugPrint('📤 Body contient "base64": ${base64Image.contains('base64')}');
+      
+      // 4. Envoyer la requête
+      final response = await _apiService.post(
+        ApiConfig.authProfilPhoto,
+        data: requestData,
+        options: Options(
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        ),
+      );
+      
+      debugPrint('📥 Réponse serveur: ${response.statusCode}');
+      debugPrint('📥 Réponse data: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        debugPrint('✅ Photo uploadée avec succès');
+        
+        // 5. Vérifier que la photo a été sauvegardée
+        await _verifierPhotoSauvegardee();
+      } else {
+        final errorMsg = response.data?['message'] ?? 'Erreur lors de l\'upload de la photo';
+        debugPrint('❌ Erreur upload photo: $errorMsg (Status: ${response.statusCode})');
+        throw Exception(errorMsg);
+      }
+    } on DioException catch (e) {
+      debugPrint('❌ Erreur DioException: ${e.message}');
+      if (e.response != null) {
+        debugPrint('   Status: ${e.response?.statusCode}');
+        debugPrint('   Data: ${e.response?.data}');
+        
+        if (e.response?.statusCode == 401) {
+          throw Exception('Non authentifié. Veuillez vous reconnecter.');
+        } else if (e.response?.statusCode == 400) {
+          final errorMsg = e.response?.data?['message'] ?? 'Format de photo incorrect';
+          throw Exception(errorMsg);
+        } else if (e.response?.statusCode == 413) {
+          throw Exception('Fichier trop volumineux. Maximum 5MB.');
+        }
+      }
+      rethrow;
+    } catch (e) {
+      debugPrint('❌ Erreur uploadPhotoProfil: $e');
+      rethrow;
+    }
+  }
+  
+  /// Vérifier que la photo a été sauvegardée dans le profil
+  Future<void> _verifierPhotoSauvegardee() async {
+    try {
+      debugPrint('🔍 Vérification de la photo sauvegardée...');
+      final user = await getProfil();
+      
+      if (user.photoProfil != null && user.photoProfil!.isNotEmpty) {
+        final photoPreview = user.photoProfil!.length > 50
+            ? "${user.photoProfil!.substring(0, 50)}..."
+            : user.photoProfil!;
+        debugPrint('✅ Photo confirmée dans le profil: ${user.photoProfil!.length} caractères');
+        debugPrint('📸 Aperçu: $photoPreview');
+      } else {
+        debugPrint('⚠️ Photo toujours NULL après upload');
+      }
+    } catch (e) {
+      debugPrint('⚠️ Erreur lors de la vérification: $e');
+      // Ne pas faire échouer l'upload si la vérification échoue
     }
   }
   

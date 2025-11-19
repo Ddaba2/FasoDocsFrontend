@@ -28,10 +28,7 @@ android {
         checkReleaseBuilds = false
     }
 
-    // Add compiler args to suppress Java 8 warnings
-    tasks.withType<JavaCompile> {
-        options.compilerArgs.addAll(listOf("-Xlint:-options"))
-    }
+    // Note: -Xlint:-options removed as it's not compatible with Java 17+
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
@@ -42,6 +39,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        
+        // Améliorer la stabilité du débogage
+        multiDexEnabled = true
     }
 
     buildTypes {

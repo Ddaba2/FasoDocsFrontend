@@ -57,12 +57,14 @@ dependencies:
   
   # Icons
   cupertino_icons: ^1.0.2
+  font_awesome_flutter: ^10.6.0  # Pour l'icône moto de délégation
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^3.0.1
-  flutter_launcher_icons: ^0.13.1
+  flutter_launcher_icons: ^0.14.4
+
 
 flutter:
   uses-material-design: true
@@ -85,7 +87,7 @@ flutter:
 
 # ========================================================================================
 # CONFIGURATION DE L'ICÔNE DE L'APPLICATION (Logo + Nom sur l'écran d'accueil)
-# Logo réduit de 40% pour être visible en entier même sur les icônes rondes
+# Logo réduit de 60% pour être visible en entier même sur les icônes rondes
 # ========================================================================================
 flutter_launcher_icons:
   android: true
@@ -96,5 +98,5 @@ flutter_launcher_icons:
   adaptive_icon_foreground: "assets/images/FasoDocs 1.png"
   # Enlever la transparence pour iOS
   remove_alpha_ios: true
-  # Réduire le logo de 40% pour être sûr qu'il soit visible en entier
-  adaptive_icon_padding: 40  # 40% de padding = beaucoup d'espace autour
+  # Réduire le logo de 60% pour être sûr qu'il soit visible en entier sur toutes les formes
+  adaptive_icon_padding: 60  # 60% de padding = espace maximal autour pour visibilité complète

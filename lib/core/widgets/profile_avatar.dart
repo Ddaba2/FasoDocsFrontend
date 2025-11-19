@@ -26,28 +26,43 @@ class ProfileAvatar extends StatelessWidget {
     // Si une photo Base64 est fournie
     if (photoBase64 != null && photoBase64!.isNotEmpty) {
       try {
-        // Enlever le préfixe "data:image/...;base64," si présent
-        final base64String = photoBase64!.contains(',')
-            ? photoBase64!.split(',').last
-            : photoBase64!;
+        debugPrint('📸 ProfileAvatar: Photo fournie (${photoBase64!.length} caractères)');
+        
+        // Extraire les données Base64 (après la virgule)
+        // Format attendu: "data:image/jpeg;base64,/9j/4AAQSkZJRg..."
+        String base64Data;
+        if (photoBase64!.contains(',')) {
+          base64Data = photoBase64!.split(',')[1];
+          debugPrint('📸 ProfileAvatar: Préfixe détecté, extraction des données Base64');
+        } else {
+          // Si pas de préfixe, on assume que c'est déjà du Base64 pur
+          base64Data = photoBase64!;
+          debugPrint('📸 ProfileAvatar: Pas de préfixe, utilisation directe du Base64');
+        }
 
-        // Décoder le Base64
-        final bytes = base64Decode(base64String);
+        // Décoder le Base64 en bytes
+        final bytes = base64Decode(base64Data);
+        debugPrint('📸 ProfileAvatar: Base64 décodé en ${bytes.length} bytes');
 
         // Afficher l'avatar avec l'image
         return CircleAvatar(
           radius: radius,
           backgroundImage: MemoryImage(bytes),
           backgroundColor: backgroundColor ?? Colors.grey.shade300,
+          onBackgroundImageError: (exception, stackTrace) {
+            debugPrint('❌ ProfileAvatar: Erreur chargement image: $exception');
+          },
         );
-      } catch (e) {
-        debugPrint('❌ Erreur décodage photo Base64 : $e');
+      } catch (e, stackTrace) {
+        debugPrint('❌ ProfileAvatar: Erreur décodage photo Base64 : $e');
+        debugPrint('❌ StackTrace: $stackTrace');
         // En cas d'erreur, afficher l'avatar par défaut
         return _buildDefaultAvatar(context);
       }
     }
 
-    // Photo par défaut
+    // Photo par défaut si aucune photo n'est fournie
+    debugPrint('📸 ProfileAvatar: Aucune photo fournie, affichage avatar par défaut');
     return _buildDefaultAvatar(context);
   }
 

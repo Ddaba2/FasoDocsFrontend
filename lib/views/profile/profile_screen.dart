@@ -1,5 +1,6 @@
 // ÉCRAN: PROFIL
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'edit_profile_screen.dart'; // Import de l'écran d'édition
 import '../history/history_screen.dart';
 import '../../controllers/report_controller.dart'; // Supposé existant
@@ -67,7 +68,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isLoading = false;
       });
       
-      print('✅ Profil utilisateur chargé: ${user.nomComplet}');
+      debugPrint('✅ Profil utilisateur chargé: ${user.nomComplet}');
+      debugPrint('📸 Photo de profil: ${user.photoProfil != null ? "${user.photoProfil!.length} caractères" : "NULL"}');
+      if (user.photoProfil != null && user.photoProfil!.isNotEmpty) {
+        final preview = user.photoProfil!.length > 50 
+            ? "${user.photoProfil!.substring(0, 50)}..." 
+            : user.photoProfil!;
+        debugPrint('📸 Aperçu photo: $preview');
+      }
     } catch (e) {
       print('❌ Erreur chargement profil: $e');
       setState(() {
@@ -92,38 +100,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
 
+    // Toujours recharger le profil après retour de l'écran d'édition
+    // pour s'assurer que la photo (et autres données) sont à jour
+    // Attendre un peu pour laisser le backend sauvegarder la photo
+    await Future.delayed(const Duration(milliseconds: 500));
+    await _loadUserProfile();
+    
     // Vérifier si le résultat est un Map (données mises à jour)
     if (result != null && result is Map<String, String>) {
-      try {
-        // Appeler l'API pour mettre à jour le profil
-        await _authService.updateProfil({
-          'nomComplet': result['name'] ?? userName,
-          'email': result['email'] ?? userEmail,
-          'telephone': result['phone'] ?? userPhone,
-        });
-        
-        // Recharger le profil depuis le backend
-        await _loadUserProfile();
-        
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profil mis à jour avec succès !'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        print('❌ Erreur mise à jour profil: $e');
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erreur lors de la mise à jour: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Profil mis à jour avec succès !'),
+            backgroundColor: Colors.green,
+          ),
+        );
       }
+    }
+    
+    // Log pour vérifier que la photo est bien chargée
+    if (mounted && _user != null) {
+      debugPrint('📸 Photo dans le profil après rechargement: ${_user!.photoProfil != null ? "${_user!.photoProfil!.length} caractères" : "NULL"}');
     }
   }
 
@@ -268,7 +265,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                         // Photo de profil avec ProfileAvatar
                         ProfileAvatar(
-                          photoBase64: _user?.photo,
+                          photoBase64: _user?.photoProfil,
                           radius: screenWidth * 0.15,
                           backgroundColor: isDarkMode ? Colors.grey.shade700 : Colors.grey[300],
                           defaultIcon: Icons.person,

@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -20,21 +21,40 @@ class ProfilService {
   // ========================================================================================
   
   /// Upload SEULEMENT une photo de profil en Base64
-  /// Le backend met à jour uniquement les champs non-null
+  /// Utilise l'endpoint dédié POST /api/auth/profil/photo (recommandé)
   Future<Map<String, dynamic>> uploadPhoto({
     required File photoFile,
   }) async {
     try {
-      // 1. Obtenir le token d'authentification
-      final token = await _getToken();
-      if (token == null) {
-        throw Exception('Non authentifié');
+      // 1. Vérifier que le fichier existe
+      if (!await photoFile.exists()) {
+        throw Exception('❌ Le fichier photo n\'existe pas: ${photoFile.path}');
       }
-
-      // 2. Lire et convertir l'image en Base64
+      
+      final fileSize = await photoFile.length();
       debugPrint('📸 Lecture du fichier photo...');
+      debugPrint('   - Fichier: ${photoFile.path}');
+      debugPrint('   - Taille fichier: $fileSize bytes');
+      
+      // Vérifier la taille (max 5MB)
+      if (fileSize > 5 * 1024 * 1024) {
+        throw Exception('❌ La photo est trop volumineuse (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB). Maximum: 5MB');
+      }
+      
+      // 2. Lire et convertir l'image en Base64
       final bytes = await photoFile.readAsBytes();
+      debugPrint('   - Bytes lus: ${bytes.length} bytes');
+      
+      if (bytes.isEmpty) {
+        throw Exception('❌ Le fichier photo est vide');
+      }
+      
       final base64Image = base64Encode(bytes);
+      debugPrint('   - Base64 encodé: ${base64Image.length} caractères');
+      
+      if (base64Image.isEmpty) {
+        throw Exception('❌ L\'encodage Base64 a échoué');
+      }
       
       // 3. Déterminer le type MIME de l'image
       String mimeType = 'image/jpeg';
@@ -44,51 +64,38 @@ class ProfilService {
       } else if (extension == 'jpg' || extension == 'jpeg') {
         mimeType = 'image/jpeg';
       }
+      debugPrint('   - Type MIME détecté: $mimeType');
       
+      // 4. Créer le Data URL avec le préfixe requis
       final photoBase64 = 'data:$mimeType;base64,$base64Image';
+      
+      // Vérifier que le préfixe est correct
+      if (!photoBase64.startsWith('data:image/')) {
+        throw Exception('❌ Format de photo invalide: doit commencer par "data:image/"');
+      }
       
       debugPrint('📤 Upload de la photo (${bytes.length} bytes)...');
       debugPrint('📏 Taille Base64: ${photoBase64.length} caractères');
-
-      // 4. ✅ Envoyer avec PUT /profil (le backend met à jour seulement photoProfil si c'est le seul champ)
-      final response = await http.put(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.authProfil}'),
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer $token',
-        },
-        body: jsonEncode({
-          'photoProfil': photoBase64,  // ✅ Seulement la photo
-        }),
-      ).timeout(
-        const Duration(seconds: 30),
-        onTimeout: () {
-          throw Exception('⏱️ Timeout : Le serveur ne répond pas');
-        },
-      );
-
-      debugPrint('📥 Réponse HTTP : ${response.statusCode}');
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        debugPrint('✅ Photo uploadée avec succès');
-        
-        // Recharger le profil pour mettre à jour les données locales
-        await _authService.getProfil();
-        
-        return data;
-      } else if (response.statusCode == 401) {
-        throw Exception('🔒 Non authentifié. Veuillez vous reconnecter.');
-      } else if (response.statusCode == 413) {
-        throw Exception('📦 Fichier trop volumineux. Maximum 5MB.');
-      } else {
-        try {
-          final errorData = jsonDecode(response.body);
-          throw Exception(errorData['message'] ?? 'Erreur serveur : ${response.statusCode}');
-        } catch (e) {
-          throw Exception('Erreur serveur : ${response.statusCode}');
-        }
+      debugPrint('📸 Format: ${photoBase64.substring(0, math.min(50, photoBase64.length))}...');
+      debugPrint('📤 Envoi vers: ${ApiConfig.baseUrl}${ApiConfig.authProfilPhoto}');
+      
+      // 5. Vérifier le token avant l'upload
+      final token = await _getToken();
+      if (token == null || token.isEmpty) {
+        throw Exception('Token d\'authentification manquant. Veuillez vous reconnecter.');
       }
+      debugPrint('🔑 Token présent: ${token.substring(0, math.min(20, token.length))}...');
+      
+      // 6. ✅ Utiliser l'endpoint dédié POST /api/auth/profil/photo (recommandé)
+      await _authService.uploadPhotoProfil(photoBase64);
+      
+      debugPrint('✅ Photo uploadée avec succès via endpoint dédié');
+      
+      // Retourner un Map pour compatibilité avec l'ancienne interface
+      return {
+        'success': true,
+        'message': 'Photo uploadée avec succès',
+      };
     } catch (e) {
       debugPrint('❌ Erreur uploadPhoto : $e');
       rethrow;
@@ -100,48 +107,106 @@ class ProfilService {
   // ========================================================================================
   
   /// Met à jour le profil complet (nom, prénom, photo optionnelle)
+  /// ✅ Utilise l'endpoint dédié POST /api/auth/profil/photo pour la photo (recommandé)
   Future<Map<String, dynamic>> updateProfilComplet({
     required String nom,
     required String prenom,
     File? photoFile,
   }) async {
     try {
+      debugPrint('💾 ===== DÉBUT MISE À JOUR PROFIL COMPLET =====');
+      debugPrint('   - Nom: $nom');
+      debugPrint('   - Prénom: $prenom');
+      debugPrint('   - Photo fournie: ${photoFile != null}');
+      
       // 1. Obtenir le token d'authentification
       final token = await _getToken();
       if (token == null) {
         throw Exception('Non authentifié');
       }
 
-      // 2. Préparer les données
-      final Map<String, dynamic> data = {
-        'nom': nom,
-        'prenom': prenom,
-      };
-
-      // 3. Si une photo est fournie, la convertir en Base64
+      // 2. Si une photo est fournie, l'uploader avec l'endpoint dédié
       if (photoFile != null) {
-        debugPrint('📸 Conversion de la photo en Base64...');
-        final bytes = await photoFile.readAsBytes();
-        final base64Image = base64Encode(bytes);
+        debugPrint('📸 ===== DÉBUT UPLOAD PHOTO (endpoint dédié) =====');
+        debugPrint('   - Fichier: ${photoFile.path}');
         
+        // Vérifier que le fichier existe
+        if (!await photoFile.exists()) {
+          throw Exception('❌ Le fichier photo n\'existe pas: ${photoFile.path}');
+        }
+        
+        final fileSize = await photoFile.length();
+        debugPrint('   - Taille fichier: $fileSize bytes');
+        
+        // Vérifier la taille (max 5MB)
+        if (fileSize > 5 * 1024 * 1024) {
+          throw Exception('❌ La photo est trop volumineuse (${(fileSize / 1024 / 1024).toStringAsFixed(2)} MB). Maximum: 5MB');
+        }
+        
+        // Lire et convertir en Base64
+        final bytes = await photoFile.readAsBytes();
+        debugPrint('   - Bytes lus: ${bytes.length} bytes');
+        
+        if (bytes.isEmpty) {
+          throw Exception('❌ Le fichier photo est vide');
+        }
+        
+        final base64Image = base64Encode(bytes);
+        debugPrint('   - Base64 encodé: ${base64Image.length} caractères');
+        
+        if (base64Image.isEmpty) {
+          throw Exception('❌ L\'encodage Base64 a échoué');
+        }
+        
+        // Déterminer le type MIME de l'image
         String mimeType = 'image/jpeg';
         final extension = photoFile.path.split('.').last.toLowerCase();
         if (extension == 'png') {
           mimeType = 'image/png';
+        } else if (extension == 'jpg' || extension == 'jpeg') {
+          mimeType = 'image/jpeg';
+        }
+        debugPrint('   - Type MIME détecté: $mimeType');
+        
+        // Créer le Data URL avec le préfixe requis
+        final photoDataUrl = 'data:$mimeType;base64,$base64Image';
+        
+        // Vérifier que le préfixe est correct
+        if (!photoDataUrl.startsWith('data:image/')) {
+          throw Exception('❌ Format de photo invalide: doit commencer par "data:image/"');
         }
         
-        data['photoProfil'] = 'data:$mimeType;base64,$base64Image';
-        debugPrint('📤 Photo incluse dans la mise à jour');
+        debugPrint('📤 Envoi photo vers: ${ApiConfig.baseUrl}${ApiConfig.authProfilPhoto}');
+        debugPrint('📤 Photo longueur: ${photoDataUrl.length} caractères');
+        debugPrint('📤 Préfixe: ${photoDataUrl.substring(0, math.min(30, photoDataUrl.length))}...');
+        
+        // ✅ Utiliser l'endpoint dédié POST /api/auth/profil/photo
+        await _authService.uploadPhotoProfil(photoDataUrl);
+        
+        debugPrint('✅ Photo uploadée avec succès via endpoint dédié');
+        debugPrint('📸 ===== FIN UPLOAD PHOTO =====');
+      } else {
+        debugPrint('⚠️ Aucune photo fournie (photoFile est null)');
       }
-
-      // 4. Envoyer la requête
+      
+      // 3. Mettre à jour le profil (nom, prénom) avec PUT /auth/profil
+      debugPrint('📤 Mise à jour du profil (nom, prénom)...');
+      final Map<String, dynamic> data = {
+        'nom': nom,
+        'prenom': prenom,
+      };
+      
+      final jsonBody = jsonEncode(data);
+      debugPrint('📤 Envoi vers: ${ApiConfig.baseUrl}${ApiConfig.authProfil}');
+      debugPrint('📤 Body: $jsonBody');
+      
       final response = await http.put(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.authProfil}'),
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer $token',
         },
-        body: jsonEncode(data),
+        body: jsonBody,
       ).timeout(
         const Duration(seconds: 30),
         onTimeout: () {
@@ -150,14 +215,20 @@ class ProfilService {
       );
 
       debugPrint('📥 Réponse HTTP : ${response.statusCode}');
+      debugPrint('📥 Réponse body: ${response.body}');
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
         debugPrint('✅ Profil mis à jour avec succès');
         
+        // ⏳ Attendre un peu avant de recharger le profil
+        await Future.delayed(const Duration(milliseconds: 500));
+        
         // Recharger le profil
+        debugPrint('🔄 Rechargement du profil après mise à jour...');
         await _authService.getProfil();
         
+        debugPrint('✅ ===== FIN MISE À JOUR PROFIL COMPLET =====');
         return responseData;
       } else if (response.statusCode == 401) {
         throw Exception('🔒 Non authentifié. Veuillez vous reconnecter.');
@@ -231,9 +302,9 @@ class ProfilService {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: 800,  // Limite selon le guide
+        maxHeight: 800, // Limite selon le guide
+        imageQuality: 85, // Qualité 0-100 (85 = bon compromis taille/qualité)
       );
 
       if (image != null) {
@@ -252,9 +323,9 @@ class ProfilService {
       final ImagePicker picker = ImagePicker();
       final XFile? image = await picker.pickImage(
         source: ImageSource.camera,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
+        maxWidth: 800,  // Limite selon le guide
+        maxHeight: 800, // Limite selon le guide
+        imageQuality: 85, // Qualité 0-100 (85 = bon compromis taille/qualité)
       );
 
       if (image != null) {

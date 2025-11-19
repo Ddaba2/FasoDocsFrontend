@@ -3,14 +3,17 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import '../services/mapbox_nearby_service.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:url_launcher/url_launcher.dart';
+import '../../models/api_models.dart';
 
 /// Widget de carte affichant le centre le plus proche
 class NearbyCenterMap extends StatefulWidget {
   final String centerType; // Ex: "Mairie", "Commissariat", etc.
+  final List<CentreDeTraitement>? backendCenters; // Centres du backend (optionnel)
   
   const NearbyCenterMap({
     super.key,
     required this.centerType,
+    this.backendCenters, // Si fourni, utilise les noms du backend avec les coordonnées de default_centers_bamako
   });
 
   @override
@@ -62,26 +65,122 @@ class _NearbyCenterMapState extends State<NearbyCenterMap> {
       });
 
       // 2. Rechercher les lieux à proximité
-      final places = await MapBoxNearbyService.searchNearby(
-        centerType: widget.centerType,
-        latitude: position.latitude,
-        longitude: position.longitude,
-        limit: 5,
-      );
+      NearbyPlace? nearestPlace;
+
+      // ✅ Si des centres du backend sont fournis, utiliser findNearestCenterFromBackend
+      if (widget.backendCenters != null && widget.backendCenters!.isNotEmpty) {
+        print('✅ Utilisation des centres du backend avec coordonnées de default_centers_bamako.dart');
+        nearestPlace = await MapBoxNearbyService.findNearestCenterFromBackend(
+          backendCenters: widget.backendCenters!,
+          userLatitude: position.latitude,
+          userLongitude: position.longitude,
+        );
+      } else {
+        // Sinon, utiliser la recherche MapBox classique
+        print('🌐 Utilisation de la recherche MapBox classique');
+        final places = await MapBoxNearbyService.searchNearby(
+          centerType: widget.centerType,
+          latitude: position.latitude,
+          longitude: position.longitude,
+          limit: 5,
+        );
+
+        if (places.isEmpty) {
+          // ✅ FALLBACK : Si aucun résultat, utiliser le premier centre du backend s'il existe
+          if (widget.backendCenters != null && widget.backendCenters!.isNotEmpty) {
+            print('⚠️ Aucun résultat MapBox, utilisation du premier centre du backend');
+            final firstCenter = widget.backendCenters!.first;
+            
+            // Essayer d'utiliser les coordonnées GPS du backend
+            if (firstCenter.latitude != null && firstCenter.longitude != null) {
+              try {
+                final lat = double.parse(firstCenter.latitude!);
+                final lon = double.parse(firstCenter.longitude!);
+                final distance = MapBoxNearbyService.calculateDistance(
+                  position.latitude,
+                  position.longitude,
+                  lat,
+                  lon,
+                );
+                
+                nearestPlace = NearbyPlace(
+                  name: firstCenter.nom,
+                  address: firstCenter.adresse,
+                  latitude: lat,
+                  longitude: lon,
+                  distance: distance,
+                  category: null,
+                  phone: firstCenter.telephone,
+                );
+              } catch (e) {
+                print('❌ Erreur parsing coordonnées GPS: $e');
+              }
+            }
+          }
+          
+          // Si toujours null, utiliser le premier résultat de la recherche (qui devrait être un centre par défaut)
+          if (nearestPlace == null && places.isNotEmpty) {
+            nearestPlace = places.first;
+          }
+        } else {
+          nearestPlace = places.first;
+        }
+      }
 
       if (!mounted) return;
 
-      if (places.isEmpty) {
+      // ✅ FALLBACK FINAL : Si toujours null, utiliser le premier centre du backend
+      if (nearestPlace == null && widget.backendCenters != null && widget.backendCenters!.isNotEmpty) {
+        print('⚠️ Aucun centre trouvé, utilisation du premier centre du backend');
+        final firstCenter = widget.backendCenters!.first;
+        
+        // Utiliser les coordonnées GPS du backend ou un centre par défaut
+        if (firstCenter.latitude != null && firstCenter.longitude != null) {
+          try {
+            final lat = double.parse(firstCenter.latitude!);
+            final lon = double.parse(firstCenter.longitude!);
+            final distance = _userPosition != null 
+                ? MapBoxNearbyService.calculateDistance(
+                    _userPosition!.latitude,
+                    _userPosition!.longitude,
+                    lat,
+                    lon,
+                  )
+                : 0.0;
+            
+            nearestPlace = NearbyPlace(
+              name: firstCenter.nom,
+              address: firstCenter.adresse,
+              latitude: lat,
+              longitude: lon,
+              distance: distance,
+              category: null,
+              phone: firstCenter.telephone,
+            );
+          } catch (e) {
+            print('❌ Erreur parsing coordonnées GPS: $e');
+          }
+        }
+        
+        // Si toujours null, afficher une erreur
+        if (nearestPlace == null) {
+          setState(() {
+            _isLoading = false;
+            _errorMessage = 'Impossible de charger les informations du centre.';
+          });
+          return;
+        }
+      } else if (nearestPlace == null) {
         setState(() {
           _isLoading = false;
-          _errorMessage = 'Aucun ${widget.centerType} trouvé près de vous.\nEssayez d\'élargir la zone de recherche.';
+          _errorMessage = 'Aucun centre trouvé près de vous.\nEssayez d\'élargir la zone de recherche.';
         });
         return;
       }
 
-      // 3. Prendre le plus proche
+      // 3. Définir le centre le plus proche
       setState(() {
-        _nearestPlace = places.first;
+        _nearestPlace = nearestPlace;
         _isLoading = false;
       });
 

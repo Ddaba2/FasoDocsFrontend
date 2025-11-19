@@ -23,10 +23,10 @@ class ApiConfig {
     }
 
     // 3) Par défaut (émulateur Android): 10.0.2.2
-    // return 'http://10.0.2.2:8080/api';
+     return 'http://10.0.2.2:8080/api';
 
   // 4) Téléphone Android réel 
- return 'http://172.20.10.2:8080/api';
+ //return 'http://192.168.11.109:8080/api';
   }
   
   // Pour iOS simulator, vous pouvez utiliser localhost directement
@@ -41,6 +41,7 @@ class ApiConfig {
   static const String authVerifierSms = '/auth/verifier-sms';
   static const String authVerify = '/auth/verify';
   static const String authProfil = '/auth/profil';
+  static const String authProfilPhoto = '/auth/profil/photo';
   static const String authDeconnexion = '/auth/deconnexion';
   
   // ============================================================================
@@ -81,6 +82,21 @@ class ApiConfig {
   static const String signalements = '/signalements';
   static String signalementById(String id) => '/signalements/$id';
   static const String signalementTypes = '/signalements/types'; // Correct endpoint for signalement types
+  
+  // ============================================================================
+  // SERVICES
+  // ============================================================================
+  // Utilisateur
+  static String serviceTarif(int procedureId) => '/services/procedures/$procedureId/tarif';
+  static const String servicesDemandes = '/services/demandes';
+  static const String servicesMesDemandes = '/services/mes-demandes';
+  static String serviceDemandeById(int id) => '/services/demandes/$id';
+  static String serviceAnnulerDemande(int id) => '/services/demandes/$id/annuler';
+  
+  // Admin
+  static const String adminServicesDemandes = '/admin/services/demandes';
+  static String adminServiceDemandeById(int id) => '/admin/services/demandes/$id';
+  static String adminServiceModifierStatut(int id) => '/admin/services/demandes/$id/statut';
   
   // Méthode helper pour construire une URL complète
   static String buildUrl(String endpoint) {

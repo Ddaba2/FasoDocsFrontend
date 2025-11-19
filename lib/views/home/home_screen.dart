@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import '../../locale/locale_helper.dart';
 import '../../core/services/procedure_service.dart';
-
-// Import de la page de détail
-import 'certificat_residence_screen.dart';
+import '../../core/services/category_service.dart';
+import '../../core/services/auth_service.dart';
+import '../../core/config/emoji_to_icon.dart';
+import '../../core/widgets/profile_avatar.dart';
+import '../../models/api_models.dart';
 
 // Importations des autres vues (ajustez les chemins selon votre structure)
 import '../profile/profile_screen.dart';
@@ -33,7 +35,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   // Liste des écrans correspondant à la BottomNavigationBar
-  final List<Widget> _widgetOptions = const <Widget>[
+  List<Widget> get _widgetOptions => const <Widget>[
     // 0. Accueil
     _HomeContent(),
 
@@ -74,33 +76,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       // Le corps change en fonction de l'onglet sélectionné
       body: currentBody,
-
-      // Le Bouton Flottant (Affiché uniquement sur l'écran d'Accueil)
-      floatingActionButton: _selectedIndex == 0 ? Padding(
-        padding: const EdgeInsets.only(bottom: 10, right: 0),
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: navBarColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: defaultIconColor, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(isDarkMode ? 0.8 : 0.5),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.mic,
-            color: Colors.green,
-            size: 24,
-          ),
-        ),
-      ) : null, // Cache le bouton sur les autres pages
 
       // Bottom Navigation Bar
       bottomNavigationBar: Container(
@@ -185,14 +160,45 @@ class _HomeContent extends StatefulWidget {
 }
 
 class _HomeContentState extends State<_HomeContent> {
+  // Service d'authentification pour charger le profil
+  final AuthService _authService = authService;
+  
+  // Données utilisateur pour afficher la photo de profil
+  User? _user;
+  bool _isLoadingProfile = true;
+
   final TextEditingController _searchController = TextEditingController();
   List<ProcedureResponse> _allProcedures = [];
+  List<ProcedureResponse> _popularProcedures = []; // Procédures populaires depuis l'API
   bool _isLoadingProcedures = false;
 
   @override
   void initState() {
     super.initState();
     _loadAllProcedures();
+    _loadUserProfile();
+  }
+  
+  /// Charge le profil utilisateur pour afficher la photo
+  Future<void> _loadUserProfile() async {
+    try {
+      final user = await _authService.getProfil();
+      if (mounted) {
+        setState(() {
+          _user = user;
+          _isLoadingProfile = false;
+        });
+        debugPrint('✅ Profil chargé dans HomeScreen: ${user.nomComplet}');
+        debugPrint('📸 Photo de profil: ${user.photoProfil != null ? "${user.photoProfil!.length} caractères" : "NULL"}');
+      }
+    } catch (e) {
+      debugPrint('❌ Erreur chargement profil dans HomeScreen: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingProfile = false;
+        });
+      }
+    }
   }
 
   @override
@@ -201,16 +207,55 @@ class _HomeContentState extends State<_HomeContent> {
     super.dispose();
   }
 
-  /// Charge toutes les procédures pour les suggestions
+  /// Charge toutes les procédures pour les suggestions et les procédures populaires
+  /// Les procédures populaires sont sélectionnées de manière cohérente avec les catégories
   Future<void> _loadAllProcedures() async {
     setState(() => _isLoadingProcedures = true);
     try {
       final procedureService = ProcedureService();
       final procedures = await procedureService.getAllProcedures();
+      
+      // Charger les catégories pour sélectionner les procédures de manière cohérente
+      List<ProcedureResponse> popularProcedures = [];
+      try {
+        final categories = await categoryService.getAllCategories();
+        debugPrint('📂 ${categories.length} catégorie(s) chargée(s)');
+        
+        // Pour chaque catégorie, prendre la première procédure disponible
+        for (final category in categories.take(6)) { // Limiter à 6 catégories
+          final categoryProcedures = procedures.where((proc) {
+            return proc.categorie?.id == category.id;
+          }).toList();
+          
+          if (categoryProcedures.isNotEmpty) {
+            // Prendre la première procédure de cette catégorie
+            popularProcedures.add(categoryProcedures.first);
+            debugPrint('  ✅ Catégorie "${category.titre}": ${categoryProcedures.first.titre}');
+          }
+        }
+        
+        // Si on n'a pas assez de procédures (moins de 6 catégories avec procédures),
+        // compléter avec les premières procédures restantes
+        if (popularProcedures.length < 6) {
+          final remainingProcedures = procedures.where((proc) {
+            return !popularProcedures.any((p) => p.id == proc.id);
+          }).take(6 - popularProcedures.length).toList();
+          
+          popularProcedures.addAll(remainingProcedures);
+          debugPrint('  ➕ ${remainingProcedures.length} procédure(s) supplémentaire(s) ajoutée(s)');
+        }
+      } catch (e) {
+        debugPrint('⚠️ Erreur chargement catégories, utilisation des 6 premières procédures: $e');
+        // Fallback: utiliser les 6 premières procédures si le chargement des catégories échoue
+        popularProcedures = procedures.take(6).toList();
+      }
+      
       setState(() {
         _allProcedures = procedures;
+        _popularProcedures = popularProcedures;
         _isLoadingProcedures = false;
       });
+      debugPrint('✅ ${procedures.length} procédures chargées, ${_popularProcedures.length} affichées comme populaires (cohérentes avec les catégories)');
     } catch (e) {
       setState(() => _isLoadingProcedures = false);
       debugPrint('❌ Erreur chargement procédures pour suggestions: $e');
@@ -299,45 +344,88 @@ class _HomeContentState extends State<_HomeContent> {
     }
   }
 
-  // Liste des démarches populaires pour l'affichage en grille
-  final List<Map<String, dynamic>> popularSteps = const [
-    {
-      'title': 'Certificat de residence',
-      'icon': Icons.description_outlined,
-      'bgColor': Color(0xFFE8F5E8),
-      'iconColor': Color(0xFF4CAF50),
-    },
-    {
-      'title': 'Passeport',
-      'icon': Icons.contact_mail_outlined,
-      'bgColor': Color(0xFFFFFDE7),
-      'iconColor': Color(0xFFFFC107),
-    },
-    {
-      'title': 'Acte de naissance',
-      'icon': Icons.person_outline,
-      'bgColor': Color(0xFFFFEBEE),
-      'iconColor': Color(0xFFE91E63),
-    },
-    {
-      'title': 'Permis de conduire',
-      'icon': Icons.directions_car_outlined,
-      'bgColor': Color(0xFFE8F5E8),
-      'iconColor': Color(0xFF4CAF50),
-    },
-    {
-      'title': 'Carte Nationale d\'Identité',
-      'icon': Icons.credit_card,
-      'bgColor': Color(0xFFE3F2FD),
-      'iconColor': Color(0xFF2196F3),
-    },
-    {
-      'title': 'Extrait de mariage',
-      'icon': Icons.favorite_border,
-      'bgColor': Color(0xFFFBEFF5),
-      'iconColor': Color(0xFFF06292),
-    },
-  ];
+  /// Fonction pour obtenir l'icône et les couleurs selon la procédure
+  /// Priorité : 1) Icône de la sous-catégorie, 2) Icône de la catégorie, 3) Mapping par titre, 4) Par défaut
+  Map<String, dynamic> _getProcedureStyle(ProcedureResponse procedure) {
+    // 1. Essayer d'utiliser l'icône de la sous-catégorie (si disponible)
+    if (procedure.sousCategorie?.iconeUrl != null && procedure.sousCategorie!.iconeUrl!.isNotEmpty) {
+      return {
+        'icon': EmojiToIcon.getIcon(procedure.sousCategorie!.iconeUrl),
+        'bgColor': EmojiToIcon.getBackgroundColor(procedure.sousCategorie!.iconeUrl),
+        'iconColor': EmojiToIcon.getIconColor(procedure.sousCategorie!.iconeUrl),
+      };
+    }
+    
+    // 2. Essayer d'utiliser l'icône de la catégorie (si disponible)
+    if (procedure.categorie?.iconeUrl != null && procedure.categorie!.iconeUrl!.isNotEmpty) {
+      return {
+        'icon': EmojiToIcon.getIcon(procedure.categorie!.iconeUrl),
+        'bgColor': EmojiToIcon.getBackgroundColor(procedure.categorie!.iconeUrl),
+        'iconColor': EmojiToIcon.getIconColor(procedure.categorie!.iconeUrl),
+      };
+    }
+    
+    // 3. Fallback : Mapping basé sur le titre de la procédure
+    final titreLower = procedure.titre.toLowerCase();
+    
+    if (titreLower.contains('certificat') && titreLower.contains('résidence')) {
+      return {
+        'icon': Icons.description_outlined,
+        'bgColor': const Color(0xFFE8F5E8),
+        'iconColor': const Color(0xFF4CAF50),
+      };
+    } else if (titreLower.contains('passeport')) {
+      return {
+        'icon': Icons.contact_mail_outlined,
+        'bgColor': const Color(0xFFFFFDE7),
+        'iconColor': const Color(0xFFFFC107),
+      };
+    } else if (titreLower.contains('acte') && titreLower.contains('naissance')) {
+      return {
+        'icon': Icons.person_outline,
+        'bgColor': const Color(0xFFFFEBEE),
+        'iconColor': const Color(0xFFE91E63),
+      };
+    } else if (titreLower.contains('permis') && titreLower.contains('conduire')) {
+      return {
+        'icon': Icons.directions_car_outlined,
+        'bgColor': const Color(0xFFE8F5E8),
+        'iconColor': const Color(0xFF4CAF50),
+      };
+    } else if (titreLower.contains('carte') && (titreLower.contains('identité') || titreLower.contains('nationale'))) {
+      return {
+        'icon': Icons.credit_card,
+        'bgColor': const Color(0xFFE3F2FD),
+        'iconColor': const Color(0xFF2196F3),
+      };
+    } else if (titreLower.contains('mariage') || titreLower.contains('extrait')) {
+      return {
+        'icon': Icons.favorite_border,
+        'bgColor': const Color(0xFFFBEFF5),
+        'iconColor': const Color(0xFFF06292),
+      };
+    }
+    
+    // 4. Icône et couleurs par défaut pour les autres procédures
+    final defaultColors = [
+      {'bgColor': const Color(0xFFE8F5E8), 'iconColor': const Color(0xFF4CAF50)},
+      {'bgColor': const Color(0xFFFFFDE7), 'iconColor': const Color(0xFFFFC107)},
+      {'bgColor': const Color(0xFFFFEBEE), 'iconColor': const Color(0xFFE91E63)},
+      {'bgColor': const Color(0xFFE3F2FD), 'iconColor': const Color(0xFF2196F3)},
+      {'bgColor': const Color(0xFFFBEFF5), 'iconColor': const Color(0xFFF06292)},
+      {'bgColor': const Color(0xFFF3E5F5), 'iconColor': const Color(0xFF9C27B0)},
+    ];
+    
+    // Utiliser un hash du titre pour sélectionner une couleur de manière cohérente
+    final colorIndex = procedure.titre.hashCode.abs() % defaultColors.length;
+    final selectedColor = defaultColors[colorIndex];
+    
+    return {
+      'icon': Icons.description_outlined, // Icône par défaut
+      'bgColor': selectedColor['bgColor'] as Color,
+      'iconColor': selectedColor['iconColor'] as Color,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -374,7 +462,7 @@ class _HomeContentState extends State<_HomeContent> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        'FacoDocs',
+                        'FasoDocs',
                         style: TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -387,26 +475,47 @@ class _HomeContentState extends State<_HomeContent> {
                   Row(
                     children: [
                       GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                          );
+                        onTap: () async {
+                          // Recharger le profil avant d'ouvrir l'écran de profil
+                          await _loadUserProfile();
+                          if (mounted) {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                            ).then((_) {
+                              // Recharger le profil après retour de l'écran de profil
+                              _loadUserProfile();
+                            });
+                          }
                         },
-                        // Icône de profil
-                        child: Container(
-                          width: 32,
-                          height: 32,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            // Utilisation d'un secours non-nullable pour Colors.grey[xxx]
-                            color: isDarkMode ? (Colors.grey[700] ?? const Color(0xFF333333)) : (Colors.grey[300] ?? const Color(0xFFCCCCCC)),
-                          ),
-                          child: Icon(
-                            Icons.person,
-                            color: isDarkMode ? (Colors.grey[400] ?? Colors.white70) : (Colors.grey[600] ?? Colors.black54),
-                            size: 20,
-                          ),
-                        ),
+                        // Photo de profil avec ProfileAvatar
+                        child: _isLoadingProfile
+                            ? Container(
+                                width: 32,
+                                height: 32,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: isDarkMode ? (Colors.grey[700] ?? const Color(0xFF333333)) : (Colors.grey[300] ?? const Color(0xFFCCCCCC)),
+                                ),
+                                child: Center(
+                                  child: SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        isDarkMode ? Colors.white70 : Colors.black54,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              )
+                            : ProfileAvatar(
+                                photoBase64: _user?.photoProfil,
+                                radius: 16,
+                                backgroundColor: isDarkMode ? (Colors.grey[700] ?? const Color(0xFF333333)) : (Colors.grey[300] ?? const Color(0xFFCCCCCC)),
+                                defaultIcon: Icons.person,
+                                defaultIconSize: 20,
+                              ),
                       ),
                       const SizedBox(width: 12),
                       // Notifications avec badge rouge
@@ -730,29 +839,51 @@ class _HomeContentState extends State<_HomeContent> {
           ),
 
           // ========================================================================
-          // 5. CARTES VERTICALES EN GRILLE
+          // 5. CARTES VERTICALES EN GRILLE (Procédures depuis l'API)
           // ========================================================================
           SliverPadding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
             sliver: SliverToBoxAdapter(
-              child: Wrap(
-                spacing: 15, // Espace horizontal entre les cartes
-                runSpacing: 15, // Espace vertical entre les lignes
-                children: popularSteps.map((step) {
-                  double cardWidth = (MediaQuery.of(context).size.width - 55) / 2;
+              child: _isLoadingProcedures
+                  ? const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(20.0),
+                        child: CircularProgressIndicator(),
+                      ),
+                    )
+                  : _popularProcedures.isEmpty
+                      ? Padding(
+                          padding: const EdgeInsets.all(20.0),
+                          child: Center(
+                            child: Text(
+                              'Aucune procédure disponible',
+                              style: TextStyle(
+                                color: textColor.withOpacity(0.5),
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Wrap(
+                          spacing: 15, // Espace horizontal entre les cartes
+                          runSpacing: 15, // Espace vertical entre les lignes
+                          children: _popularProcedures.map((procedure) {
+                            double cardWidth = (MediaQuery.of(context).size.width - 55) / 2;
+                            final style = _getProcedureStyle(procedure); // Passer la procédure complète
 
-                  return SizedBox(
-                    width: cardWidth,
-                    child: _buildPopularCard(
-                      context: context,
-                      icon: step['icon'] as IconData,
-                      backgroundColor: step['bgColor'] as Color,
-                      iconColor: step['iconColor'] as Color,
-                      title: step['title'] as String,
-                    ),
-                  );
-                }).toList(),
-              ),
+                            return SizedBox(
+                              width: cardWidth,
+                              child: _buildPopularCard(
+                                context: context,
+                                procedure: procedure,
+                                icon: style['icon'] as IconData,
+                                backgroundColor: style['bgColor'] as Color,
+                                iconColor: style['iconColor'] as Color,
+                                title: procedure.titre,
+                              ),
+                            );
+                          }).toList(),
+                        ),
             ),
           ),
 
@@ -768,6 +899,7 @@ class _HomeContentState extends State<_HomeContent> {
   // Fonction pour construire une carte populaire (format carré/icône)
   Widget _buildPopularCard({
     required BuildContext context,
+    required ProcedureResponse procedure,
     required IconData icon,
     required Color backgroundColor,
     required Color iconColor,
@@ -779,41 +911,12 @@ class _HomeContentState extends State<_HomeContent> {
 
     return GestureDetector(
       onTap: () {
-        // Navigation vers la page de détail correspondante
-        if (title == 'Certificat de residence') {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const CertificatResidenceScreen()),
-          );
-        }
-        // Vous pouvez ajouter d'autres conditions pour les autres cartes
-        else if (title == 'Passeport') {
-          // Navigator.of(context).push(MaterialPageRoute(builder: (_) => const PasseportScreen()));
-          // Afficher un message temporaire pour les autres cartes
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Page $title en cours de développement'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-        else if (title == 'Acte de naissance') {
-          // Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ActeNaissanceScreen()));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Page $title en cours de développement'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
-        // ... etc pour les autres cartes
-        else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Page $title en cours de développement'),
-              duration: const Duration(seconds: 2),
-            ),
-          );
-        }
+        // Navigation vers la page de détail de la procédure depuis l'API
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => ProcedureDetailScreen(procedure: procedure),
+          ),
+        );
       },
       child: Container(
         height: 120,

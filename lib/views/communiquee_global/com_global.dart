@@ -287,12 +287,32 @@ class ComGlobalScreen extends StatelessWidget {
       child: TextButton(
         onPressed: () async {
           // Ouvrir le lien externe
-          final Uri uri = Uri.parse(url);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(
-              uri,
-              mode: LaunchMode.externalApplication,
-            );
+          try {
+            final Uri uri = Uri.parse(url);
+            if (await canLaunchUrl(uri)) {
+              await launchUrl(
+                uri,
+                mode: LaunchMode.externalApplication,
+              );
+            } else {
+              // Si canLaunchUrl retourne false, essayer quand même avec platformDefault
+              await launchUrl(
+                uri,
+                mode: LaunchMode.platformDefault,
+              );
+            }
+          } catch (e) {
+            print('❌ Erreur ouverture URL: $e');
+            // Essayer avec platformDefault en cas d'erreur
+            try {
+              final Uri uri = Uri.parse(url);
+              await launchUrl(
+                uri,
+                mode: LaunchMode.platformDefault,
+              );
+            } catch (e2) {
+              print('❌ Erreur secondaire ouverture URL: $e2');
+            }
           }
         },
         style: TextButton.styleFrom(

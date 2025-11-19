@@ -460,8 +460,8 @@ class DefaultCentersBamako {
       name: 'Tribunal de Grande Instance Commune V',
       type: 'tribunaux',
       address: 'Bamako, Mali',
-      latitude: 12.610110535092812,
-      longitude: -8.004010770078901,
+      latitude:12.610110535092812,
+      longitude:-8.004010770078901,
       phone: null, // À compléter si disponible
       plusCode: 'JX4X+32J, Bamako',
     ),
@@ -619,7 +619,7 @@ class DefaultCentersBamako {
       type: 'Somagep',
       address: 'Bamako, Mali',
       latitude:12.626928308221707,
-      longitude: -8.014739425998616,
+      longitude:-8.014739425998616,
       phone: null, // À compléter si disponible
       plusCode: 'Bamako',
     ),
@@ -628,7 +628,7 @@ class DefaultCentersBamako {
       type: 'Somagep',
       address: 'Bamako, Mali',
       latitude:12.635806162576287,
-      longitude:  -8.016799362422557,
+      longitude:-8.016799362422557,
       phone: null, // À compléter si disponible
       plusCode: 'JXMM+49F, Bamako',
     ),
@@ -637,7 +637,7 @@ class DefaultCentersBamako {
       type: 'Somagep',
       address: 'Bamako, Mali',
       latitude:12.584704665921123,
-      longitude:  -7.991486496639088,
+      longitude:-7.991486496639088,
       phone: "20733153", // À compléter si disponible
       plusCode: 'H2J5+G3R Kalaban Coura, Bamako',
     ),
@@ -795,7 +795,7 @@ class DefaultCentersBamako {
       type: 'transport',
       address: 'Bamako, Mali',
       latitude: 12.601425888434495,
-      longitude:  -7.959648808924352,
+      longitude: -7.959648808924352,
       phone: "66097245", // À compléter si disponible
       plusCode: 'J22R+F62, Bamako',
     ),
@@ -1007,11 +1007,14 @@ class DefaultCentersBamako {
     if (lowerType.contains('edm') || lowerType.contains('électricité')) {
       return edm;
     }
-    if (lowerType.contains('transports') || lowerType.contains('transports')) {
+    if (lowerType.contains('transports') || lowerType.contains('transport')) {
       return transports;
     }
     if (lowerType.contains('ministère') || lowerType.contains('ministeres')) {
       return ministeres;
+    }
+    if (lowerType.contains('douane') || lowerType.contains('douanes')) {
+      return douanes;
     }
     if (lowerType.contains('impôt') || lowerType.contains('impot')) {
       return impots;
@@ -1030,6 +1033,7 @@ class DefaultCentersBamako {
       ...edm,
       ...transports,
       ...ministeres,
+      ...douanes,
       ...impots,
     ];
   }

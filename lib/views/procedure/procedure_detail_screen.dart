@@ -2,17 +2,16 @@
 // PROCEDURE DETAIL SCREEN - Écran détaillé d'une procédure avec onglets
 // ========================================================================================
 
-import 'dart:math';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:dio/dio.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import '../../models/api_models.dart';
 import '../../core/widgets/icone_haut_parleur.dart';
-import '../../core/config/api_config.dart';
 import '../../core/widgets/nearby_center_map.dart';
 import '../../core/services/history_service.dart';
+import '../../core/services/service_service.dart';
+import '../../core/widgets/tarif_service_modal.dart';
+import '../../core/widgets/formulaire_service.dart';
 
 class ProcedureDetailScreen extends StatefulWidget {
   final ProcedureResponse procedure;
@@ -27,9 +26,11 @@ class ProcedureDetailScreen extends StatefulWidget {
 }
 
 class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   late TabController _tabController;
   int _selectedTab = 0;
+  late AnimationController _floatingAnimationController;
+  late Animation<double> _floatingAnimation;
 
   @override
   void initState() {
@@ -40,6 +41,19 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
         _selectedTab = _tabController.index;
       });
     });
+    
+    // Animation de flottement pour le bouton de service
+    _floatingAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _floatingAnimation = Tween<double>(begin: 0.0, end: 10.0).animate(
+      CurvedAnimation(
+        parent: _floatingAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
     
     // Enregistrer cette procédure dans l'historique
     _addToHistory();
@@ -133,6 +147,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
   @override
   void dispose() {
     _tabController.dispose();
+    _floatingAnimationController.dispose();
     super.dispose();
   }
 
@@ -167,6 +182,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
             texteFrancais: _buildFullProcedureText(),
             couleur: Colors.orange,
             taille: 24,
+            procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
           ),
         ],
       ),
@@ -242,15 +258,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
           ],
           ),
       ),
-      floatingActionButton: widget.procedure.urlFormulaire != null &&
-              widget.procedure.urlFormulaire!.isNotEmpty
-          ? FloatingActionButton.extended(
-              onPressed: () => _openUrl(widget.procedure.urlFormulaire!),
-              icon: const Icon(Icons.open_in_new),
-              label: const Text('Formulaire en ligne'),
-              backgroundColor: Colors.green,
-            )
-          : null,
+      floatingActionButton: _buildFloatingActionButtons(),
     );
   }
 
@@ -349,7 +357,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
 
   String _getAmountSummary() {
     if (widget.procedure.couts == null || widget.procedure.couts!.isEmpty) {
-      return 'Gratuit';
+      return 'g';
     }
     final total = widget.procedure.couts!
         .fold<double>(0, (sum, cout) => sum + cout.prix);
@@ -424,6 +432,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                           texteFrancais: etape.nom,
                           couleur: Colors.orange,
                           taille: 20,
+                          procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                         ),
                       ],
                     ),
@@ -445,6 +454,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                             texteFrancais: etape.description,
                             couleur: Colors.orange,
                             taille: 20,
+                            procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                           ),
                         ],
                       ),
@@ -539,6 +549,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                             texteFrancais: widget.procedure.delai!,
                             couleur: Colors.orange,
                             taille: 20,
+                            procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                           ),
                         ],
                       ),
@@ -582,6 +593,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                                   texteFrancais: cout.nom,
                                   couleur: Colors.orange,
                                   taille: 20,
+                                  procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                                 ),
                               ],
                             ),
@@ -605,6 +617,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                                       texteFrancais: cout.description!,
                                       couleur: Colors.orange,
                                       taille: 20,
+                                      procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                                     ),
                                   ],
                                 ),
@@ -745,6 +758,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                     texteFrancais: doc.nom,
                     couleur: Colors.orange,
                     taille: 20,
+                    procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                   ),
                 ],
               ),
@@ -766,6 +780,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                       texteFrancais: doc.description!,
                       couleur: Colors.orange,
                       taille: 20,
+                      procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                     ),
                   ],
                 ),
@@ -853,6 +868,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                     texteFrancais: ref.description,
                     couleur: Colors.orange,
                     taille: 20,
+                    procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                   ),
                 ],
               ),
@@ -875,6 +891,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                       texteFrancais: ref.article,
                       couleur: Colors.orange,
                       taille: 20,
+                      procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                     ),
                   ],
                 ),
@@ -944,6 +961,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                     texteFrancais: centre.nom,
                     couleur: Colors.orange,
                     taille: 20,
+                    procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
                   ),
                 ],
               ),
@@ -995,10 +1013,13 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
       centerType = 'Hôpital';
     }
 
-    // Afficher la carte MapBox interactive
+    // Afficher la carte MapBox interactive avec les centres du backend
     return SingleChildScrollView(
       child: NearbyCenterMap(
         centerType: centerType,
+        backendCenters: widget.procedure.centres.isNotEmpty 
+            ? widget.procedure.centres 
+            : null, // ✅ Passer les centres du backend pour utiliser leurs noms avec les coordonnées de default_centers_bamako.dart
       ),
     );
   }
@@ -1042,6 +1063,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
             texteFrancais: text,
             couleur: Colors.orange,
             taille: 20,
+            procedureId: int.tryParse(widget.procedure.id), // Active le fallback audio
           ),
         ],
       ),
@@ -1066,5 +1088,205 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
   // Removed _playAudioBambara method that used chatbot service
   // Removed _playStepAudio method that used chatbot service  // Removed _playStepAudioBambara method that used chatbot service
   // Removed _playDescriptionAudio method that used chatbot service
+
+  /// Affiche le modal de tarif de service
+  Future<void> _afficherModalTarif() async {
+    // 1. Demander la commune à l'utilisateur
+    final commune = await _demanderCommune();
+    if (commune == null || commune.isEmpty) return;
+
+    try {
+      // 2. Récupérer le tarif
+      final tarif = await serviceService.obtenirTarif(
+        procedureId: widget.procedure.id,
+        commune: commune,
+      );
+
+      // 3. Afficher le modal de tarif
+      if (!mounted) return;
+      
+      final continuer = await showDialog<bool>(
+        context: context,
+        builder: (context) => TarifServiceModal(
+          tarif: tarif,
+          onContinuer: () => Navigator.of(context).pop(true),
+          onAnnuler: () => Navigator.of(context).pop(false),
+        ),
+      );
+
+      // 4. Si l'utilisateur continue, afficher le formulaire
+      if (continuer == true) {
+        if (!mounted) return;
+        
+        await Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => FormulaireService(
+              procedureId: widget.procedure.id,
+              procedureNom: widget.procedure.titre,
+              tarifTotal: tarif.tarifTotal,
+              communeInitiale: commune,
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Erreur: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  /// Demande la commune à l'utilisateur
+  Future<String?> _demanderCommune() async {
+    return await showDialog<String>(
+      context: context,
+      builder: (context) {
+        String commune = '';
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+        
+        return AlertDialog(
+          title: Text(
+            'Votre commune',
+            style: TextStyle(color: textColor),
+          ),
+          content: TextField(
+            decoration: const InputDecoration(
+              labelText: 'Commune',
+              hintText: 'Ex: Commune I, Kati, etc.',
+            ),
+            onChanged: (value) => commune = value,
+            autofocus: true,
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annuler'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (commune.isNotEmpty) {
+                  Navigator.of(context).pop(commune);
+                }
+              },
+              child: const Text('Continuer'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  /// Construit les boutons flottants (service + formulaire en ligne si disponible)
+  Widget _buildFloatingActionButtons() {
+    final hasFormulaire = widget.procedure.urlFormulaire != null &&
+        widget.procedure.urlFormulaire!.isNotEmpty;
+    final hasService = widget.procedure.peutEtreDelegatee;
+
+    // Si les deux boutons existent, utiliser un Stack
+    if (hasFormulaire && hasService) {
+      return Stack(
+        alignment: Alignment.bottomRight,
+        children: [
+          // Bouton formulaire en ligne (en haut)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 80, right: 0),
+            child: FloatingActionButton.extended(
+              onPressed: () => _openUrl(widget.procedure.urlFormulaire!),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Formulaire en ligne'),
+              backgroundColor: Colors.green,
+            ),
+          ),
+          // Bouton demabder un service avec animation flottante (en bas)
+          AnimatedBuilder(
+            animation: _floatingAnimation,
+            builder: (context, child) {
+              final imagePath = 'assets/images/livreur_sombre.png';
+              return Transform.translate(
+                offset: Offset(0, -_floatingAnimation.value),
+                child: FloatingActionButton(
+                  onPressed: _afficherModalTarif,
+                  backgroundColor: Colors.orange,
+                  tooltip: "Faire à ma place",
+                  child: _buildLivreurIcon(imagePath),
+                ),
+              );
+            },
+          ),
+        ],
+      );
+    }
+
+    // Si seulement le formulaire existe
+    if (hasFormulaire) {
+      return FloatingActionButton.extended(
+        onPressed: () => _openUrl(widget.procedure.urlFormulaire!),
+        icon: const Icon(Icons.open_in_new),
+        label: const Text('Formulaire en ligne'),
+        backgroundColor: Colors.green,
+      );
+    }
+
+    // Si seulement le service existe
+    if (hasService) {
+      return AnimatedBuilder(
+        animation: _floatingAnimation,
+        builder: (context, child) {
+          final imagePath = 'assets/images/livreur_sombre.png';
+          return Transform.translate(
+            offset: Offset(0, -_floatingAnimation.value),
+            child: FloatingActionButton(
+              onPressed: _afficherModalTarif,
+              backgroundColor: Colors.orange,
+              tooltip: "Faire à ma place",
+              child: _buildLivreurIcon(imagePath),
+            ),
+          );
+        },
+      );
+    }
+
+    // Aucun bouton
+    return const SizedBox.shrink();
+  }
+
+  /// Construit l'icône du livreur avec gestion d'erreur
+  Widget _buildLivreurIcon(String imagePath) {
+    debugPrint('🖼️ [LIVREUR] Chargement image: $imagePath');
+    
+    return Image.asset(
+      imagePath,
+      width: 24,
+      height: 24,
+      fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        debugPrint('❌ [LIVREUR] ERREUR chargement image: $imagePath');
+        debugPrint('   Type erreur: ${error.runtimeType}');
+        debugPrint('   Message: $error');
+        debugPrint('   StackTrace: $stackTrace');
+        
+        // Essayer avec différentes variantes du nom
+        final variants = [
+          imagePath,
+          imagePath.replaceAll('livreur_sombre.png', 'Livreur_sombre.png'),
+          imagePath.replaceAll('livreur_sombre.png', 'livreur.png'),
+          'assets/images/livreur_sombre.png',
+        ];
+        
+        // Retourner l'icône de secours
+        return const Icon(
+          FontAwesomeIcons.motorcycle,
+          color: Colors.white,
+          size: 24,
+        );
+      },
+    );
+  }
 
 }
