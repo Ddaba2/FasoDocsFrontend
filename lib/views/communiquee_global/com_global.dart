@@ -54,32 +54,6 @@ class ComGlobalScreen extends StatelessWidget {
         ),
       ),
 
-      // BOUTON FLOTTANT IDENTIQUE À LA PAGE D'ACCUEIL
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 75, right: 0),
-        child: Container(
-          width: 50,
-          height: 50,
-          decoration: BoxDecoration(
-            color: cardColor,
-            shape: BoxShape.circle,
-            border: Border.all(color: iconColor, width: 1),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.grey.withOpacity(isDarkMode ? 0.8 : 0.5),
-                spreadRadius: 1,
-                blurRadius: 5,
-                offset: const Offset(0, 3),
-              ),
-            ],
-          ),
-          child: Icon(
-            Icons.headset_mic_outlined,
-            color: iconColor,
-            size: 24,
-          ),
-        ),
-      ),
 
       // Contenu du corps de l'écran
       body: SingleChildScrollView(

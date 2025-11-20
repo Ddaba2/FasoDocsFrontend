@@ -155,6 +155,14 @@ class LocaleHelper {
       'insuranceTax': LocaleEn.insuranceTax,
       'goldExportTax': LocaleEn.goldExportTax,
       'firearmTax': LocaleEn.firearmTax,
+      
+      // Procedure tab titles
+      'etapes': LocaleEn.etapes,
+      'montant': LocaleEn.montant,
+      'gratuit': LocaleEn.gratuit,
+      'documents': LocaleEn.documents,
+      'lois': LocaleEn.lois,
+      'centres': LocaleEn.centres,
     };
     
     return translations[key] ?? key;
@@ -296,6 +304,14 @@ class LocaleHelper {
       'insuranceTax': LocaleFr.insuranceTax,
       'goldExportTax': LocaleFr.goldExportTax,
       'firearmTax': LocaleFr.firearmTax,
+      
+      // Titres des onglets de procédure
+      'etapes': LocaleFr.etapes,
+      'montant': LocaleFr.montant,
+      'gratuit': LocaleFr.gratuit,
+      'documents': LocaleFr.documents,
+      'lois': LocaleFr.lois,
+      'centres': LocaleFr.centres,
     };
     
     return translations[key] ?? key;

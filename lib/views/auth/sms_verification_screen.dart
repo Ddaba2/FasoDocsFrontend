@@ -369,10 +369,11 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
             // Calcule la taille des boîtes pour laisser de l'espace (4 boîtes + 3 espaces)
             final boxSize = (screenWidth * 0.9 - 3 * 10) / 4;
 
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
-              child: Column(
-                children: [
+            return SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: screenWidth * 0.05),
+                child: Column(
+                  children: [
                   SizedBox(height: screenHeight * 0.02),
 
                   // =========================================================
@@ -477,7 +478,7 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                     }),
                   ),
 
-                  const Spacer(),
+                  SizedBox(height: screenHeight * 0.04),
 
                   // Bouton Confirmer (désactivé si le code est expiré)
                   SizedBox(
@@ -511,7 +512,8 @@ class _SMSVerificationScreenState extends State<SMSVerificationScreen> {
                   ),
 
                   SizedBox(height: screenHeight * 0.05),
-                ],
+                  ],
+                ),
               ),
             );
           },

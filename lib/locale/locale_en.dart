@@ -127,5 +127,13 @@ class LocaleEn {
   static const String insuranceTax = 'Tax on insurance contracts (TCA)';
   static const String goldExportTax = 'Tax on gold exporters not governed by the mining code';
   static const String firearmTax = 'Firearm tax';
+  
+  // Procedure tab titles
+  static const String etapes = 'Steps';
+  static const String montant = 'Amount';
+  static const String gratuit = 'Free';
+  static const String documents = 'Documents';
+  static const String lois = 'Law(s)';
+  static const String centres = 'Centers';
 }
 

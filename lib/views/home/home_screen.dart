@@ -2,11 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../locale/locale_helper.dart';
 import '../../core/services/procedure_service.dart';
 import '../../core/services/category_service.dart';
 import '../../core/services/auth_service.dart';
+import '../../core/services/profil_service.dart';
+import '../../core/services/photo_service.dart';
 import '../../core/config/emoji_to_icon.dart';
+import '../../core/config/api_config.dart';
 import '../../core/widgets/profile_avatar.dart';
 import '../../models/api_models.dart';
 
@@ -162,10 +166,12 @@ class _HomeContent extends StatefulWidget {
 class _HomeContentState extends State<_HomeContent> {
   // Service d'authentification pour charger le profil
   final AuthService _authService = authService;
+  final ProfilService _profilService = profilService;
   
   // Données utilisateur pour afficher la photo de profil
   User? _user;
   bool _isLoadingProfile = true;
+  bool _isUploadingPhoto = false;
 
   final TextEditingController _searchController = TextEditingController();
   List<ProcedureResponse> _allProcedures = [];
@@ -197,6 +203,62 @@ class _HomeContentState extends State<_HomeContent> {
         setState(() {
           _isLoadingProfile = false;
         });
+      }
+    }
+  }
+  
+  /// Upload immédiat de la photo de profil (comme Test Upload Photo Simple)
+  Future<void> _uploadProfilePhoto() async {
+    try {
+      setState(() => _isUploadingPhoto = true);
+      
+      // Récupérer le token
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Token d\'authentification manquant'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() => _isUploadingPhoto = false);
+        return;
+      }
+      
+      // Utiliser le service simple (comme Test Upload Photo Simple)
+      // Cette fonction sélectionne l'image et l'upload directement
+      await uploadPhotoProfil(token, ApiConfig.baseUrl);
+      
+      // Recharger le profil pour voir la nouvelle photo
+      await _loadUserProfile();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo uploadée avec succès !'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('❌ Erreur upload photo: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Erreur: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploadingPhoto = false);
       }
     }
   }
@@ -474,48 +536,84 @@ class _HomeContentState extends State<_HomeContent> {
                   // Profil utilisateur et notifications
                   Row(
                     children: [
+                      // Photo de profil avec icône caméra pour upload immédiat
                       GestureDetector(
-                        onTap: () async {
-                          // Recharger le profil avant d'ouvrir l'écran de profil
-                          await _loadUserProfile();
-                          if (mounted) {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(builder: (_) => const ProfileScreen()),
-                            ).then((_) {
-                              // Recharger le profil après retour de l'écran de profil
-                              _loadUserProfile();
-                            });
-                          }
+                        onLongPress: () async {
+                          // Long press pour uploader une photo
+                          await _uploadProfilePhoto();
                         },
-                        // Photo de profil avec ProfileAvatar
-                        child: _isLoadingProfile
-                            ? Container(
-                                width: 32,
-                                height: 32,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: isDarkMode ? (Colors.grey[700] ?? const Color(0xFF333333)) : (Colors.grey[300] ?? const Color(0xFFCCCCCC)),
-                                ),
-                                child: Center(
-                                  child: SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      valueColor: AlwaysStoppedAnimation<Color>(
-                                        isDarkMode ? Colors.white70 : Colors.black54,
+                        child: Stack(
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                // Tap pour ouvrir le profil
+                                await _loadUserProfile();
+                                if (mounted) {
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                                  ).then((_) {
+                                    // Recharger le profil après retour de l'écran de profil
+                                    _loadUserProfile();
+                                  });
+                                }
+                              },
+                              // Photo de profil avec ProfileAvatar
+                              child: _isLoadingProfile || _isUploadingPhoto
+                                  ? Container(
+                                      width: 32,
+                                      height: 32,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: isDarkMode ? (Colors.grey[700] ?? const Color(0xFF333333)) : (Colors.grey[300] ?? const Color(0xFFCCCCCC)),
                                       ),
+                                      child: Center(
+                                        child: SizedBox(
+                                          width: 16,
+                                          height: 16,
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            valueColor: AlwaysStoppedAnimation<Color>(
+                                              isDarkMode ? Colors.white70 : Colors.black54,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    )
+                                  : ProfileAvatar(
+                                      photoBase64: _user?.photoProfil,
+                                      radius: 16,
+                                      backgroundColor: isDarkMode ? (Colors.grey[700] ?? const Color(0xFF333333)) : (Colors.grey[300] ?? const Color(0xFFCCCCCC)),
+                                      defaultIcon: Icons.person,
+                                      defaultIconSize: 20,
+                                    ),
+                            ),
+                            // Icône caméra en bas à droite de la photo
+                            if (!_isLoadingProfile && !_isUploadingPhoto)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: GestureDetector(
+                                  onTap: () async {
+                                    await _uploadProfilePhoto();
+                                  },
+                                  child: Container(
+                                    width: 12,
+                                    height: 12,
+                                    decoration: BoxDecoration(
+                                      color: primaryColor,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(color: Theme.of(context).scaffoldBackgroundColor, width: 1.5),
+                                    ),
+                                    child: Icon(
+                                      Icons.camera_alt,
+                                      size: 7,
+                                      color: Colors.white,
                                     ),
                                   ),
                                 ),
-                              )
-                            : ProfileAvatar(
-                                photoBase64: _user?.photoProfil,
-                                radius: 16,
-                                backgroundColor: isDarkMode ? (Colors.grey[700] ?? const Color(0xFF333333)) : (Colors.grey[300] ?? const Color(0xFFCCCCCC)),
-                                defaultIcon: Icons.person,
-                                defaultIconSize: 20,
                               ),
+                          ],
+                        ),
                       ),
                       const SizedBox(width: 12),
                       // Notifications avec badge rouge

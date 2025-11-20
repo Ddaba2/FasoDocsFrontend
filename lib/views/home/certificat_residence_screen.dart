@@ -5,6 +5,7 @@ import 'centre_screen.dart';
 import 'montant_screen.dart';
 import 'document_screen.dart';
 import 'loi_screen.dart';
+import '../../locale/locale_helper.dart';
 
 class CertificatResidenceScreen extends StatelessWidget {
   const CertificatResidenceScreen({super.key});
@@ -81,14 +82,14 @@ class CertificatResidenceScreen extends StatelessWidget {
                 children: [
                   _InfoItemWithIcon(
                     icon: Icons.list_alt,
-                    title: 'Etapes',
+                    title: LocaleHelper.getText(context, 'etapes'),
                     value: '4',
                     iconColor: const Color(0xFF2196F3),
                   ),
                   _InfoItemWithIcon(
                     icon: Icons.money,
-                    title: 'Montant',
-                    value: 'Gratuit',
+                    title: LocaleHelper.getText(context, 'montant'),
+                    value: LocaleHelper.getText(context, 'gratuit'),
                     iconColor: const Color(0xFF4CAF50),
                     isBold: true,
                     onTap: () {
@@ -100,7 +101,7 @@ class CertificatResidenceScreen extends StatelessWidget {
                   ),
                   _InfoItemWithIcon(
                     icon: Icons.description,
-                    title: 'Documents',
+                    title: LocaleHelper.getText(context, 'documents'),
                     value: '4',
                     iconColor: const Color(0xFFFF9800),
                     onTap: () {
@@ -112,7 +113,7 @@ class CertificatResidenceScreen extends StatelessWidget {
                   ),
                   _InfoItemWithIcon(
                     icon: Icons.gavel,
-                    title: 'Loi(s)',
+                    title: LocaleHelper.getText(context, 'lois'),
                     value: '1',
                     iconColor: const Color(0xFF9C27B0),
                     onTap: () {
@@ -124,7 +125,7 @@ class CertificatResidenceScreen extends StatelessWidget {
                   ),
                   _InfoItemWithIcon(
                     icon: Icons.location_on,
-                    title: 'Centres',
+                    title: LocaleHelper.getText(context, 'centres'),
                     value: '2',
                     iconColor: const Color(0xFFF44336),
                     onTap: () {

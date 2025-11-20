@@ -12,6 +12,7 @@ import '../../core/services/history_service.dart';
 import '../../core/services/service_service.dart';
 import '../../core/widgets/tarif_service_modal.dart';
 import '../../core/widgets/formulaire_service.dart';
+import '../../locale/locale_helper.dart';
 
 class ProcedureDetailScreen extends StatefulWidget {
   final ProcedureResponse procedure;
@@ -199,7 +200,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                   context,
                   icon: Icons.list,
                   iconColor: Colors.orange,
-                  label: 'Etapes',
+                  label: LocaleHelper.getText(context, 'etapes'),
                   value: widget.procedure.etapes?.length.toString() ?? '0',
                   isSelected: _selectedTab == 0,
                 ),
@@ -207,15 +208,15 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                   context,
                   imagePath: 'assets/images/fcfa.png',
                   iconColor: Colors.green,
-                  label: 'Montant',
-                  value: _getAmountSummary(),
+                  label: LocaleHelper.getText(context, 'montant'),
+                  value: _getAmountSummary(context),
                   isSelected: _selectedTab == 1,
                 ),
                 _buildSummaryCard(
                   context,
                   icon: Icons.folder,
                   iconColor: Colors.blue,
-                  label: 'Documents',
+                  label: LocaleHelper.getText(context, 'documents'),
                   value: widget.procedure.documentsRequis.length.toString(),
                   isSelected: _selectedTab == 2,
                 ),
@@ -223,7 +224,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                   context,
                   icon: Icons.gavel,
                   iconColor: Colors.amber,
-                  label: 'Loi(s)',
+                  label: LocaleHelper.getText(context, 'lois'),
                   value: widget.procedure.referencesLegales?.length.toString() ?? '0',
                   isSelected: _selectedTab == 3,
                 ),
@@ -231,7 +232,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                   context,
                   icon: Icons.location_on,
                   iconColor: Colors.red,
-                  label: 'Centres',
+                  label: LocaleHelper.getText(context, 'centres'),
                   value: widget.procedure.centres.length.toString(),
                   isSelected: _selectedTab == 4,
                 ),
@@ -339,30 +340,29 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
   }
 
   int _getTabIndex(String label) {
-    switch (label) {
-      case 'Etapes':
-        return 0;
-      case 'Montant':
-        return 1;
-      case 'Documents':
-        return 2;
-      case 'Loi(s)':
-        return 3;
-      case 'Centres':
-        return 4;
-      default:
-        return 0;
+    // Comparer avec les traductions françaises et anglaises
+    if (label == 'Etapes' || label == 'Steps') {
+      return 0;
+    } else if (label == 'Montant' || label == 'Amount') {
+      return 1;
+    } else if (label == 'Documents') {
+      return 2;
+    } else if (label == 'Loi(s)' || label == 'Law(s)') {
+      return 3;
+    } else if (label == 'Centres' || label == 'Centers') {
+      return 4;
     }
+    return 0;
   }
 
-  String _getAmountSummary() {
+  String _getAmountSummary(BuildContext context) {
     if (widget.procedure.couts == null || widget.procedure.couts!.isEmpty) {
       return 'g';
     }
     final total = widget.procedure.couts!
         .fold<double>(0, (sum, cout) => sum + cout.prix);
     if (total == 0) {
-      return 'Gratuit';
+      return LocaleHelper.getText(context, 'gratuit');
     }
     return '${total.toStringAsFixed(0)} FCFA';
   }
@@ -492,7 +492,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
             ),
             const SizedBox(height: 16),
             Text(
-              'Gratuit',
+              LocaleHelper.getText(context, 'gratuit'),
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,

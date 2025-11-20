@@ -9,6 +9,29 @@ import 'conditions_utilisation_screen.dart';
 // ASSUREZ-VOUS QUE CE CHEMIN EST CORRECT
 import '../auth/login_screen.dart'; // <--- NOUVELLE IMPORTATION POUR LA NAVIGATION
 
+// Formatter pour valider que le numéro commence par 5, 6, 7, 8 ou 9
+class _PhoneNumberFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+    TextEditingValue oldValue,
+    TextEditingValue newValue,
+  ) {
+    // Si le texte est vide, permettre la saisie
+    if (newValue.text.isEmpty) {
+      return newValue;
+    }
+    
+    // Vérifier que le premier caractère est 5, 6, 7, 8 ou 9
+    final firstChar = newValue.text[0];
+    if (!['5', '6', '7', '8', '9'].contains(firstChar)) {
+      // Rejeter la saisie si elle ne commence pas par un chiffre valide
+      return oldValue;
+    }
+    
+    return newValue;
+  }
+}
+
 class SignupScreen extends StatefulWidget {
   const SignupScreen({super.key});
 
@@ -293,48 +316,49 @@ class _SignupScreenState extends State<SignupScreen> {
             ),
           ),
           child: SafeArea(
-            child: Column(
-              children: [
-                // Header avec bouton retour (adapté)
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    children: [
-                      GestureDetector(
-                        onTap: _goToLogin,
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF14B53A),
-                            borderRadius: BorderRadius.circular(8),
+            child: SingleChildScrollView(
+              child: Column(
+                children: [
+                  // Header avec bouton retour (adapté)
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Row(
+                      children: [
+                        GestureDetector(
+                          onTap: _goToLogin,
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF14B53A),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(
+                              // CHANGEMENT D'ICÔNE : Utilisation de chevron_left
+                              Icons.chevron_left,
+                              color: Colors.white,
+                              size: 24, // Légèrement plus grande pour un chevron
+                            ),
                           ),
-                          child: const Icon(
-                            // CHANGEMENT D'ICÔNE : Utilisation de chevron_left
-                            Icons.chevron_left,
+                        ),
+                        const Spacer(),
+                        const Text(
+                          'Inscription',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
                             color: Colors.white,
-                            size: 24, // Légèrement plus grande pour un chevron
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      const Text(
-                        'Inscription',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const Spacer(),
-                      const SizedBox(width: 40),
-                    ],
+                        const Spacer(),
+                        const SizedBox(width: 40),
+                      ],
+                    ),
                   ),
-                ),
 
-                const Spacer(),
+                  SizedBox(height: MediaQuery.of(context).size.height * 0.15),
 
-                // Contenu principal (Formulaire)
-                Container(
+                  // Contenu principal (Formulaire)
+                  Container(
                   margin: const EdgeInsets.symmetric(horizontal: 20),
                   padding: const EdgeInsets.all(24),
                   decoration: BoxDecoration(
@@ -413,7 +437,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         decoration: InputDecoration(
                           labelText: 'Téléphone',
                           hintText: 'Ex: 76 12 34 56',
-                          helperText: 'Le numéro doit commencer par 5, 6, 7, 8 ou 9',
                           labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
                           prefixIcon: Icon(
                             Icons.phone_outlined,
@@ -455,8 +478,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         decoration: InputDecoration(
                           labelText: 'Email',
                           hintText: 'exemple@email.com',
-                          helperText: 'Utilisez le clavier pour taper @ et .com',
-                          helperStyle: TextStyle(color: Colors.grey.shade500, fontSize: 11),
                           labelStyle: TextStyle(color: isDarkMode ? Colors.grey.shade400 : Colors.grey.shade700),
                           hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
                           prefixIcon: Icon(
@@ -677,11 +698,12 @@ class _SignupScreenState extends State<SignupScreen> {
                     ],
                   ),
                 ),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),
-      ),
     );
   }
 }

@@ -99,28 +99,6 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
           _isLoading = false;
         });
         
-        // Afficher un message informatif
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('📻 Audio préenregistré : $procedureNom'),
-                  const SizedBox(height: 4),
-                  Text('🇫🇷 ${widget.texteFrancais}', 
-                       style: const TextStyle(fontSize: 12)),
-                  Text('🎵 Format: $format', 
-                       style: const TextStyle(fontSize: 10, fontStyle: FontStyle.italic)),
-                ],
-              ),
-              backgroundColor: Colors.blue,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
-        
         // Jouer l'audio avec le format correct
         await _jouerAudio(audioBase64, format: format);
         
@@ -146,32 +124,6 @@ class _IconeHautParleurState extends State<IconeHautParleur> {
         _traductionBambara = traductionBambara;
         _isLoading = false;
       });
-      
-      // 3️⃣ Afficher la traduction dans un SnackBar avec la source de l'audio
-      if (mounted) {
-        final isFallback = voiceDescription == 'Audio de fallback';
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('🇫🇷 Français : ${widget.texteFrancais}'),
-                const SizedBox(height: 4),
-                Text('🇲🇱 Bambara : $traductionBambara', 
-                     style: const TextStyle(fontWeight: FontWeight.bold)),
-                if (isFallback) ...[
-                  const SizedBox(height: 4),
-                  Text('📻 ${voiceDescription}', 
-                       style: const TextStyle(fontSize: 12, fontStyle: FontStyle.italic)),
-                ],
-              ],
-            ),
-            backgroundColor: isFallback ? Colors.blue : Colors.orange,
-            duration: const Duration(seconds: 5),
-          ),
-        );
-      }
       
       // 4️⃣ Jouer l'audio selon la plateforme
       await _jouerAudio(audioBase64);

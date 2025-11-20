@@ -375,7 +375,7 @@ class ConditionsUtilisationScreen extends StatelessWidget {
                         _buildContactCard(
                           icon: Icons.email,
                           label: 'Email',
-                          value: 'contactpigeonfarm@gmail.com',
+                          value: 'contactfasodocs@gmail.com',
                           color: Colors.red,
                           isDarkMode: isDarkMode,
                         ),

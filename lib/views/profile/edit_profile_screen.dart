@@ -130,32 +130,59 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   // MÉTHODES UTILITAIRES
   // ========================================================================================
 
-  /// Permet à l'utilisateur de sélectionner une image (galerie ou caméra)
+  /// Permet à l'utilisateur de sélectionner une image (galerie ou caméra) et l'upload immédiatement
   Future<void> _pickProfileImage() async {
     try {
-      debugPrint('📸 ===== DÉBUT SÉLECTION PHOTO =====');
-      final File? selectedFile = await _profilService.showImageSourceDialog(context);
+      debugPrint('📸 ===== DÉBUT SÉLECTION ET UPLOAD PHOTO =====');
+      setState(() => _isUploading = true);
       
-      if (selectedFile != null) {
-        debugPrint('📸 Photo sélectionnée: ${selectedFile.path}');
-        setState(() {
-          _profileImage = selectedFile;
-          _currentPhotoBase64 = null; // Réinitialiser la photo actuelle
-        });
-        debugPrint('📸 Photo stockée dans _profileImage');
-        debugPrint('📸 ===== FIN SÉLECTION PHOTO =====');
-      } else {
-        debugPrint('⚠️ Aucune photo sélectionnée');
+      // Récupérer le token
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token');
+      
+      if (token == null || token.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Token d\'authentification manquant'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        setState(() => _isUploading = false);
+        return;
       }
+      
+      // Utiliser le service simple (comme Test Upload Photo Simple)
+      // Cette fonction sélectionne l'image et l'upload directement
+      await uploadPhotoProfil(token, ApiConfig.baseUrl);
+        
+      // Recharger le profil pour voir la nouvelle photo
+      await _loadCurrentProfile();
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Photo uploadée avec succès !'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+      debugPrint('✅ Photo uploadée avec succès');
+      debugPrint('📸 ===== FIN SÉLECTION ET UPLOAD PHOTO =====');
     } catch (e) {
-      debugPrint('❌ Erreur sélection photo: $e');
+      debugPrint('❌ Erreur upload photo: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Erreur lors de la sélection de l\'image: $e'),
+            content: Text('Erreur: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isUploading = false);
       }
     }
   }
@@ -545,28 +572,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                               _buildEditField(
                                 context, screenWidth, screenHeight,
                                 Icons.phone, _phoneController, 'Téléphone',
-                                isPhone: true,
                               ),
 
                               SizedBox(height: screenHeight * 0.04),
-
-                              // Bouton de test pour upload photo simple (optionnel - pour debug)
-                              if (kDebugMode)
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton.icon(
-                                    onPressed: _isUploading ? null : _testUploadPhotoSimple,
-                                    icon: const Icon(Icons.photo_camera),
-                                    label: const Text('Test Upload Photo Simple'),
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: primaryColor,
-                                      side: BorderSide(color: primaryColor),
-                                      padding: EdgeInsets.symmetric(vertical: screenHeight * 0.015),
-                                    ),
-                                  ),
-                                ),
-
-                              if (kDebugMode) SizedBox(height: screenHeight * 0.02),
 
                               // Bouton Enregistrer
                               SizedBox(

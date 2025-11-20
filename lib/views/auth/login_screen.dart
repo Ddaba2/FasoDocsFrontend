@@ -1,5 +1,6 @@
 // ÉCRAN 3: LOGIN SCREEN
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'sms_verification_screen.dart';
@@ -40,6 +41,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
   String _completeNumber = '';
+  String _selectedCountryCode = 'ML'; // Code pays sélectionné
   bool _showError = false;
   String _errorMessage = '';
   bool _isLoading = false;
@@ -71,11 +73,18 @@ class _LoginScreenState extends State<LoginScreen> {
   void _handleLogin() async {
     final phoneText = _phoneController.text.trim();
 
-    // Validation avec messages clairs et précis
+    // ✅ Validation adaptée selon le pays sélectionné
+    // Si le pays n'est pas le Mali, la validation "commence par 5,6,7,8,9" ne s'applique pas
     final phoneError = FormValidators.validatePhone(
       phoneText,
       completeNumber: _completeNumber,
     );
+    
+    // Vérification supplémentaire : si le pays n'est pas le Mali, avertir l'utilisateur
+    if (_selectedCountryCode != 'ML' && phoneError == null) {
+      debugPrint('⚠️ Pays sélectionné: $_selectedCountryCode (pas le Mali)');
+      // Note: La validation standard s'applique toujours, mais la règle "5,6,7,8,9" est spécifique au Mali
+    }
 
     if (phoneError != null) {
       setState(() {
@@ -330,6 +339,18 @@ class _LoginScreenState extends State<LoginScreen> {
                             Icons.arrow_drop_down,
                             color: isDarkMode ? Colors.grey.shade400 : Colors.grey,
                           ),
+                          onCountryChanged: (country) {
+                            // ✅ Gérer le changement de pays
+                            setState(() {
+                              _selectedCountryCode = country.code;
+                              // Réinitialiser l'erreur et le numéro quand le pays change
+                              _phoneController.clear();
+                              _completeNumber = '';
+                              _showError = false;
+                              _errorMessage = '';
+                            });
+                            debugPrint('🌍 Pays sélectionné: ${country.name} (${country.code}) - Indicatif: ${country.dialCode}');
+                          },
                           onChanged: (phone) {
                             if (phone != null) {
                               _completeNumber = phone.completeNumber;

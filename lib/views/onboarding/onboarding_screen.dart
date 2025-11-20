@@ -173,7 +173,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                         top: index == 0 ? screenHeight * 0.53 : (index == 2 ? screenHeight * 0.52 : screenHeight * 0.56),
                         child: Container(
                           padding: EdgeInsets.symmetric(
-                            horizontal: screenWidth * 0.03,
+                            horizontal: screenWidth * 0.02,
                             vertical: screenHeight * 0.01,
                           ),
                           decoration: BoxDecoration(
@@ -186,7 +186,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
                                 : null,
                           ),
                           child: RichText(
-                            textAlign: TextAlign.left,
+                            textAlign: (index == 1 || index == 2) ? TextAlign.center : TextAlign.left,
                             text: TextSpan(
                               children: _getTitleText(index, screenWidth * 0.038),
                             ),
@@ -224,7 +224,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
 
                             SizedBox(height: screenHeight * 0.025),
 
-                            // Bouton Continuer gris foncé (exactement comme la photo)
+                            // Bouton Continuer gris foncé 
                             Container(
                               width: double.infinity,
                               margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
@@ -294,23 +294,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> with TickerProvider
     switch (index) {
       case 0:
         return [
-          TextSpan(text: "Comment obtenir mes ", style: TextStyle(fontSize: fontSize, color: Colors.white),),
-          TextSpan(
-            text: "documents administratifs",
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFFCD116),
-            ),
-          ),
-          TextSpan(text: " au Mali en toute simplicité ?", style: TextStyle(fontSize: fontSize, color: Colors.white)),
+          TextSpan(text: "Comment je vais faire pour mes démarches administratifs ", style: TextStyle(fontSize: fontSize, color: Colors.white),),
         ];
       case 1:
-        return [TextSpan(text: "FasoDocs est là avec des procédures guidées et des informations fiables enfin accessibles à tous.", style: TextStyle(fontSize: fontSize, color: Colors.white))];
+        return [TextSpan(text: "FasoDocs est là pour vos démarches.", style: TextStyle(fontSize: fontSize, color: Colors.white))];
       case 2:
         return [
-          TextSpan(text: "La complexité, nous la gérons & \n", style: TextStyle(fontSize: fontSize, color: Colors.white)),
-          TextSpan(text: "La simplicité, nous vous la livrons.", style: TextStyle(fontSize: fontSize, color: Colors.white)),
+          TextSpan(text: "Simple, facile et accessible.", style: TextStyle(fontSize: fontSize, color: Colors.white)),
         ];
       default:
         return [TextSpan(text: "", style: TextStyle(fontSize: fontSize, color: Colors.white))];
