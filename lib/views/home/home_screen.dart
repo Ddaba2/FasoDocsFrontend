@@ -22,7 +22,7 @@ import '../identity/identity_screen.dart';
 import '../category/category_screen.dart';
 import '../procedure/procedure_list_screen.dart';
 import '../procedure/procedure_detail_screen.dart';
-import '../report/report_screen.dart';
+import '../quiz/quiz_screen.dart';
 import '../settings/settings_screen.dart';
 import '../communiquee_global/com_global.dart';
 
@@ -46,8 +46,8 @@ class _HomeScreenState extends State<HomeScreen> {
     // 1. Catégorie
     CategoryScreen(),
 
-    // 2. Alerte/Problème
-    ReportScreen(),
+    // 2. Quiz
+    QuizScreen(),
 
     // 3. Communiqués
     ComGlobalScreen(),
@@ -114,10 +114,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 inactiveColor: inactiveColor,
                 onTap: () => _onItemTapped(1),
               ),
-              // 2: Alerte
+              // 2: Quiz
               _buildNavItem(
-                icon: Icons.warning_amber_outlined,
-                label: LocaleHelper.getText(context, 'alert'),
+                icon: Icons.help_center_outlined,
+                label: LocaleHelper.getText(context, 'quiz'),
                 index: 2,
                 selectedIndex: _selectedIndex,
                 activeColor: primaryColor,

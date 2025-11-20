@@ -23,10 +23,10 @@ class ApiConfig {
     }
 
     // 3) Par défaut (émulateur Android): 10.0.2.2
-    // return 'http://10.0.2.2:8080/api';
+     return 'http://10.0.2.2:8080/api';
 
     // 4) Téléphone Android réel 
-    return 'http://192.168.11.109:8080/api';
+    //return 'http://192.168.11.109:8080/api';
   }
   
   // Pour iOS simulator, vous pouvez utiliser localhost directement

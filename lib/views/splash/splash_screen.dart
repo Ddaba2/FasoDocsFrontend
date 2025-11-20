@@ -82,37 +82,35 @@ class _SplashScreenState extends State<SplashScreen> {
             // ========================================================================================
             final screenWidth = constraints.maxWidth;     // Largeur de l'écran
             final screenHeight = constraints.maxHeight;   // Hauteur de l'écran
-            final logoSize = screenWidth * 0.7;           // Taille du logo (70% de la largeur)
-            final fontSize = screenWidth * 0.08;          // Taille de police (8% de la largeur)
+            final logoSize = screenWidth * 0.4;           // Taille du logo (40% de la largeur)
+            final fontSize = screenWidth * 0.06;          // Taille de police (6% de la largeur)
             
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,  // Colonne centrée verticalement
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // ========================================================================================
-                  // LOGO FASODOCS - Image principale du splash screen
-                  // ========================================================================================
-                  Image.asset(
-                    'assets/images/FasoDocs 1.png',
-                    width: logoSize,
-                    fit: BoxFit.contain,
+            return Column(
+              mainAxisAlignment: MainAxisAlignment.center,  // Centré verticalement au milieu
+              crossAxisAlignment: CrossAxisAlignment.center,  // Centré horizontalement
+              children: [
+                // ========================================================================================
+                // LOGO FASODOCS - Image principale du splash screen (en haut du milieu)
+                // ========================================================================================
+                Image.asset(
+                  'assets/images/FasoDocs 1.png',
+                  width: logoSize,
+                  fit: BoxFit.contain,
+                ),
+                
+                SizedBox(height: screenWidth * 0.04),
+                
+                // Texte FasoDocs (en bas du logo, au milieu)
+                Text(
+                  'FasoDocs',
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.bold,
+                    color: textColor,
+                    letterSpacing: 0.5,
                   ),
-                  
-                  SizedBox(height: screenWidth * 0.02),
-                  
-                  // Texte FasoDocs
-                  Text(
-                    'FasoDocs',
-                    style: TextStyle(
-                      fontSize: fontSize,
-                      fontWeight: FontWeight.bold,
-                      color: textColor,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             );
           },
         ),

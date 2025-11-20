@@ -387,7 +387,9 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     return Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
-        children: widget.procedure.etapes!.map((etape) {
+        children: widget.procedure.etapes!.asMap().entries.map((entry) {
+        final index = entry.key;
+        final etape = entry.value;
         return Container(
           margin: const EdgeInsets.only(bottom: 12),
           padding: const EdgeInsets.all(16),
@@ -406,7 +408,7 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                 radius: 20,
                 backgroundColor: Colors.green,
                 child: Text(
-                  '${etape.niveauOrdre}',
+                  '${index + 1}',
                   style: const TextStyle(
                       color: Colors.white, fontWeight: FontWeight.bold),
                 ),

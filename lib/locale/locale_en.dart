@@ -135,5 +135,8 @@ class LocaleEn {
   static const String documents = 'Documents';
   static const String lois = 'Law(s)';
   static const String centres = 'Centers';
+  
+  // Navigation
+  static const String quiz = 'Quiz';
 }
 
