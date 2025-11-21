@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Pas de splash screen - fond blanc simple -->
+<!-- Splash screen transparent pour démarrage immédiat -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+    <item android:drawable="@android:color/transparent" />
 </layer-list>

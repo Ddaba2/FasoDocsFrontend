@@ -2,6 +2,8 @@
 // API MODELS - Modèles de données pour l'API FasoDocs
 // ========================================================================================
 
+import 'dart:convert';
+
 /// Modèle pour les requêtes d'inscription
 class InscriptionRequest {
   final String nomComplet;
@@ -346,6 +348,14 @@ class ProcedureResponse {
   final List<EtapeProcedure>? etapes;
   final List<ReferenceLegale>? referencesLegales;
   final bool peutEtreDelegatee; // ⚠️ IMPORTANT: Indique si la procédure peut être déléguée
+  
+  // ⚠️ NOUVEAUX CHAMPS AJOUTÉS
+  final int? cout; // Coût simple (pour compatibilité avec l'ancien format)
+  final String? coutDescription; // Description du coût
+  final String? audioUrl; // URL de l'audio de la procédure
+  final DateTime? dateCreation; // Date de création
+  final DateTime? dateModification; // Date de modification
+  final CentreDeTraitement? centre; // Centre principal (pour compatibilité avec l'ancien format)
 
   ProcedureResponse({
     required this.id,
@@ -362,39 +372,106 @@ class ProcedureResponse {
     this.etapes,
     this.referencesLegales,
     this.peutEtreDelegatee = false, // Par défaut, une procédure n'est pas déléguable
+    // ⚠️ NOUVEAUX CHAMPS
+    this.cout,
+    this.coutDescription,
+    this.audioUrl,
+    this.dateCreation,
+    this.dateModification,
+    this.centre,
   });
 
-  factory ProcedureResponse.fromJson(Map<String, dynamic> json) => ProcedureResponse(
-    id: json['id']?.toString() ?? '',
-    nom: json['nom'] ?? '',
-    titre: json['titre'] ?? '',
-    description: json['description'],
-    delai: json['delai'],
-    urlFormulaire: json['urlVersFormulaire'],
-    categorie: json['categorie'] != null ? CategorieResponse.fromJson(json['categorie']) : null,
-    sousCategorie: json['sousCategorie'] != null 
-      ? SousCategorieResponse.fromJson(json['sousCategorie']) 
-      : null,
-    centres: json['centre'] != null 
-      ? [CentreDeTraitement.fromJson(json['centre'])] 
-      : (json['centres'] as List?)?.map((e) => CentreDeTraitement.fromJson(e)).toList() ?? [],
-    couts: json['cout'] != null 
-      ? (json['cout'] is double || json['cout'] is int)
-        ? [Cout(nom: json['coutDescription'] ?? 'Coût', prix: (json['cout'] as num).toDouble())]
-        : null
-      : (json['couts'] as List?)?.map((e) => Cout.fromJson(e)).toList() ?? null,
-    documentsRequis: (json['documentsRequis'] as List?)
-      ?.map((e) => DocumentRequis.fromJson(e))
-      .toList() ?? [],
-    etapes: json['etapes'] != null
-      ? (json['etapes'] as List).map((e) => EtapeProcedure.fromJson(e)).toList()
-      : null,
-    referencesLegales: _parseReferencesLegales(json),
-    peutEtreDelegatee: json['peutEtreDelegatee'] ?? false, // ⚠️ IMPORTANT
-  );
+  factory ProcedureResponse.fromJson(Map<String, dynamic> json) {
+    // Parser le centre (peut être un objet unique ou une liste)
+    CentreDeTraitement? centrePrincipal;
+    List<CentreDeTraitement> centresList = [];
+    
+    if (json['centre'] != null) {
+      centrePrincipal = CentreDeTraitement.fromJson(json['centre']);
+      centresList = [centrePrincipal];
+    } else if (json['centres'] != null) {
+      centresList = (json['centres'] as List).map((e) => CentreDeTraitement.fromJson(e)).toList();
+      if (centresList.isNotEmpty) {
+        centrePrincipal = centresList.first;
+      }
+    }
+    
+    // Parser les coûts (peut être un nombre simple ou une liste)
+    int? coutSimple;
+    String? coutDesc;
+    List<Cout>? coutsList;
+    
+    if (json['cout'] != null) {
+      if (json['cout'] is double || json['cout'] is int) {
+        coutSimple = (json['cout'] as num).toInt();
+        coutDesc = json['coutDescription'];
+        coutsList = [Cout(nom: coutDesc ?? 'Coût', prix: (json['cout'] as num).toDouble())];
+      } else if (json['cout'] is Map) {
+        // Si c'est un objet, le convertir en Cout
+        final coutObj = json['cout'] as Map<String, dynamic>;
+        coutSimple = coutObj['montant'] != null ? (coutObj['montant'] as num).toInt() : null;
+        coutDesc = coutObj['description'];
+        coutsList = [Cout.fromJson(coutObj)];
+      }
+    } else if (json['couts'] != null) {
+      coutsList = (json['couts'] as List).map((e) => Cout.fromJson(e)).toList();
+      if (coutsList.isNotEmpty) {
+        coutSimple = coutsList.first.prix.toInt();
+        coutDesc = coutsList.first.description;
+      }
+    }
+    
+    // Parser les dates
+    DateTime? dateCreation;
+    DateTime? dateModification;
+    
+    if (json['dateCreation'] != null) {
+      if (json['dateCreation'] is String) {
+        dateCreation = DateTime.tryParse(json['dateCreation']);
+      } else if (json['dateCreation'] is int) {
+        dateCreation = DateTime.fromMillisecondsSinceEpoch(json['dateCreation']);
+      }
+    }
+    
+    if (json['dateModification'] != null) {
+      if (json['dateModification'] is String) {
+        dateModification = DateTime.tryParse(json['dateModification']);
+      } else if (json['dateModification'] is int) {
+        dateModification = DateTime.fromMillisecondsSinceEpoch(json['dateModification']);
+      }
+    }
+    
+    return ProcedureResponse(
+      id: json['id']?.toString() ?? '',
+      nom: json['nom'] ?? '',
+      titre: json['titre'] ?? '',
+      description: json['description'],
+      delai: json['delai'],
+      urlFormulaire: json['urlVersFormulaire'],
+      categorie: json['categorie'] != null ? CategorieResponse.fromJson(json['categorie']) : null,
+      sousCategorie: json['sousCategorie'] != null 
+        ? SousCategorieResponse.fromJson(json['sousCategorie']) 
+        : null,
+      centres: centresList,
+      couts: coutsList,
+      documentsRequis: (json['documentsRequis'] as List?)
+        ?.map((e) => DocumentRequis.fromJson(e))
+        .toList() ?? [],
+      etapes: json['etapes'] != null
+        ? (json['etapes'] as List).map((e) => EtapeProcedure.fromJson(e)).toList()
+        : null,
+      referencesLegales: _parseReferencesLegales(json),
+      peutEtreDelegatee: json['peutEtreDelegatee'] ?? false, // ⚠️ IMPORTANT
+      // ⚠️ NOUVEAUX CHAMPS
+      cout: coutSimple,
+      coutDescription: coutDesc,
+      audioUrl: json['audioUrl'],
+      dateCreation: dateCreation,
+      dateModification: dateModification,
+      centre: centrePrincipal,
+    );
+  }
 }
-
-/// Modèle pour les notifications
 
 /// Modèle pour les notifications
 class NotificationResponse {
@@ -403,6 +480,9 @@ class NotificationResponse {
   final String message;
   final bool lue;
   final DateTime dateCreation;
+  final String? type; // Type de notification (MISE_A_JOUR, INFO, etc.)
+  final Map<String, dynamic>? details; // Détails des changements pour les notifications MISE_A_JOUR
+  final String? procedureId; // ID de la procédure concernée (pour les notifications de mise à jour)
 
   NotificationResponse({
     required this.id,
@@ -410,16 +490,48 @@ class NotificationResponse {
     required this.message,
     required this.lue,
     required this.dateCreation,
+    this.type,
+    this.details,
+    this.procedureId,
   });
 
-  factory NotificationResponse.fromJson(Map<String, dynamic> json) => NotificationResponse(
-    id: json['id']?.toString() ?? '',
-    titre: json['titre'] ?? json['title'] ?? '',
-    // ✅ Gérer plusieurs champs possibles : message, description, contenu
-    message: json['message'] ?? json['description'] ?? json['contenu'] ?? json['content'] ?? '',
-    lue: json['lue'] ?? json['read'] ?? false,
-    dateCreation: DateTime.tryParse(json['dateCreation'] ?? json['createdAt'] ?? json['date_creation'] ?? '') ?? DateTime.now(),
-  );
+  factory NotificationResponse.fromJson(Map<String, dynamic> json) {
+    // Parser les détails si c'est une notification de mise à jour
+    Map<String, dynamic>? detailsParsed;
+    if (json['details'] != null) {
+      if (json['details'] is Map) {
+        detailsParsed = Map<String, dynamic>.from(json['details']);
+      } else if (json['details'] is String) {
+        // Si c'est une chaîne JSON, essayer de la parser
+        try {
+          detailsParsed = jsonDecode(json['details']) as Map<String, dynamic>;
+        } catch (e) {
+          detailsParsed = null;
+        }
+      }
+    }
+    
+    return NotificationResponse(
+      id: json['id']?.toString() ?? '',
+      titre: json['titre'] ?? json['title'] ?? '',
+      // ✅ Gérer plusieurs champs possibles : message, description, contenu
+      message: json['message'] ?? json['description'] ?? json['contenu'] ?? json['content'] ?? '',
+      lue: json['lue'] ?? json['read'] ?? false,
+      dateCreation: DateTime.tryParse(json['dateCreation'] ?? json['createdAt'] ?? json['date_creation'] ?? '') ?? DateTime.now(),
+      type: json['type'],
+      details: detailsParsed,
+      procedureId: json['procedureId']?.toString() ?? json['procedure_id']?.toString(),
+    );
+  }
+  
+  // Vérifie si c'est une notification de mise à jour
+  bool get isMiseAJour => type == 'MISE_A_JOUR' || type == 'mise_a_jour';
+  
+  // Obtient les changements depuis les détails
+  Map<String, dynamic>? get changements => details?['changements'] as Map<String, dynamic>?;
+  
+  // Obtient le champ qui a changé (ex: "cout", "delai", "etapes", etc.)
+  String? get champModifie => details?['champ'] as String?;
 }
 
 /// Modèle pour les signalements

@@ -7,6 +7,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart'; // NÉCESSAIRE POUR LA GESTION DE THÈME
 
@@ -216,6 +217,7 @@ class FasoDocsApp extends StatelessWidget {
       theme: lightTheme(), // Thème Clair par défaut
       darkTheme: darkTheme(), // Thème Sombre
 
+      // Afficher le splash screen avec le logo FasoDocs au démarrage
       home: const SplashScreen(),
       routes: {
         '/onboarding': (context) => const OnboardingScreen(),

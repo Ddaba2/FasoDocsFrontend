@@ -20,7 +20,7 @@ subprojects {
     // Set JVM toolchain to suppress Java version warnings
     project.plugins.withType<JavaPlugin> {
         project.extensions.getByType<JavaPluginExtension>().toolchain {
-            languageVersion.set(JavaLanguageVersion.of(11))
+            languageVersion.set(JavaLanguageVersion.of(17))
         }
     }
     
@@ -29,22 +29,20 @@ subprojects {
         // Configure Android projects
         extensions.findByType<com.android.build.gradle.BaseExtension>()?.apply {
             compileOptions {
-                sourceCompatibility = JavaVersion.VERSION_11
-                targetCompatibility = JavaVersion.VERSION_11
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
             }
         }
         
-        // Configure all Java compilation tasks to use Java 11 and suppress obsolete warnings
+        // Configure all Java compilation tasks to use Java 17
         tasks.withType<JavaCompile>().configureEach {
-            sourceCompatibility = "11"
-            targetCompatibility = "11"
-            // Suppress warnings about obsolete Java 8 options
-            options.compilerArgs.add("-Xlint:-options")
+            sourceCompatibility = "17"
+            targetCompatibility = "17"
         }
         
         // Also configure for Kotlin projects
         extensions.findByType<org.jetbrains.kotlin.gradle.dsl.KotlinJvmOptions>()?.apply {
-            jvmTarget = "11"
+            jvmTarget = "17"
         }
     }
     

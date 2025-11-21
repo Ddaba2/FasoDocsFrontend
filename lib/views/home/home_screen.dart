@@ -116,7 +116,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               // 2: Quiz
               _buildNavItem(
-                icon: Icons.help_center_outlined,
+                icon: Icons.assignment_outlined,
                 label: LocaleHelper.getText(context, 'quiz'),
                 index: 2,
                 selectedIndex: _selectedIndex,

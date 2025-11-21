@@ -128,6 +128,12 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
         buffer.writeln('${cout.nom} : ${cout.prix} francs CFA');
       }
       buffer.writeln();
+    } else if (widget.procedure.cout != null) {
+      buffer.writeln('Coût : ${widget.procedure.cout} francs CFA');
+      if (widget.procedure.coutDescription != null && widget.procedure.coutDescription!.isNotEmpty) {
+        buffer.writeln('Description : ${widget.procedure.coutDescription}');
+      }
+      buffer.writeln();
     }
     
     // 7. Centres
@@ -356,15 +362,23 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
   }
 
   String _getAmountSummary(BuildContext context) {
-    if (widget.procedure.couts == null || widget.procedure.couts!.isEmpty) {
-      return 'g';
+    // Priorité 1: Utiliser la liste des coûts si disponible
+    if (widget.procedure.couts != null && widget.procedure.couts!.isNotEmpty) {
+      final total = widget.procedure.couts!
+          .fold<double>(0, (sum, cout) => sum + cout.prix);
+      if (total == 0) {
+        return LocaleHelper.getText(context, 'gratuit');
+      }
+      return '${total.toStringAsFixed(0)} FCFA';
     }
-    final total = widget.procedure.couts!
-        .fold<double>(0, (sum, cout) => sum + cout.prix);
-    if (total == 0) {
-      return LocaleHelper.getText(context, 'gratuit');
+    // Priorité 2: Utiliser le champ cout simple si disponible
+    if (widget.procedure.cout != null) {
+      if (widget.procedure.cout == 0) {
+        return LocaleHelper.getText(context, 'gratuit');
+      }
+      return '${widget.procedure.cout} FCFA';
     }
-    return '${total.toStringAsFixed(0)} FCFA';
+    return LocaleHelper.getText(context, 'gratuit');
   }
 
   Widget _buildStepsTab(BuildContext context) {
@@ -476,7 +490,11 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
     final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
     final cardColor = Theme.of(context).cardColor;
 
-    if (widget.procedure.couts == null || widget.procedure.couts!.isEmpty) {
+    // Vérifier si on a des coûts (liste ou champ simple)
+    final hasCouts = widget.procedure.couts != null && widget.procedure.couts!.isNotEmpty;
+    final hasCoutSimple = widget.procedure.cout != null;
+    
+    if (!hasCouts && !hasCoutSimple) {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -506,8 +524,14 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
       );
     }
 
-    double total = widget.procedure.couts!.fold<double>(
-        0, (sum, cout) => sum + cout.prix);
+    // Calculer le total : priorité à la liste des coûts, sinon utiliser le champ simple
+    double total;
+    if (hasCouts) {
+      total = widget.procedure.couts!.fold<double>(
+          0, (sum, cout) => sum + cout.prix);
+    } else {
+      total = widget.procedure.cout!.toDouble();
+    }
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -570,7 +594,9 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
           ),
           child: Column(
             children: [
-              ...widget.procedure.couts!.map((cout) {
+              // Afficher les coûts depuis la liste si disponible
+              if (hasCouts)
+                ...widget.procedure.couts!.map((cout) {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Row(
@@ -637,7 +663,51 @@ class _ProcedureDetailScreenState extends State<ProcedureDetailScreen>
                     ],
                   ),
                 );
-              }).toList(),
+              }).toList()
+              // Sinon afficher le coût simple
+              else if (hasCoutSimple)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    widget.procedure.coutDescription ?? 'Coût',
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                if (widget.procedure.audioUrl != null)
+                                  IconeHautParleur(
+                                    texteFrancais: widget.procedure.coutDescription ?? 'Coût',
+                                    couleur: Colors.orange,
+                                    taille: 20,
+                                    procedureId: int.tryParse(widget.procedure.id),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '${widget.procedure.cout} FCFA',
+                        style: TextStyle(
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               Divider(height: 1),
               Padding(
                 padding: const EdgeInsets.only(top: 12),

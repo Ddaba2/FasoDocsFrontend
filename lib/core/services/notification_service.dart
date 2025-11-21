@@ -93,6 +93,40 @@ class NotificationService {
       throw Exception('Erreur: $e');
     }
   }
+  
+  /// Obtenir les notifications de mise à jour (type MISE_A_JOUR)
+  Future<List<NotificationResponse>> getNotificationsMiseAJour() async {
+    try {
+      final allNotifications = await getAllNotifications();
+      return allNotifications.where((notif) => notif.isMiseAJour).toList();
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des notifications de mise à jour: $e');
+    }
+  }
+  
+  /// Obtenir les notifications de mise à jour pour une procédure spécifique
+  Future<List<NotificationResponse>> getNotificationsMiseAJourPourProcedure(String procedureId) async {
+    try {
+      final allNotifications = await getAllNotifications();
+      return allNotifications.where((notif) => 
+        notif.isMiseAJour && notif.procedureId == procedureId
+      ).toList();
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des notifications de mise à jour: $e');
+    }
+  }
+  
+  /// Obtenir les notifications non lues de type mise à jour
+  Future<List<NotificationResponse>> getNotificationsMiseAJourNonLues() async {
+    try {
+      final allNotifications = await getAllNotifications();
+      return allNotifications.where((notif) => 
+        notif.isMiseAJour && !notif.lue
+      ).toList();
+    } catch (e) {
+      throw Exception('Erreur lors de la récupération des notifications de mise à jour: $e');
+    }
+  }
 }
 
 // Instance globale du service de notifications

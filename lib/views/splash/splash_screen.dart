@@ -8,6 +8,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -49,8 +50,8 @@ class _SplashScreenState extends State<SplashScreen> {
     // ========================================================================================
     // NAVIGATION AUTOMATIQUE VERS L'ONBOARDING
     // ========================================================================================
-    // Attend 3 secondes puis navigue vers l'écran d'onboarding
-    // Vérifie que le widget est toujours monté avant de naviguer
+    // Afficher le splash screen pendant 3 secondes (même en mode debug)
+    // puis naviguer vers l'écran d'onboarding
     Future.delayed(const Duration(seconds: 3), () {
       if (mounted) {  // Vérification que le widget existe encore
         Navigator.of(context).pushReplacement(
@@ -69,8 +70,9 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final backgroundColor = Theme.of(context).scaffoldBackgroundColor;
-    final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
+    // Utiliser un fond blanc pour le splash screen (visible même si le thème est sombre)
+    final backgroundColor = Colors.white;
+    final textColor = Colors.black;
     
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -82,35 +84,39 @@ class _SplashScreenState extends State<SplashScreen> {
             // ========================================================================================
             final screenWidth = constraints.maxWidth;     // Largeur de l'écran
             final screenHeight = constraints.maxHeight;   // Hauteur de l'écran
-            final logoSize = screenWidth * 0.4;           // Taille du logo (40% de la largeur)
+            final logoSize = screenWidth * 0.3;           // Taille du logo réduite (30% de la largeur)
             final fontSize = screenWidth * 0.06;          // Taille de police (6% de la largeur)
             
-            return Column(
-              mainAxisAlignment: MainAxisAlignment.center,  // Centré verticalement au milieu
-              crossAxisAlignment: CrossAxisAlignment.center,  // Centré horizontalement
-              children: [
-                // ========================================================================================
-                // LOGO FASODOCS - Image principale du splash screen (en haut du milieu)
-                // ========================================================================================
-                Image.asset(
-                  'assets/images/FasoDocs 1.png',
-                  width: logoSize,
-                  fit: BoxFit.contain,
-                ),
-                
-                SizedBox(height: screenWidth * 0.04),
-                
-                // Texte FasoDocs (en bas du logo, au milieu)
-                Text(
-                  'FasoDocs',
-                  style: TextStyle(
-                    fontSize: fontSize,
-                    fontWeight: FontWeight.bold,
-                    color: textColor,
-                    letterSpacing: 0.5,
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,  // Centré verticalement au milieu
+                crossAxisAlignment: CrossAxisAlignment.center,  // Centré horizontalement
+                children: [
+                  // ========================================================================================
+                  // LOGO FASODOCS - Image principale du splash screen (en haut du milieu)
+                  // ========================================================================================
+                  Image.asset(
+                    'assets/images/FasoDocs 1.png',
+                    width: logoSize,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.center,
                   ),
-                ),
-              ],
+                  
+                  SizedBox(height: screenWidth * 0.04),
+                  
+                  // Texte FasoDocs (en bas du logo, au milieu)
+                  Text(
+                    'FasoDocs',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.bold,
+                      color: textColor,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
             );
           },
         ),

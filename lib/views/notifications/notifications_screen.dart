@@ -202,6 +202,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'error':
       case 'erreur':
         return Icons.error;
+      case 'mise_a_jour':
+      case 'mise à jour':
+        return Icons.update;
       default:
         return Icons.notifications;
     }
@@ -222,6 +225,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'error':
       case 'erreur':
         return Colors.red;
+      case 'mise_a_jour':
+      case 'mise à jour':
+        return Colors.purple;
       default:
         return Colors.grey;
     }
@@ -254,12 +260,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     final textColor = Theme.of(context).textTheme.bodyLarge!.color!;
     final cardColor = Theme.of(context).cardColor;
     
-    // Utiliser un type par défaut si non disponible dans le modèle
-    final icon = _getNotificationIcon(null);
-    final iconColor = _getNotificationColor(null);
+    // Utiliser le type de la notification si disponible
+    final icon = _getNotificationIcon(notification.type);
+    final iconColor = _getNotificationColor(notification.type);
     final isLue = notification.lue;
     final dateTime = notification.dateCreation;
     final timeText = _formatTime(dateTime);
+    final isMiseAJour = notification.isMiseAJour;
     
     return GestureDetector(
       onTap: onTap,
@@ -318,6 +325,60 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                           fontStyle: notification.message.isEmpty ? FontStyle.italic : FontStyle.normal,
                         ),
                       ),
+                      // Afficher les détails des changements pour les notifications de mise à jour
+                      if (isMiseAJour && notification.changements != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: iconColor.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: iconColor.withOpacity(0.3)),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Changements :',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: iconColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                ...notification.changements!.entries.map((entry) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '• ${entry.key}: ',
+                                          style: TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w500,
+                                            color: textColor,
+                                          ),
+                                        ),
+                                        Expanded(
+                                          child: Text(
+                                            entry.value.toString(),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: textColor.withOpacity(0.8),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                }).toList(),
+                              ],
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                 ),
