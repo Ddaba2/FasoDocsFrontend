@@ -203,7 +203,7 @@ class ProfilService {
       final response = await http.put(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.authProfil}'),
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': 'Bearer $token',
         },
         body: jsonBody,
@@ -261,7 +261,7 @@ class ProfilService {
       final response = await http.put(
         Uri.parse('${ApiConfig.baseUrl}${ApiConfig.authProfil}'),
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({

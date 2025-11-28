@@ -988,6 +988,18 @@ class DefaultCentersBamako {
 
   ];
   
+  static const List<DefaultCenter> api = [
+    DefaultCenter(
+      name: 'API Mali - Agence de Promotion de l\'Investissement',
+      type: 'api',
+      address: 'Bamako, Mali',
+      latitude: 12.631120361654032,
+      longitude: -8.002692460927026,
+      phone: null, // À compléter si disponible
+      plusCode: 'Près de l\'ambassade de Suède, Bamako',
+    ),
+  ];
+
   /// Obtenir les centres selon le type
   static List<DefaultCenter> getCentersByType(String centerType) {
     final lowerType = centerType.toLowerCase();
@@ -1019,6 +1031,9 @@ class DefaultCentersBamako {
     if (lowerType.contains('impôt') || lowerType.contains('impot')) {
       return impots;
     }
+    if (lowerType.contains('api') || lowerType.contains('investissement')) {
+      return api;
+    }
     
     return [];
   }
@@ -1035,6 +1050,7 @@ class DefaultCentersBamako {
       ...ministeres,
       ...douanes,
       ...impots,
+      ...api,
     ];
   }
 }

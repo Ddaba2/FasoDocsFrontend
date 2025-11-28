@@ -22,7 +22,7 @@ import '../identity/identity_screen.dart';
 import '../category/category_screen.dart';
 import '../procedure/procedure_list_screen.dart';
 import '../procedure/procedure_detail_screen.dart';
-import '../quiz/quiz_screen.dart';
+import '../quiz/selection_niveau_quiz_screen.dart';
 import '../settings/settings_screen.dart';
 import '../communiquee_global/com_global.dart';
 
@@ -47,7 +47,7 @@ class _HomeScreenState extends State<HomeScreen> {
     CategoryScreen(),
 
     // 2. Quiz
-    QuizScreen(),
+    SelectionNiveauQuizScreen(),
 
     // 3. Communiqués
     ComGlobalScreen(),

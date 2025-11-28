@@ -56,7 +56,7 @@ class TranslationService {
       
       final response = await http.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
         body: jsonEncode({
           'texte': frenchText,
           'speaker': speaker // 1 = Moussa, 2 = Sekou, 3 = Seydou
@@ -112,7 +112,7 @@ class TranslationService {
       
       final response = await http.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
         body: jsonEncode({
           'text': frenchText,
           'source_lang': 'fr',
@@ -143,7 +143,7 @@ class TranslationService {
       
       final response = await http.post(
         Uri.parse(url),
-        headers: {'Content-Type': 'application/json'},
+        headers: {'Content-Type': 'application/json; charset=utf-8'},
         body: jsonEncode({
           'text': bambaraText,
           'language': 'bm',

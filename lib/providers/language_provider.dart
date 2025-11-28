@@ -58,7 +58,7 @@ class LanguageProvider with ChangeNotifier {
       final response = await http.put(
         Uri.parse('http://192.168.1.100:8080/api/auth/profil'),
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
           'Authorization': 'Bearer $token',
         },
         body: jsonEncode({'languePreferee': code}),

@@ -24,7 +24,7 @@ class AudioService {
       final response = await http.post(
         Uri.parse(fullUrl),
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
         },
         body: json.encode({
           'texte': frenchText,
@@ -86,8 +86,8 @@ class AudioService {
       
       // Préparer les headers avec authentification si disponible
       final headers = <String, String>{
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Content-Type': 'application/json; charset=utf-8',
+        'Accept': 'application/json; charset=utf-8',
       };
       
       // Ajouter le token d'authentification si disponible

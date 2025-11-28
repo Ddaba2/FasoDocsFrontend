@@ -101,8 +101,8 @@ class DjeliaService {
       final response = await http.post(
         Uri.parse(fullUrl),
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
         },
         body: jsonEncode(body),
       ).timeout(

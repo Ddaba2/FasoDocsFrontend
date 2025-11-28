@@ -7,3 +7,4 @@
 export 'user_model.dart';
 export 'document_model.dart';
 export 'notification_model.dart';
+export 'quiz_models.dart';

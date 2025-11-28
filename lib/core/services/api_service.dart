@@ -16,12 +16,12 @@ class ApiService {
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
         headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
+          'Accept': 'application/json; charset=utf-8',
         },
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 120), // Increased from 30 to 120 seconds to handle large audio files
-        sendTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 10), // Réduit de 30 à 10 secondes
+        receiveTimeout: const Duration(seconds: 15), // Réduit de 120 à 15 secondes pour les quiz (audio files utilisent getAudio avec timeout étendu)
+        sendTimeout: const Duration(seconds: 10), // Réduit de 30 à 10 secondes
         validateStatus: (status) => status! < 500, // Accepter les codes < 500
       ),
     );

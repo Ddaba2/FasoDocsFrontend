@@ -98,6 +98,18 @@ class ApiConfig {
   static String adminServiceDemandeById(int id) => '/admin/services/demandes/$id';
   static String adminServiceModifierStatut(int id) => '/admin/services/demandes/$id/statut';
   
+  // ============================================================================
+  // QUIZ
+  // ============================================================================
+  static const String quizAujourdhui = '/quiz/aujourdhui';
+  static String quizAujourdhuiParNiveau(String niveau) => '/quiz/aujourdhui/$niveau';
+  static const String quizParticiper = '/quiz/participer';
+  static const String quizStatistiques = '/quiz/statistiques';
+  static const String quizClassementHebdomadaire = '/quiz/classement/hebdomadaire';
+  static const String quizClassementMensuel = '/quiz/classement/mensuel';
+  static const String quizGenerer = '/quiz/generer';
+  static const String quizProgression = '/quiz/progression';
+  
   // Méthode helper pour construire une URL complète
   static String buildUrl(String endpoint) {
     return baseUrl + endpoint;

@@ -50,7 +50,7 @@ Future<void> uploadPhotoProfil(String token, String baseUrl) async {
       options: Options(
         headers: {
           'Authorization': 'Bearer $token',
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json; charset=utf-8',
         },
       ),
     );
